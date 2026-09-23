@@ -1,0 +1,4 @@
+dist/app_local.html
+dist/app_db.html
+tests/capturas/
+__pycache__/
