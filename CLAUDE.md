@@ -28,6 +28,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
+  mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
   seed_local.json         dados iniciais completos (versão offline)
@@ -38,6 +39,7 @@ data/
   copias/                 guarda aqui as cópias exportadas da app (Plantel -> Exportar cópia)
 tests/      testes Playwright (correr_testes.sh corre todos)
 tools/import-exercicios/  scripts usados para importar exercícios de capturas (recorte, OCR, descrições)
+tools/apps-script/ligacao_app.gs  bloco a acrescentar ao Apps Script da monitorização (escreverApp_ + doGet); instruções no topo
 dist/       resultado do build (não editar à mão)
 ```
 
@@ -48,7 +50,7 @@ python3 build.py online       # só a versão para o artifact do Claude (sem dad
 python3 build.py offline      # só dist/index.html (com dados e fotos, guarda no browser) — para Netlify
 ./tests/correr_testes.sh      # build de teste + todos os testes
 ```
-Requisitos dos testes: `pip install playwright && python3 -m playwright install chromium`.
+Requisitos dos testes: `pip install playwright && python3 -m playwright install chromium` (no Claude Code na web, ver nota abaixo).
 O aviso "403" nos testes vem das Google Fonts bloqueadas sem rede — é esperado.
 No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "playwright==1.56.0"` (versão que corresponde ao Chromium pré-instalado) e **não** correr `playwright install`. Os testes têm de correr em Python 3.11.
 
@@ -88,5 +90,6 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - 83 exercícios com descrição proposta por mim (filtro "Descrição por confirmar"); a equipa vai revendo.
 - Fotos do staff (Plantel → Equipa técnica → Adicionar foto).
 - J1 vs Tenente Valdez: falta o resultado do adversário para fechar o jogo; os pares de substituições foram deduzidos dos minutos.
-- Painel do Google Sheets (monitorização, PSE, prontidão): à espera do código do Apps Script / colunas. Plano: `doGet` no Apps Script a devolver JSON, a app lê na versão Netlify. Deste ambiente não há acesso a docs.google.com.
+- Monitorização: o Apps Script (bem-estar Hooper 1-5, PSE × duração, ACWR, monotonia, prontidão/condição 0-100) grava um resumo JSON nas propriedades do script (`escreverApp_`, pedaços de 8000 caracteres) e a aplicação Web (`doGet?k=CHAVE_APP`) entrega-o. A app guarda URL/chave/ligações de nomes em `meta/cfg.mon` e o último resumo em localStorage (`estrela-tecnico-v1:mon`). Nomes ligam-se por igualdade, depois abreviaturas ("Bruno Vunge" = "Bruno V."), depois à mão. Teste com `tests/monitorizacao_exemplo.json` (gerado por `tests/gerar_monitorizacao_exemplo.py`). Deste ambiente não há acesso a docs.google.com/script.google.com.
+- Imagens dos exercícios (440 px): melhor caminho é o utilizador tirar capturas em "Ecrã inteiro" na origem e recortar de novo, comparando com a atual (só substituir se for praticamente idêntica).
 - Ideias ainda não feitas: estatísticas só com jogos/treinos fechados; lista de locais de jogo; contas com cargos e permissões (precisa de base de dados própria); confirmação da convocatória pelos jogadores.

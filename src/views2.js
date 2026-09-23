@@ -38,9 +38,9 @@ function pJogo(id){
   const F=(f,label,val,type="text",extra="")=>`<label class="fld">${label}<input type="${type}" value="${esc(val??"")}" data-c="f" data-col="events" data-id="${esc(id)}" data-f="${f}" ${extra}></label>`;
   const byGroup = (list,fn) => ["GR","DEF","MED","ATA","X"].map(k=>{ const l=list.filter(p=>GROUP(p.pos)===k); return l.length?`<div class="gsec">${GNAME[k]}</div><div class="tiles">${l.map(fn).join("")}</div>`:""; }).join("");
   const callTile=p=>{ const on=call.includes(p.id), av=avail(p.id);
-    return `<button class="tile ${on?"on":"off"}" data-a="call" data-id="${esc(id)}" data-p="${esc(p.id)}">${av!=="ok"?`<span class="flag ${av==="cond"?"cond":""}" title="${AV[av].l}"></span>`:""}${avatar(p)}<b>${esc(p.name)}</b><span class="st">${on?"Convocado":av!=="ok"?AV[av].l:"Fora"}</span></button>`; };
+    return `<button class="tile ${on?"on":"off"}" data-a="call" data-id="${esc(id)}" data-p="${esc(p.id)}">${av!=="ok"?`<span class="flag ${av==="cond"?"cond":""}" title="${AV[av].l}"></span>`:""}${monChip(p.id)}${avatar(p)}<b>${esc(p.name)}</b><span class="st">${on?"Convocado":av!=="ok"?AV[av].l:"Fora"}</span></button>`; };
   const callP=call.map(P).filter(Boolean).sort(BYPOS);
-  const xiTile=p=>{ const on=xi.has(p.id); return `<button class="tile ${on?"xi":""}" data-a="xi" data-id="${esc(id)}" data-p="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b><span class="st">${on?"Titular":"Suplente"}</span></button>`; };
+  const xiTile=p=>{ const on=xi.has(p.id); return `<button class="tile ${on?"xi":""}" data-a="xi" data-id="${esc(id)}" data-p="${esc(p.id)}">${monChip(p.id)}${avatar(p)}<b>${esc(p.name)}</b><span class="st">${on?"Titular":"Suplente"}</span></button>`; };
   const evs=(g.ev||[]).slice().sort((a,b)=>(parseNum(a.min)??999)-(parseNum(b.min)??999));
   const astOf={}; evs.forEach(e=>{ if(e.t==="assist"&&e.of) astOf[e.of]=e; });
   const evRow=e=>{
@@ -158,6 +158,7 @@ function pAtleta(id){
     </div></div>
   </section>
   <div class="grid2" style="margin-top:14px">
+    ${monAth(id)}
     <section class="card"><div class="card-h"><h3>Avaliação</h3><button class="btn sm primary" data-a="evalNew" data-id="${esc(id)}">+ Avaliação</button></div><div class="card-b">
       ${last?`${radarSVG(la,pa)}<div class="areas" style="margin-top:8px">${Object.entries(evalCfg()).map(([k,a])=>`<div class="area"><span>${esc(a.l)}</span><b>${la[k]==null?"–":fmt1(la[k])}</b>${pa&&la[k]!=null&&pa[k]!=null?deltaHTML(la[k],pa[k],false,1):""}</div>`).join("")}</div>
         ${prev?`<p class="note">Linha tracejada: avaliação anterior (${fmtD(prev.date)}).</p>`:""}`:`<div class="empty"><b>Sem avaliações</b>Avalia técnica, tática, física e psicológica de 0 a 10.</div>`}

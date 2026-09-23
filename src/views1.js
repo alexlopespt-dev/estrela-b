@@ -1,7 +1,7 @@
 /* ================= estado de navegação ================= */
 const TABS = [
   {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},
-  {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
+  {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"mon",l:"Monitorização"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
 ];
 const S = { pm:todayISO().slice(0,7), mdl:"", dist:"", tab:"painel", page:null, cal:todayISO().slice(0,7), day:todayISO(), tsub:"sessoes", exCat:"", jComp:"", plGroup:"", tmom:null, scSt:"", stComp:"", stSort:"min", stDir:-1 };
 try{ const s=JSON.parse(localStorage.getItem(LS+":ui")||"null"); if(s&&TABS.some(t=>t.k===s.tab)) S.tab=s.tab; }catch(e){}
@@ -28,7 +28,7 @@ function render(){
       if(!h){ S.page=null; }
     }
     if(!S.page){
-      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
+      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
     console.error(err);
@@ -107,6 +107,7 @@ function vPainel(){
     <div class="kpi"><span>Assiduidade (30 dias)</span><b>${a30.pct==null?"–":a30.pct+"%"}<small> ${a30.sessions} treinos</small></b></div>
     <div class="kpi"><span>Indisponíveis</span><b>${out.length}<small> de ${players().length}</small></b></div>
   </div>
+  <div style="margin-top:14px">${monCard()}</div>
   <div class="grid2" style="margin-top:14px">
     <section class="card"><div class="card-h"><h3>Alertas</h3><span class="sub">${al.length}</span></div>
       <div>${al.length?al.map(alertHTML).join(""):`<div class="empty"><b>Tudo em dia</b>Não há treinos nem jogos por fechar.</div>`}</div></section>

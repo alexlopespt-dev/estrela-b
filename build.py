@@ -10,7 +10,7 @@ Uso:
 import sys, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src"); DATA = os.path.join(ROOT, "data"); DIST = os.path.join(ROOT, "dist")
-JS_ORDER = ["core.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","migr.js","boot.js"]
+JS_ORDER = ["core.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","migr.js","mon.js","boot.js"]
 
 def build(seed, out):
     crest = open(os.path.join(DATA, "emblema.b64")).read()
