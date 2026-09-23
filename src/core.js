@@ -3,6 +3,7 @@
 const CREST = "__CREST__";
 const SEED = __SEED__;
 const EXIMG = __EXIMG__;
+const OPPIMG = __OPPIMG__;   // emblemas dos adversários (nome -> dataURL), embutidos no build
 const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
 const exImg = x => x && ((x.imgA && "/_blob/"+x.imgA) || (x.imgL && IMGC[x.imgL]) || x.img || (x.imgk && EXIMG[x.imgk]) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];

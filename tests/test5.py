@@ -64,7 +64,7 @@ with sync_playwright() as pw:
     print("pres head:", pg.eval_on_selector_all(".tb thead th","e=>e.map(x=>x.innerText.replace(/\\n/g,' '))"))
     print("row Rocha:", pg.eval_on_selector('.tb tbody tr:has-text("Rocha")',"e=>e.innerText.replace(/\\s+/g,' ')"))
     print("row Alves:", pg.eval_on_selector('.tb tbody tr:has-text("Alves")',"e=>e.innerText.replace(/\\s+/g,' ')"))
-    pg.click('[data-a="pmNav"][data-n="1"]'); pg.wait_for_timeout(80); chk(pg,"pres next"); print("next month:", pg.inner_text("#main .empty")[:40])
+    pg.click('[data-a="pmNav"][data-n="1"]'); pg.wait_for_timeout(80); chk(pg,"pres next"); print("next month (jogos do calendário):", pg.eval_on_selector_all(".tb thead th","e=>e.filter(x=>x.innerText.includes('Jogo')).length"))
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","s_pres.png"))
     # ---- tratamentos
     pg.click('nav [data-t="clinico"]'); pg.click('.bar [data-a="injNew"]'); pg.select_option('#dlg [name=pid]',"p7"); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(150)

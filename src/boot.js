@@ -6,15 +6,16 @@ render();
 (async()=>{
   db = await use("db");
   assets = await use("assets");
-  if(!db){ await idbLoadAll(); lsLoad(); MODE="local"; render(); return; }
-  const got={};
-  const ready=()=>{ if(MODE==="loading" && COLS.every(c=>got[c])){ MODE="db"; } schedule(); };
+  if(!db){ await idbLoadAll(); lsLoad(); MODE="local"; runMigrations(); render(); return; }
+  const got={}, ok={};
+  // as atualizações de dados só correm se todas as coleções chegaram bem (nunca sobre dados incompletos)
+  const ready=()=>{ if(MODE==="loading" && COLS.every(c=>got[c])){ MODE="db"; if(COLS.every(c=>ok[c])) runMigrations(); } schedule(); };
   COLS.forEach(c=>{
     db.collection(c).onSnapshot(q=>{
       const next={};
       q.docs.forEach(d=>{ const key=c+"/"+d.id; next[d.id] = busy(key) && D[c][d.id] ? D[c][d.id] : d.data(); });
       Object.keys(D[c]).forEach(id=>{ if(busy(c+"/"+id) && !(id in next) && pending[c+"/"+id] && !pending[c+"/"+id].del) next[id]=D[c][id]; });
-      D[c]=next; VER++; got[c]=true; ready();
+      D[c]=next; VER++; got[c]=true; ok[c]=true; ready();
     }, ()=>{ got[c]=true; ready(); });
   });
   setTimeout(()=>{ if(MODE==="loading"){ COLS.forEach(c=>got[c]=true); ready(); } }, 12000);

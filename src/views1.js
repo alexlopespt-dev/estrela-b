@@ -71,9 +71,10 @@ function eventRow(e){
   else { const att=Object.values(e.att||{}).filter(a=>a&&a.s); const pres=att.filter(a=>a.s==="P"||a.s==="AT").length;
     right = e.closed ? `<span class="tag ok">Fechado</span>${att.length?` <span class="small muted num">${pres}/${att.length}</span>`:""}` : e.date<todayISO() ? `<span class="tag warn">Por fechar</span>` : `<span class="tag">Agendado</span>`; }
   const title = isG ? `${e.venue==="F"?"@ ":"vs "}${e.opp||"Adversário por definir"}` : (e.theme||"Treino");
+  const oc = isG && oppCrestSrc(oppByName(e.opp)) ? oppCrest(e.opp,22)+" " : "";
   const sub = isG ? [e.comp,e.phase,e.time,e.venue==="F"?"Fora":"Casa"].filter(Boolean) : [e.time,e.dur?e.dur+"'":"",e.place,(cycleAt("micro",e.date)||{}).name].filter(Boolean);
   const tt = isG ? "" : ttypeTag(e);
-  return `<button class="li" data-a="page" data-p="${isG?"jogo":"treino"}" data-id="${esc(e.id)}"><span class="datebox ${isG?"jogo":""}"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${esc(title)}</b><small>${sub.map(esc).join(" — ")}</small>${tt?`<small style="margin-top:3px">${tt}</small>`:""}</span>${right}</button>`;
+  return `<button class="li" data-a="page" data-p="${isG?"jogo":"treino"}" data-id="${esc(e.id)}"><span class="datebox ${isG?"jogo":""}"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${oc}${esc(title)}</b><small>${sub.map(esc).join(" — ")}</small>${tt?`<small style="margin-top:3px">${tt}</small>`:""}</span>${right}</button>`;
 }
 function playerLine(p,right=""){
   return `<button class="li" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small><span class="pos">${esc(p.pos||"—")}</span>${p.n?"n.º "+esc(p.n):""}</small></span>${right}</button>`;
@@ -140,7 +141,7 @@ function vAgenda(){
     const evs=byDay[d]||[], wd=toD(d).getDay();
     cells+=`<button class="d ${d.slice(0,7)!==S.cal?"out":""} ${d===t?"today":""} ${d===S.day?"sel":""}" data-a="calDay" data-d="${d}">
       <span class="n">${toD(d).getDate()}</span>
-      ${evs.map(e=>{ if(e.type==="jogo") return `<span class="ev j ${e.closed?"done":""}">${esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"Jogo"))}</span>`;
+      ${evs.map(e=>{ if(e.type==="jogo") return `<span class="ev j ${e.closed?"done":""}">${oppCrestSrc(oppByName(e.opp))?oppCrest(e.opp,14):""}${esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"Jogo"))}</span>`;
         const t=TRT(e.ttype), c=INTC(e.int);
         return `<span class="ev t ${t||c?"typed":""} ${e.closed?"done":""}" style="${t?`background:${t.c};`:""}${c?`--intc:${c}`:""}" title="${esc([t&&t.l,e.int&&"Intensidade "+e.int.toLowerCase(),e.theme].filter(Boolean).join(" — "))}">${t?`<span class="ttag">${t.s}</span>`:""}${esc((e.time?e.time+" ":"")+(e.theme||(t?"":"Treino")))}</span>`; }).join("")}
       ${!evs.length&&(wd===1||wd===6)?`<span class="folga">Folga</span>`:""}
@@ -451,7 +452,7 @@ function vOpp(){
   return `
   <div class="bar"><h2>Adversários</h2><button class="btn primary" data-a="oppNew">+ Novo adversário</button></div>
   ${list.length?`<section class="card"><div class="list">${list.map(o=>{ const ng=nextFor(o.name);
-    return `<button class="li" data-a="page" data-p="adversario" data-id="${esc(o.id)}"><span class="shield" style="width:34px;height:40px;font-size:13px">${esc(initials(o.name))}</span>
+    return `<button class="li" data-a="page" data-p="adversario" data-id="${esc(o.id)}">${oppCrest(o,36)}
       <span class="main"><b>${esc(o.name)}</b><small>${[o.comp,o.formation,o.style].filter(Boolean).map(esc).join(" — ")}</small></span>
       ${ng?`<span class="tag grena">Jogo ${fmtD(ng.date)}</span>`:""}<span class="small muted">${(o.reports||[]).length} relatórios</span></button>`; }).join("")}</div></section>`
   :`<div class="empty"><b>Sem adversários</b>Cria a ficha de um adversário: sistema tático, pontos fortes e fracos, jogadores a vigiar e bolas paradas.</div>`}
@@ -468,8 +469,8 @@ function pOpp(id){
   const reps=(o.reports||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   return `
   <div class="phead"><button class="back" data-a="back" aria-label="Voltar">‹</button>
-    <div><h2>${esc(o.name)}</h2><p>${[o.comp,o.formation,o.style].filter(Boolean).map(esc).join(" — ")||"Ficha de adversário"}</p></div>
-    <div class="acts"><button class="btn" data-a="prOpp" data-id="${esc(id)}">Ficha em PDF</button><button class="btn ghost" data-a="oppDel" data-id="${esc(id)}">Eliminar</button></div></div>
+    ${oppCrest(o,52)}<div><h2>${esc(o.name)}</h2><p>${[o.comp,o.formation,o.style].filter(Boolean).map(esc).join(" — ")||"Ficha de adversário"}</p></div>
+    <div class="acts"><button class="btn" data-a="oppCrestUp" data-id="${esc(id)}">${oppCrestSrc(o)?"Mudar emblema":"Adicionar emblema"}</button><button class="btn" data-a="prOpp" data-id="${esc(id)}">Ficha em PDF</button><button class="btn ghost" data-a="oppDel" data-id="${esc(id)}">Eliminar</button></div></div>
   <div class="grid2">
     <section class="card"><div class="card-h"><h3>Identificação</h3></div><div class="card-b"><div class="form">
       ${F("name","Nome",o.name)}${F("comp","Competição",o.comp)}
@@ -495,7 +496,7 @@ function pOpp(id){
   </div></div></section>
   <section class="card"><div class="card-h"><h3>Observações e jogos</h3><button class="btn sm primary" data-a="oppRepNew" data-id="${esc(id)}">+ Observação</button></div>
     <div class="list">${reps.length?reps.map(r=>`<button class="li" data-a="oppRepEdit" data-id="${esc(id)}" data-r="${esc(r.id)}" style="align-items:flex-start"><span class="main"><b>${fmtD(r.date,{day:"numeric",month:"long",year:"numeric"})}${r.game?" — "+esc(r.game):""}</b><small>${esc(r.by||"")}</small><small style="display:block;margin-top:4px">${esc((r.txt||"").slice(0,180))}</small></span></button>`).join(""):`<div class="empty"><b>Sem observações</b></div>`}
-    ${gs.length?gs.map(g=>{ const c=gameCalc(g); return `<button class="li" data-a="page" data-p="jogo" data-id="${esc(g.id)}"><span class="datebox jogo"><b>${toD(g.date).getDate()}</b><span>${toD(g.date).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><small>${[g.comp,g.phase].filter(Boolean).map(esc).join(" — ")}</small></span>${g.closed&&c.result?`<span class="res ${c.result}">${c.result}</span> <b class="num">${esc(scoreTxt(g,c))}</b>`:`<span class="tag">Agendado</span>`}</button>`; }).join(""):""}</div></section>`;
+    ${gs.length?gs.map(g=>{ const c=gameCalc(g); return `<button class="li" data-a="page" data-p="jogo" data-id="${esc(g.id)}"><span class="datebox jogo"><b>${toD(g.date).getDate()}</b><span>${toD(g.date).toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><small>${[g.comp,g.phase,fmtD(g.date,{year:"numeric",month:"short",day:"numeric"}),g.time].filter(Boolean).map(esc).join(" — ")}</small></span>${g.closed&&c.result?`<span class="res ${c.result}">${c.result}</span> <b class="num">${esc(scoreTxt(g,c))}</b>`:`<span class="tag">Agendado</span>`}</button>`; }).join(""):""}</div></section>`;
 }
 
 /* esquema tático desenhado a partir do sistema */

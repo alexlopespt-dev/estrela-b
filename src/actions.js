@@ -67,6 +67,11 @@ $("#fileIn").addEventListener("change", async e=>{
     const s=clone(D.staff[sid]);
     if(assets){ try{ const r=await assets.upload(blob,{type:"image/jpeg"}); s.photo=r.id; delete s.photoData; put("staff",sid,s); toast("Foto guardada"); closeModal(); return; }catch(err){} }
     s.photoData=await blobToData(blob); s.photo=null; put("staff",sid,s); toast("Foto guardada"); closeModal(); return; }
+  if(String(photoTarget).startsWith("opp:")){ const oid=photoTarget.slice(4); if(!D.opponents[oid]) return;
+    let blob; try{ blob=await imgBlob(f,256,0.9); }catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir."); return; }
+    const st=await saveImg(blob); const o=clone(D.opponents[oid]); if(!o) return; dropImg(o); delete o.imgA; delete o.imgL; delete o.crk;
+    if(st) Object.assign(o,st); else o.crest=await blobToData(blob);
+    put("opponents",oid,o); toast("Emblema guardado"); return; }
   if(!D.players[photoTarget]) return;
   let blob; try{ toast("A carregar a foto…"); blob=await thumb(f); }catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir. Usa JPG ou PNG."); return; }
   const p=clone(D.players[photoTarget]);
@@ -686,6 +691,7 @@ const A = {
   stfPhoto: el => { photoTarget="staff:"+el.dataset.id; $("#fileIn").click(); },
   oppNew: () => { const id=uid("op_"); put("opponents",id,{name:"Novo adversário",comp:meta().comp||"",keys:[],reports:[]}); openPage("adversario",id); },
   oppFromGame: el => { const g=D.events[el.dataset.id]; if(g) oppOpenByName(g.opp,g.comp); },
+  oppCrestUp: el => { photoTarget="opp:"+el.dataset.id; $("#fileIn").click(); },
   oppDel: el => askConfirm("Eliminar esta ficha de adversário?","Eliminar",true).then(ok=>{ if(ok){ del("opponents",el.dataset.id); back(); } }),
   oppKeyNew: el => oppKeyForm(el.dataset.id,null),
   oppKeyEdit: el => oppKeyForm(el.dataset.id,+el.dataset.i),

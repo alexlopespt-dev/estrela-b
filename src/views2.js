@@ -33,7 +33,8 @@ function pJogo(id){
   const pls=players();
   const home=g.venue!=="F";
   const us=`<div class="side"><img src="${CREST}" alt="">${esc(m.team||"Estrela B")}</div>`;
-  const them=`<div class="side"><div class="shield">${esc(g.opp?initials(g.opp):"?")}</div>${esc(g.opp||"Adversário")}</div>`;
+  const oSrc=oppCrestSrc(oppByName(g.opp));
+  const them=`<div class="side">${oSrc?`<img src="${esc(oSrc)}" alt="">`:`<div class="shield">${esc(g.opp?initials(g.opp):"?")}</div>`}${esc(g.opp||"Adversário")}</div>`;
   const F=(f,label,val,type="text",extra="")=>`<label class="fld">${label}<input type="${type}" value="${esc(val??"")}" data-c="f" data-col="events" data-id="${esc(id)}" data-f="${f}" ${extra}></label>`;
   const byGroup = (list,fn) => ["GR","DEF","MED","ATA","X"].map(k=>{ const l=list.filter(p=>GROUP(p.pos)===k); return l.length?`<div class="gsec">${GNAME[k]}</div><div class="tiles">${l.map(fn).join("")}</div>`:""; }).join("");
   const callTile=p=>{ const on=call.includes(p.id), av=avail(p.id);

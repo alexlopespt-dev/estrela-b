@@ -10,16 +10,18 @@ Uso:
 import sys, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src"); DATA = os.path.join(ROOT, "data"); DIST = os.path.join(ROOT, "dist")
-JS_ORDER = ["core.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","boot.js"]
+JS_ORDER = ["core.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","migr.js","boot.js"]
 
 def build(seed, out):
     crest = open(os.path.join(DATA, "emblema.b64")).read()
     imgs = json.load(open(os.path.join(DATA, "exercicios_imagens.json")))
+    opp = json.load(open(os.path.join(DATA, "emblemas_adversarios.json")))
     css = open(os.path.join(SRC, "style.css")).read()
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in JS_ORDER)
     h = open(os.path.join(SRC, "shell.html")).read().replace("/*CSS*/", css).replace("/*JS*/", js)
     h = (h.replace('"__CREST__"', json.dumps(crest))
           .replace("__EXIMG__", json.dumps(imgs))
+          .replace("__OPPIMG__", json.dumps(opp, ensure_ascii=False))
           .replace("__SEED__", json.dumps(seed, ensure_ascii=False) if seed else "null"))
     os.makedirs(DIST, exist_ok=True)
     path = os.path.join(DIST, out)

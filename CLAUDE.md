@@ -27,12 +27,14 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   quick.js     modo pós-jogo, grelha da época, importação da antiga app de ratings
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
+  migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
   seed_local.json         dados iniciais completos (versão offline)
   seed_db.json            os mesmos dados, usados para semear a base de dados online
   exercicios_imagens.json imagens dos 129 exercícios importados (chave imgk -> dataURL), embutidas na página
   emblema.b64             emblema do clube (dataURL)
+  emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG 64 px, recortados de uma captura do zerozero), embutidos como OPPIMG
   copias/                 guarda aqui as cópias exportadas da app (Plantel -> Exportar cópia)
 tests/      testes Playwright (correr_testes.sh corre todos)
 tools/import-exercicios/  scripts usados para importar exercícios de capturas (recorte, OCR, descrições)
@@ -65,6 +67,12 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
 - Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha).
 
+## Atualizações de dados (migr.js)
+- Os dados vivem no browser (offline) ou na base de dados online, por isso mudar o `seed_local.json` não chega a quem já usa a app. Para acrescentar dados, criar uma entrada em `MIGR` com id novo: corre uma vez por dispositivo/base de dados, só acrescenta ou preenche campos vazios e usa ids fixos (nunca duplica).
+- Online só corre se todas as coleções carregaram sem erro (nunca sobre dados incompletos).
+- `cal2627`: calendário AF Lisboa 3.ª Divisão Série 4 (J11 e J24 são folga), 12 fichas de adversário com emblema (`crk`), J1 com golos sofridos 0 e "Fora" (0-6 no zerozero).
+- Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
+
 ## Regras e armadilhas (aprendidas à custa de erros)
 1. **Nunca guardar imagens dentro dos documentos da base de dados online.** Fotos novas de exercícios (1800 px) vão por `saveImg()`: `assets` online, IndexedDB offline. A exportação volta a pô-las como dataURL e a importação tira-as outra vez. Com imagens nos documentos, a app só recebia parte dos exercícios. Imagens fixas vão para `data/exercicios_imagens.json` (embutidas no build); fotos novas vão para `assets` (online) ou dataURL pequena (offline).
 2. Os documentos vindos da base de dados estão congelados: usar sempre `clone(D.col[id])` antes de alterar e gravar com `put(col, id, obj)`.
@@ -80,4 +88,5 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - 83 exercícios com descrição proposta por mim (filtro "Descrição por confirmar"); a equipa vai revendo.
 - Fotos do staff (Plantel → Equipa técnica → Adicionar foto).
 - J1 vs Tenente Valdez: falta o resultado do adversário para fechar o jogo; os pares de substituições foram deduzidos dos minutos.
+- Painel do Google Sheets (monitorização, PSE, prontidão): à espera do código do Apps Script / colunas. Plano: `doGet` no Apps Script a devolver JSON, a app lê na versão Netlify. Deste ambiente não há acesso a docs.google.com.
 - Ideias ainda não feitas: estatísticas só com jogos/treinos fechados; lista de locais de jogo; contas com cargos e permissões (precisa de base de dados própria); confirmação da convocatória pelos jogadores.

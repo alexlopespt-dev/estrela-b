@@ -29,6 +29,9 @@ with sync_playwright() as pw:
         if got.get(k)!=v: errs.append(f"MIN {k}: {got.get(k)} != {v}")
     print("ficha rows",len(rows), "Alves G/A:", [r for r in rows if r[0]=="Alves"])
     score=pg.inner_text(".goals"); print("score:",score.replace("\n"," | "))
+    # J1 já vem com o resultado do zerozero (0-6, fora); limpar para testar o fecho sem golos sofridos
+    if "0 - 6" not in score: errs.append("J1 sem resultado do calendário: "+score)
+    pg.fill('input[data-f="ga"]',""); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
     # close without ga
     pg.click('[data-a="gClose"]'); pg.wait_for_timeout(100); print("toast:",pg.inner_text("#toast"))
     pg.fill('input[data-f="ga"]',"1"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
