@@ -60,7 +60,22 @@ function imgBlob(file,maxW=1800,q=0.88){
     img.src=url;
   });
 }
-$("#fileIn").addEventListener("change", async e=>{
+/* Escolher ficheiros: o campo é criado no momento, dentro da janela aberta (se houver).
+   Com uma janela modal aberta, o resto da página fica inerte e o Safari/iPhone (e o Claude)
+   não abrem o seletor de um campo que esteja fora dela — era isso que impedia as fotos do staff. */
+const FILE_H={}, FILE_ACCEPT={fileIn:"image/*",exImgIn:"image/*",jsonIn:"application/json,.json"};
+const onFile=(id,fn)=>{ FILE_H[id]=fn; };
+function pickFile(id){
+  const host=[$("#dlgAsk"),$("#dlg")].find(d=>d&&d.open)||document.body;
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=FILE_ACCEPT[id]||"";
+  inp.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  const done=()=>setTimeout(()=>inp.remove(),0), stop=e=>e.stopPropagation();
+  inp.addEventListener("input",stop);
+  inp.addEventListener("change",e=>{ stop(e); const fn=FILE_H[id]; if(fn) fn({target:inp}); done(); });
+  inp.addEventListener("cancel",e=>{ stop(e); done(); });
+  host.appendChild(inp); inp.click();
+}
+onFile("fileIn", async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f||!photoTarget) return;
   if(String(photoTarget).startsWith("staff:")){ const sid=photoTarget.slice(6); if(!D.staff[sid]) return;
     let blob; try{ blob=await thumb(f); }catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir."); return; }
@@ -106,8 +121,8 @@ async function importData(file){
   }
   toast("Cópia importada");
 }
-$("#jsonIn").addEventListener("change", e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importAny(f); });
-$("#exImgIn").addEventListener("change", async e=>{
+onFile("jsonIn", e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importAny(f); });
+onFile("exImgIn", async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f||!exImgTarget||!D.exercises[exImgTarget]) return;
   const tid=exImgTarget;
   try{ toast("A preparar a imagem…");
@@ -633,7 +648,7 @@ const A = {
   plGroup: el => { S.plGroup=el.dataset.k; render(); },
   plNew: () => playerForm(null),
   plEdit: el => playerForm(el.dataset.id),
-  photo: el => { photoTarget=el.dataset.id; $("#fileIn").click(); },
+  photo: el => { photoTarget=el.dataset.id; pickFile("fileIn"); },
   evalNew: el => evalForm(el.dataset.id,null),
   evalEdit: el => evalForm(null,el.dataset.id),
   slClear: el => { if(!M||!M.v) return; const k=el.dataset.k, attr=el.dataset.attr; if(M.v[k]) delete M.v[k][attr]; M.dirty=true;
@@ -688,14 +703,14 @@ const A = {
     staff().forEach(p=>{ if(!tr.satt[p.id]||!tr.satt[p.id].s){ tr.satt[p.id]={s:"P"}; n++; } }); put("events",id,tr); toast(n?`${n} marcados como presentes`:"Todos já tinham presença"); },
   stfNew: () => staffForm(null),
   stfEdit: el => staffForm(el.dataset.id),
-  stfPhoto: el => { photoTarget="staff:"+el.dataset.id; $("#fileIn").click(); },
+  stfPhoto: el => { photoTarget="staff:"+el.dataset.id; pickFile("fileIn"); },
   oppNew: () => { const id=uid("op_"); put("opponents",id,{name:"Novo adversário",comp:meta().comp||"",keys:[],reports:[]}); openPage("adversario",id); },
   oppFromGame: el => { const g=D.events[el.dataset.id]; if(g) oppOpenByName(g.opp,g.comp); },
   monCfg: () => monCfgForm(),
   monRefresh: () => monFetch(true),
   monF: el => { S.monF=el.dataset.k; render(); },
   monSort: el => { const k=el.dataset.k; if(S.monSort===k) S.monDir=-(S.monDir||1); else { S.monSort=k; S.monDir=["prio","carga7","acwr","monotonia","z"].includes(k)?-1:1; } render(); },
-  oppCrestUp: el => { photoTarget="opp:"+el.dataset.id; $("#fileIn").click(); },
+  oppCrestUp: el => { photoTarget="opp:"+el.dataset.id; pickFile("fileIn"); },
   oppDel: el => askConfirm("Eliminar esta ficha de adversário?","Eliminar",true).then(ok=>{ if(ok){ del("opponents",el.dataset.id); back(); } }),
   oppKeyNew: el => oppKeyForm(el.dataset.id,null),
   oppKeyEdit: el => oppKeyForm(el.dataset.id,+el.dataset.i),
@@ -707,7 +722,7 @@ const A = {
   tevRate: el => { tevRead(); const l=tevList(M.gid), p=l[M.i]; const tr=clone(D.events[M.gid]); tr.pev=tr.pev||{}; tr.pev[p.id]={...(tr.pev[p.id]||{}),r:parseFloat(el.dataset.n)}; put("events",M.gid,tr); tevForm(M.gid,M.i); },
   minAuto: el => { const g=clone(D.events[el.dataset.id]); if(!g) return; delete g.minOv; put("events",el.dataset.id,g); toast("Minutos recalculados pelos eventos"); },
   drawEx: el => drawEditor(el.dataset.id),
-  exPhoto: el => { exImgTarget=el.dataset.id; $("#exImgIn").click(); },
+  exPhoto: el => { exImgTarget=el.dataset.id; pickFile("exImgIn"); },
   exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
@@ -732,7 +747,7 @@ const A = {
   prEdit: el => prForm(el.dataset.id),
   mdlPer: el => { S.mdl=el.dataset.k; render(); },
   pmNav: el => { const [y,m]=S.pm.split("-").map(Number); const d=new Date(y,m-1+(+el.dataset.n),1); S.pm=d.getFullYear()+"-"+pad(d.getMonth()+1); render(); },
-  import: () => $("#jsonIn").click()
+  import: () => pickFile("jsonIn")
 };
 
 /* ================= alterações em campos ================= */

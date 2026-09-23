@@ -52,7 +52,8 @@ with sync_playwright() as pw:
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","d_grelha.png"))
     # importar da app de ratings
     pg.click('nav [data-t="plantel"]')
-    pg.set_input_files("#jsonIn",os.path.join(ROOT,"tests","ratings_exemplo.json")); pg.wait_for_timeout(300)
+    with pg.expect_file_chooser() as fc: pg.click('[data-a="import"]')
+    fc.value.set_files(os.path.join(ROOT,"tests","ratings_exemplo.json")); pg.wait_for_timeout(300)
     print("ask:", pg.inner_text("#dlgAsk").replace("\n"," ")[:110])
     pg.click('#dlgAsk [data-ask="1"]'); pg.wait_for_timeout(400); chk(pg,"após import")
     print(pg.inner_text("#toast"))

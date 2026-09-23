@@ -33,6 +33,15 @@ const MIGR = [
     });
     return nG||nO ? `Calendário da época: ${plural(nG,"jogo novo","jogos novos")}, ${plural(nO,"adversário novo","adversários novos")}.` : "";
   }}
+  ,{id:"plantel_mon1", run(){
+    // Na folha de monitorização o Rocha aparece como "Hugo R."; o Khan passa a fazer parte do plantel.
+    const same=(a,b)=>nameKey(a)===nameKey(b); let msg=[];
+    const rocha=allPlayers().find(p=>same(p.name,"Rocha"));
+    const c=clone(cfg()), mon=c.mon||{}, map={...(mon.map||{})};
+    if(rocha && !("Hugo R." in map)){ map["Hugo R."]=rocha.id; put("meta","cfg",{...c,mon:{...mon,map}}); }
+    if(!allPlayers().some(p=>same(p.name,"Khan"))){ put("players","p_khan",{n:null,name:"Khan",pos:"",foot:"",photo:null}); msg.push("Khan adicionado ao plantel"); }
+    return msg.join(". ");
+  }}
 ];
 function runMigrations(){
   if(MODE!=="local" && MODE!=="db") return;

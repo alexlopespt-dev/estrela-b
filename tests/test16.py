@@ -32,8 +32,8 @@ with sync_playwright() as pw:
     print("sem ligação:", pg.inner_text("p.note >> nth=0")[:120])
     # ligações automáticas: Bruno Vunge -> Bruno V., Miguel Valério -> Valério, Miguel -> Miguel
     links=pg.evaluate("[...document.querySelectorAll('.tb.mon tbody tr')].map(r=>[r.querySelector('td b').innerText, (r.querySelector('[data-p=atleta]')||{}).dataset?.id||''])")
-    lk=dict(links); print("Bruno V.:", "Bruno V." in lk, "| Valério:", "Valério" in lk, "| Miguel:", lk.get("Miguel"), "| Hugo R. sem ligação:", lk.get("Hugo R.")=="")
-    if "Bruno V." not in lk or "Valério" not in lk or not lk.get("Miguel") or lk.get("Hugo R.")!="": errs.append("ligação de nomes")
+    lk=dict(links); print("Bruno V.:", "Bruno V." in lk, "| Valério:", "Valério" in lk, "| Miguel:", lk.get("Miguel"), "| Hugo R. = Rocha:", lk.get("Rocha"), "| Khan:", lk.get("Khan"), "| Jota sem ligação:", lk.get("Jota")=="")
+    if "Bruno V." not in lk or "Valério" not in lk or not lk.get("Miguel") or lk.get("Rocha")!="p2" or lk.get("Khan")!="p_khan" or lk.get("Jota")!="": errs.append("ligação de nomes")
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t16_mon.png"), full_page=True)
     # ordenar e filtrar
     pg.click('[data-a="monSort"][data-k="carga7"]'); pg.wait_for_timeout(200)
@@ -41,8 +41,8 @@ with sync_playwright() as pw:
     pg.click('[data-a="monF"][data-k="al"]'); pg.wait_for_timeout(200); print("com alerta:", pg.eval_on_selector_all(".tb.mon tbody tr","e=>e.length"))
     # mapear Hugo R. à mão para o Rocha e ignorar
     pg.click('.bar [data-a="monCfg"]'); pg.wait_for_timeout(300)
-    i=pg.evaluate("[...document.querySelectorAll('#dlg .monmap select')].findIndex(s=>s.dataset.n==='Hugo R.')")
-    pg.select_option(f'#dlg [name=m_{i}]',"p2"); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(1000)
+    i=pg.evaluate("[...document.querySelectorAll('#dlg .monmap select')].findIndex(s=>s.dataset.n==='Jota')")
+    pg.select_option(f'#dlg [name=m_{i}]',"p26" if False else pg.evaluate("Object.entries(JSON.parse(localStorage.getItem('estrela-tecnico-v1')).players).find(([k,v])=>v.name==='Zé Ramos')[0]")); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(1000)
     print("mapa guardado:", pg.evaluate("JSON.parse(localStorage.getItem('estrela-tecnico-v1')).meta.cfg.mon.map"))
     # painel
     pg.click('nav [data-t="painel"]'); pg.wait_for_timeout(300); chk(pg,"painel2")
