@@ -1,5 +1,5 @@
 /* ================= impressão / PDF ================= */
-let PRINT_MODE="dl";
+let PRINT_MODE="dl", PRINT_WIN=null;
 const PCSS = `
 *{box-sizing:border-box}
 body{margin:0;background:#fff;color:#1b1014;font-family:"Barlow",system-ui,Arial,sans-serif;font-size:12px;line-height:1.35}
@@ -45,10 +45,10 @@ ${body}</div><script>window.onload=function(){setTimeout(function(){try{window.p
 }
 async function openPrintable(fname, html){
   if(PRINT_MODE==="open"){
-    try{ const w=window.open("","_blank"); if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); toast("Abre a janela e escolhe Imprimir ou Guardar como PDF."); return; } }catch(e){}
+    try{ const w=PRINT_WIN||window.open("","_blank"); PRINT_WIN=null; if(w && w.document){ w.document.open(); w.document.write(html); w.document.close(); toast("Abre a janela e escolhe Imprimir ou Guardar como PDF."); return; } }catch(e){}
     toast("O browser bloqueou a aba nova — vou descarregar o ficheiro.");
   }
-  html=html.replace("window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};","");
+  html=html.replace(/window\.onload=function\(\)\{setTimeout\(function\(\)\{try\{window\.print\(\);\}catch\(e\)\{\}\},\d+\);\};/,"");
   const dl=await use("downloads");
   if(dl){ try{ await dl.save({filename:fname+".html",data:html}); toast("Ficheiro guardado. Abre-o e escolhe Imprimir → Guardar como PDF."); return; }
     catch(e){ if(e&&e.code==="declined") return; } }
@@ -59,29 +59,97 @@ async function openPrintable(fname, html){
 }
 const pRow = (l,v) => `<div><b>${esc(l)}</b>${esc(v==null||v===""?"—":v)}</div>`;
 
-/* ---- plano de treino ---- */
-function planPrint(id){
+/* ---- plano de treino (modelo: cabeçalho da sessão + um exercício em grande por página) ---- */
+const PLAN_CSS = `
+*{box-sizing:border-box}
+html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#fff;color:#222;font-family:"Barlow",system-ui,Arial,sans-serif;font-size:13px;line-height:1.35}
+.page{max-width:800px;margin:0 auto;padding:22px}
+.ph{display:flex;align-items:center;gap:12px}
+.ph img{width:58px;height:auto}
+.ph .team b{display:block;font-size:28px;font-weight:600;line-height:1;color:#333}
+.ph .team span{font-size:13px;color:#555}
+.ph .num{margin-left:auto;text-align:right;font-size:19px;color:#333;line-height:1.15}
+.ph .num b{display:block;font-size:26px;font-weight:600}
+h1.tt{font-size:22px;font-weight:500;color:#333;margin:12px 0 0;padding:0 4px 3px;border-bottom:2px solid #555}
+.info{display:grid;border-bottom:1px solid #bbb}
+.info.r4{grid-template-columns:1.1fr 1fr 1fr 1.1fr}
+.info>div{padding:5px 8px;text-align:center;border-right:1px solid #bbb;font-size:14px;color:#444}
+.info>div:last-child{border-right:0}
+.info b{font-size:16px;font-weight:600;color:#222;margin-right:6px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:14px}
+.three>div{padding:0 0 8px}
+.three>div+div{border-left:1px solid #bbb}
+.three h3{margin:0 0 6px;padding:0 6px 2px;font-size:20px;font-weight:500;color:#333;border-bottom:2px solid #555}
+.three p{margin:0;padding:0 8px;white-space:pre-line;min-height:56px}
+.blk{break-inside:avoid;page-break-inside:avoid;margin-top:20px}
+.blk h2{display:flex;align-items:center;gap:10px;margin:0;padding:0 4px 3px;font-size:22px;font-weight:500;color:#333;border-bottom:2px solid #555}
+.blk h2 .dot{width:18px;height:18px;border-radius:50%;background:#111;flex:none}
+.blk h2 .min{margin-left:auto;font-size:15px;color:#666}
+.exrow{display:grid;grid-template-columns:1fr 92px}
+.draw{display:block;line-height:0}
+.draw img,.draw svg{width:100%;height:auto;display:block}
+.side{display:flex;flex-direction:column;justify-content:center}
+.side>div{text-align:center;padding:10px 4px;color:#bbb;font-size:12px;border-top:1px solid #ccc}
+.side>div:first-child{border-top:0}
+.side b{display:block;color:#222;font-size:15px;font-weight:500;margin-bottom:2px}
+.side svg{width:30px;height:30px;display:block;margin:0 auto 2px}
+.txt{display:grid;grid-template-columns:1fr 1fr}
+.txt>div{padding:4px 6px 0}
+.txt>div+div{border-left:1px solid #bbb}
+.txt h4{margin:0;font-size:14px;font-weight:600;color:#222}
+.txt p{margin:1px 0 6px;white-space:pre-line}
+.foot{margin-top:18px;font-size:12px;color:#555}
+.foot h3{font-size:16px;font-weight:600;margin:0 0 4px;border-bottom:1px solid #bbb}
+@media print{ .page{max-width:none;padding:0} @page{size:A4 portrait;margin:10mm} }
+`;
+const ICO = {
+  t:`<svg viewBox="0 0 32 32" fill="none" stroke="#bbb" stroke-width="2"><circle cx="16" cy="17" r="12"/><path d="M16 9v8l-4 4"/></svg>`,
+  n:`<svg viewBox="0 0 32 32" fill="none" stroke="#bbb" stroke-width="2"><circle cx="11" cy="11" r="4"/><circle cx="21" cy="11" r="4"/><path d="M3 27c0-6 4-9 8-9s8 3 8 9M13 27c0-6 4-9 8-9s8 3 8 9"/></svg>`,
+  e:`<svg viewBox="0 0 32 32" fill="none" stroke="#bbb" stroke-width="2"><rect x="3" y="7" width="26" height="18"/><path d="M16 7v18"/><circle cx="16" cy="16" r="3.5"/><path d="M3 12h3v8H3M29 12h-3v8h3"/></svg>`
+};
+const cycNum = (kind,iso) => { const l=cycles(kind); const i=l.findIndex(c=>c.start<=iso&&iso<=c.end); return i<0?null:i+1; };
+async function planPrint(id){
   const e=D.events[id]; if(!e) return; const tr={id,...e};
-  const mi=cycleAt("micro",tr.date), me=cycleAt("meso",tr.date);
+  toast("A preparar o plano…");
+  const m=meta(), mi=cycleAt("micro",tr.date), me=cycleAt("meso",tr.date);
   const plan=tr.plan||[], total=plan.reduce((s,x)=>s+(+x.min||0),0);
-  const blocks=plan.map((x,i)=>{ const ex=x.ex?D.exercises[x.ex]:null;
+  const all=trainings(), nSess=all.findIndex(t=>t.id===id)+1;
+  const att=Object.values(tr.att||{}).filter(a=>a&&(a.s==="P"||a.s==="AT")).length;
+  const nPl = att || players().filter(p=>avail(p.id)!=="les").length;
+  const tt=TRT(tr.ttype);
+  const exs=plan.map(x=>x.ex?D.exercises[x.ex]:null);
+  const mats=tr.mat || [...new Set(exs.filter(Boolean).map(x=>(x.mat||"").trim()).filter(Boolean))].join("\n");
+  const imgs=await Promise.all(exs.map(ex=>ex&&exImg(ex)?srcToData(exImg(ex)):Promise.resolve(null)));
+  const date=toD(tr.date), dstr=`${pad(date.getDate())}-${pad(date.getMonth()+1)}-${date.getFullYear()}, ${date.toLocaleDateString("pt-PT",{weekday:"long"})}`;
+  const cell=(l,v)=>`<div><b>${esc(l)}</b>${esc(v==null||v===""?"—":v)}</div>`;
+  const blocks=plan.map((x,i)=>{ const ex=exs[i];
     const prs=blockPrinciples(x).map(k=>D.principles[k]).filter(Boolean);
-    return `<div class="blk"><h3>${i+1}. ${esc(x.name||(ex&&ex.name)||"Bloco")}${x.min?` <span class="note">— ${esc(x.min)}'</span>`:""}</h3>
-      <div class="meta">${esc([ex&&ex.cat,ex&&ex.players?ex.players+" jogadores":"",ex&&ex.space,prs.length?"Princípios: "+prs.map(p=>p.name).join(", "):""].filter(Boolean).join(" — "))}</div>
-      ${ex&&ex.obj?`<p><b>Objetivo:</b> ${esc(ex.obj)}</p>`:""}
-      ${ex&&ex.desc?`<p>${esc(ex.desc)}</p>`:""}
-      ${ex&&ex.mat?`<p class="note"><b>Material:</b> ${esc(ex.mat)}</p>`:""}
-      ${ex&&ex.cp?`<p class="note"><b>Pontos-chave:</b> ${esc(ex.cp).replace(/\n/g,"<br>")}</p>`:""}
-      ${ex&&exImg(ex)?`<div class="draw"><img src="${esc(exImg(ex))}" alt=""></div>`:(ex&&ex.drw&&(ex.drw.it||[]).length?`<div class="draw">${drawSVG(ex.drw)}</div>`:"")}</div>`; }).join("");
+    const pic = imgs[i] ? `<img src="${esc(imgs[i])}" alt="">` : (ex&&ex.drw&&(ex.drw.it||[]).length ? drawSVG(ex.drw) : "");
+    const obj=[ex&&ex.obj, prs.length?"Princípios: "+prs.map(p=>p.name).join(", "):""].filter(Boolean).join("\n");
+    const desc=[ex&&ex.desc, ex&&ex.cp?"Pontos-chave e variantes:\n"+ex.cp:"", ex&&ex.mat?"Material: "+ex.mat:""].filter(Boolean).join("\n\n");
+    return `<section class="blk"><h2><span class="dot"></span>${esc(x.name||(ex&&ex.name)||"Bloco")}${ex&&ex.cat?` <small style="font-size:14px;color:#777">— ${esc(ex.cat)}</small>`:""}</h2>
+      ${pic?`<div class="exrow"><div class="draw">${pic}</div><div class="side">
+        <div><b>${x.min!=null&&x.min!==""?esc(x.min)+"´":"—"}</b>${ICO.t}tempo</div>
+        <div><b>${esc(ex&&ex.players||"—")}</b>${ICO.n}número</div>
+        <div><b>${esc(ex&&ex.space||"—")}</b>${ICO.e}espaço</div></div></div>`
+      :`<p style="margin:6px 4px;color:#555">${x.min!=null&&x.min!==""?esc(x.min)+" minutos":""}${ex&&ex.players?" — "+esc(ex.players)+" jogadores":""}${ex&&ex.space?" — "+esc(ex.space):""}</p>`}
+      ${obj||desc?`<div class="txt"><div><h4>Objetivo(s) específico(s)</h4><p>${esc(obj||"—")}</p></div><div><h4>Descrição e Organização Metodológica</h4><p>${esc(desc||"—")}</p></div></div>`:""}
+    </section>`; }).join("");
   const out=players().filter(p=>avail(p.id)!=="ok");
-  const body=`<div class="kv">${pRow("Data",fmtLong(tr.date))}${pRow("Hora",tr.time)}${pRow("Duração",(tr.dur||0)+" min")}${pRow("Local",tr.place)}${pRow("Intensidade",tr.int)}${pRow("Microciclo",mi&&mi.name)}${pRow("Mesociclo",me&&me.name)}</div>
-    ${tr.theme?`<h2>Tema da sessão</h2><p>${esc(tr.theme)}</p>`:""}
-    ${mi&&mi.obj?`<p class="note"><b>Objetivo do microciclo:</b> ${esc(mi.obj)}</p>`:""}
-    <h2>Plano — ${total}' planeados</h2>${plan.length?`<div class="blocks">${blocks}</div>`:`<p class="note">Sem blocos no plano.</p>`}
-    ${out.length?`<h2>Indisponíveis</h2><p>${out.map(p=>esc(p.name)+" ("+AV[avail(p.id)].l.toLowerCase()+")").join(", ")}</p>`:""}
-    <h2>Notas</h2><p>${tr.notes?esc(tr.notes).replace(/\n/g,"<br>"):"&nbsp;"}</p>
-    <div class="sign"><div>Treinador</div><div>Adjunto</div></div>`;
-  printDoc(`plano-treino-${tr.date}`,"Plano de treino",body);
+  const html=`<!DOCTYPE html><html lang="pt-PT"><head><meta charset="utf-8"><title>Plano de treino ${esc(nSess)} — ${esc(tr.date)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>${PLAN_CSS}</style></head><body><div class="page">
+<header class="ph"><img src="${CREST}" alt=""><div class="team"><b>${esc(m.team||"Estrela B")}</b><span>${esc([m.comp,m.season?"Época "+m.season:""].filter(Boolean).join(" — "))}</span></div><div class="num">Plano de Treino<b>${nSess||""}</b></div></header>
+<h1 class="tt">Plano de Treino${tr.theme?` — ${esc(tr.theme)}`:""}</h1>
+<div class="info r4">${cell("Nº Jogadores",nPl)}${cell("Microciclo",mi?cycNum("micro",tr.date):"")}${cell("Mesociclo",me?cycNum("meso",tr.date):"")}${cell("Período",(mi&&mi.period)||(me&&me.period)||"")}</div>
+<div class="info r4">${cell("Data",dstr)}${cell("Hora",tr.time)}${cell("Clima",tr.clima)}${cell("Volume",tr.dur||total||"")}</div>
+<div class="info r4">${cell("Tipo",tt?tt.l:"")}${cell("Intensidade",tr.int)}${cell("Local",tr.place)}${cell("Planeado",total?total+"´":"")}</div>
+<div class="three"><div><h3>Material</h3><p>${esc(mats)}</p></div><div><h3>Objetivos Gerais</h3><p>${esc(tr.objG||(mi&&mi.obj)||"")}</p></div><div><h3>Objetivos Específicos</h3><p>${esc(tr.objE||"")}</p></div></div>
+${blocks||`<p style="margin-top:20px;color:#666">Sem exercícios no plano.</p>`}
+${out.length||tr.notes?`<div class="foot">${out.length?`<h3>Indisponíveis</h3><p>${out.map(p=>esc(p.name)+" ("+AV[avail(p.id)].l.toLowerCase()+")").join(", ")}</p>`:""}${tr.notes?`<h3>Notas</h3><p style="white-space:pre-line">${esc(tr.notes)}</p>`:""}</div>`:""}
+</div><script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},500);};<\/script></body></html>`;
+  openPrintable(`plano-treino-${tr.date}`, html);
 }
 
 /* ---- relatório do treino ---- */

@@ -3,7 +3,8 @@
 const CREST = "__CREST__";
 const SEED = __SEED__;
 const EXIMG = __EXIMG__;
-const exImg = x => x && (x.img || (x.imgk && EXIMG[x.imgk]) || null);
+const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
+const exImg = x => x && ((x.imgA && "/_blob/"+x.imgA) || (x.imgL && IMGC[x.imgL]) || x.img || (x.imgk && EXIMG[x.imgk]) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];
 const GROUP = p => { p=(p||"").toUpperCase(); if(p==="GR")return "GR"; if(p==="LAT"||p==="DC")return "DEF"; if(p==="MDF"||p==="MC")return "MED"; if(!p) return "X"; return "ATA"; };
 const GORDER = {GR:0,DEF:1,MED:2,ATA:3,X:4};
@@ -45,6 +46,17 @@ const MOMENTS = [
 const MOM_LEGACY = {bp:"fbp",bpo:"fbp",bpd:"fbp",rep:"fbp",gr:"fbp",tad:"trd",tda:"tro"};
 const MOMK = k => MOM_LEGACY[k] || k;
 const PERIODS = ["Preparatório","Competitivo","Transitório"];
+const TR_TYPES = [
+  {k:"fp",l:"Força e potência",s:"FP",c:"#9c2b62"},
+  {k:"res",l:"Resistência",s:"RES",c:"#2f6fb0"},
+  {k:"vel",l:"Velocidade",s:"VEL",c:"#d9731a"},
+  {k:"pj",l:"Pré-jogo",s:"PJ",c:"#0c8a58"},
+  {k:"rec",l:"Recuperação",s:"REC",c:"#7a6d72"}
+];
+const TRT = k => TR_TYPES.find(t=>t.k===k) || null;
+const INTS = [{l:"Baixa",c:"#3fb24f"},{l:"Média",c:"#e0b800"},{l:"Alta",c:"#ec8420"},{l:"Muito alta",c:"#dc3f45"}];
+const INTC = l => (INTS.find(i=>i.l===l)||{}).c || null;
+const CLIMAS = ["Quente sem chuva","Ameno sem chuva","Frio sem chuva","Chuva","Vento forte","Calor intenso"];
 const SATT = ["P","AT","FJ","FI","D"];
 const FORMATIONS = ["4-3-3","4-4-2","4-2-3-1","4-1-4-1","3-4-3","3-5-2","5-3-2","4-4-2 losango","Outro"];
 const STYLES = ["Posse curta","Jogo direto","Contra-ataque","Pressão alta","Bloco médio","Bloco baixo"];
@@ -115,6 +127,25 @@ function del(col,id){
   if(db){ const key=col+"/"+id; pending[key]={col,id,del:true}; flush(key); } else lsSave();
 }
 const busy = key => inflight[key] || pending[key]!==undefined;
+
+/* ================= imagens grandes (fotos de exercícios) ================= */
+// Online: vão para "assets" (nunca para dentro dos documentos). Offline: IndexedDB, porque o localStorage só leva ~5 MB.
+function idb(){ return new Promise((res,rej)=>{ if(!window.indexedDB) return rej(new Error("idb")); const r=indexedDB.open(LS+"-img",1); r.onupgradeneeded=()=>r.result.createObjectStore("img"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbDo(mode,fn){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction("img",mode); const out=fn(t.objectStore("img")); t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); }
+async function idbLoadAll(){
+  try{ const d=await idb(); await new Promise(res=>{ const rq=d.transaction("img","readonly").objectStore("img").openCursor();
+    rq.onsuccess=()=>{ const c=rq.result; if(!c) return res(); if(!IMGC[c.key]) IMGC[c.key]=URL.createObjectURL(c.value); c.continue(); }; rq.onerror=()=>res(); }); }catch(e){}
+}
+async function saveImg(blob){
+  if(assets){ try{ const r=await assets.upload(blob,{type:blob.type||"image/jpeg"}); return {imgA:r.id}; }catch(e){} }
+  if(!db){ try{ const id=uid("im_"); await idbDo("readwrite",st=>st.put(blob,id)); IMGC[id]=URL.createObjectURL(blob); return {imgL:id}; }catch(e){} }
+  return null;
+}
+function dropImg(x){ if(x&&x.imgL){ const id=x.imgL; idbDo("readwrite",st=>st.delete(id)).catch(()=>{}); } }
+async function srcToData(src){
+  if(!src || src.startsWith("data:")) return src;
+  try{ const r=await fetch(src); if(!r.ok) return src; const b=await r.blob(); return await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); }); }catch(e){ return src; }
+}
 
 /* ================= render agendado ================= */
 let rq=false, deferred=false;

@@ -50,6 +50,16 @@ function imgResize(file,maxW=560,q=0.62){
     img.src=url;
   });
 }
+function imgBlob(file,maxW=1800,q=0.88){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ const w=Math.min(maxW,img.naturalWidth), h=Math.round(img.naturalHeight*w/img.naturalWidth);
+      const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); x.imageSmoothingQuality="high"; x.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url); c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/jpeg",q); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error("img")); };
+    img.src=url;
+  });
+}
 $("#fileIn").addEventListener("change", async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f||!photoTarget) return;
   if(String(photoTarget).startsWith("staff:")){ const sid=photoTarget.slice(6); if(!D.staff[sid]) return;
@@ -69,6 +79,7 @@ async function exportData(){
   toast("A preparar a cópia…");
   const out={app:"estrela-tecnico",v:1,exported:new Date().toISOString()};
   COLS.forEach(c=>out[c]=clone(D[c]));
+  for(const x of Object.values(out.exercises)){ if(x.imgA||x.imgL){ const src=exImg(x); const data=src?await srcToData(src):null; if(data&&data.startsWith("data:")){ x.img=data; delete x.imgA; delete x.imgL; } } }
   for(const [id,p] of Object.entries(out.players)){ if(p.photo){ try{ const r=await fetch("/_blob/"+p.photo); if(r.ok){ p.photoData=await blobToData(await r.blob()); p.photo=null; } }catch(e){} } }
   const data=JSON.stringify(out), fname=`estrela-tecnico-${todayISO()}.json`;
   const dl=await use("downloads");
@@ -80,6 +91,9 @@ async function importData(file){
   let d=null; try{ d=JSON.parse(await file.text()); }catch(e){ d=null; }
   if(!d || d.app!=="estrela-tecnico" || typeof d.players!=="object"){ toast("Esse ficheiro não é uma cópia desta app."); return; }
   if(!(await askConfirm(`Substituir todos os dados atuais pela cópia de ${d.exported?fmtD(d.exported.slice(0,10),{day:"numeric",month:"long",year:"numeric"}):"um ficheiro"}?`,"Substituir",true))) return;
+  for(const x of Object.values(d.exercises&&typeof d.exercises==="object"?d.exercises:{})){
+    if(x && typeof x.img==="string" && x.img.startsWith("data:") && x.img.length>120000){
+      try{ const st=await saveImg(await (await fetch(x.img)).blob()); if(st){ delete x.img; Object.assign(x,st); } }catch(e){} } }
   for(const c of COLS){
     const next=d[c]&&typeof d[c]==="object"?d[c]:{};
     Object.keys(D[c]).forEach(id=>{ if(!(id in next)) del(c,id); });
@@ -90,7 +104,12 @@ async function importData(file){
 $("#jsonIn").addEventListener("change", e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importAny(f); });
 $("#exImgIn").addEventListener("change", async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f||!exImgTarget||!D.exercises[exImgTarget]) return;
-  try{ toast("A preparar a imagem…"); const data=await imgResize(f); const x=clone(D.exercises[exImgTarget]); x.img=data; put("exercises",exImgTarget,x); toast("Imagem guardada"); exView(exImgTarget); }
+  const tid=exImgTarget;
+  try{ toast("A preparar a imagem…");
+    const blob=await imgBlob(f); const stored=await saveImg(blob);
+    const x=clone(D.exercises[tid]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL;
+    if(stored) Object.assign(x,stored); else x.img=await imgResize(f, db?560:1000, db?0.62:0.75);
+    put("exercises",tid,x); toast(stored?"Imagem guardada em alta resolução":"Imagem guardada"); exView(tid); }
   catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir. Usa JPG ou PNG."); }
 });
 document.addEventListener("input", e=>{ if(e.target.id==="pickSearch") pickFilter(); });
@@ -113,6 +132,8 @@ function newEventForm(type,date){
       <label class="fld">Hora<input type="time" name="time"></label>
       <label class="fld">Duração (min)<input name="dur" inputmode="numeric" value="90"></label>
       <label class="fld">Local<input name="place"></label>
+      <label class="fld">Tipo de treino${sel("ttype",TR_TYPES.map(t=>({v:t.k,l:t.l})),"","","—")}</label>
+      <label class="fld">Intensidade${sel("int",INTS.map(i=>i.l),"","","—")}</label>
       <label class="fld full">Tema / objetivo<input name="theme" placeholder="Ex.: Transição defensiva"></label></div>`
     : `<div class="form">
       <label class="fld full">Adversário<input name="opp" placeholder="Nome do adversário"></label>
@@ -125,7 +146,7 @@ function newEventForm(type,date){
   modal({title:type==="treino"?"Novo treino":"Novo jogo",body,foot:footSave("Criar"),ctx:{save:()=>{
     const date=fv("date"); if(!validISO(date)){ toast("Escolhe uma data."); return; }
     const id=uid(type==="treino"?"tr_":"jg_");
-    const o = type==="treino" ? {type,date,time:fv("time"),dur:parseNum(fv("dur"))||90,place:fv("place"),theme:fv("theme"),plan:[],att:{},closed:false}
+    const o = type==="treino" ? {type,date,time:fv("time"),dur:parseNum(fv("dur"))||90,place:fv("place"),ttype:fv("ttype"),int:fv("int"),theme:fv("theme"),plan:[],att:{},closed:false}
       : {type,date,time:fv("time"),opp:fv("opp"),venue:fv("venue")||"C",comp:fv("comp"),phase:fv("phase"),dur:90,call:[],xi:[],ev:[],rt:{},ga:null,closed:false};
     put("events",id,o); closeModal(); S.tab=type==="treino"?"treinos":"jogos"; saveUI(); openPage(type==="treino"?"treino":"jogo",id); toast(type==="treino"?"Treino criado":"Jogo criado");
   }}});
@@ -141,7 +162,7 @@ function weekGenForm(){
     <label class="fld">Hora dos treinos<input type="time" name="time"></label>
     <label class="fld">Duração (min)<input name="dur" inputmode="numeric" value="90"></label>
     <label class="fld">Local<input name="place"></label>
-    <div class="fld full">Dias de treino<div class="chips" style="margin-top:4px">${days.map(([l,o,on])=>`<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" name="d${o}" ${on?"checked":""} style="accent-color:var(--grena)">${l}</label>`).join("")}</div></div>
+    <div class="fld full">Dias de treino — tipo e intensidade<div class="wkdays">${days.map(([l,o,on])=>`<div class="wkday"><label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" name="d${o}" ${on?"checked":""} style="accent-color:var(--grena)">${l}</label>${sel("tt"+o,TR_TYPES.map(t=>({v:t.k,l:t.l})),"",'aria-label="Tipo de treino"',"Tipo…")}${sel("in"+o,INTS.map(i=>i.l),"",'aria-label="Intensidade"',"Intensidade…")}</div>`).join("")}</div></div>
     <label class="fld full" style="flex-direction:row;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" name="game" checked style="width:auto;accent-color:var(--grena)"> Criar jogo ao domingo</label>
     <label class="fld">Adversário<input name="opp"></label>
     <label class="fld">Hora do jogo<input type="time" name="gtime"></label>
@@ -155,7 +176,7 @@ function weekGenForm(){
     const dur=parseNum(fv("dur"))||90;
     for(let o=0;o<6;o++){ if(!fv("d"+o)) continue; const d=addDays(monday,o);
       if(evs.some(e=>e.type==="treino"&&e.date===d)) continue;
-      put("events",uid("tr_"),{type:"treino",date:d,time:fv("time"),dur,place:fv("place"),theme:"",plan:[],att:{},closed:false}); nT++; }
+      put("events",uid("tr_"),{type:"treino",date:d,time:fv("time"),dur,place:fv("place"),ttype:fv("tt"+o),int:fv("in"+o),theme:"",plan:[],att:{},closed:false}); nT++; }
     if(fv("game")){ const d=addDays(monday,6);
       if(!evs.some(e=>e.type==="jogo"&&e.date===d)){ put("events",uid("jg_"),{type:"jogo",date:d,time:fv("gtime"),opp:fv("opp"),venue:fv("venue")||"C",comp:meta().comp||"",phase:fv("phase"),dur:90,call:[],xi:[],ev:[],rt:{},ga:null,closed:false}); nG++; } }
     let mc=false;
@@ -187,7 +208,7 @@ function exView(id){
   const row=(l,v)=>v?`<p style="margin:0 0 10px"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
     body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px"></div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
-    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
+    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
   const x=id?D.exercises[id]:{};
@@ -537,7 +558,7 @@ function printAsk(kind,id){
   if(!run) return;
   const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário"};
   modal({title:titles[kind],sub:"Documento para imprimir ou guardar em PDF",
-    body:`<div class="qlbl"><span>Tamanho da folha</span></div>
+    body: kind==="plan" ? `<p class="small muted" style="margin:0">Plano em A4 ao alto: cabeçalho da sessão e cada exercício com o desenho em grande. O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>` : `<div class="qlbl"><span>Tamanho da folha</span></div>
       <div class="seg" style="margin-bottom:14px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>
       <p class="small muted" style="margin:0">125% ou 150% deixam os desenhos dos exercícios maiores. O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF.</p>`,
     foot:`<button class="btn" data-a="prGo" data-k="open">Abrir numa aba</button><span class="right"><button class="btn primary" data-a="prGo" data-k="dl">Descarregar</button></span>`,
@@ -569,7 +590,7 @@ const A = {
     put("events",el.dataset.id,{...tr,closed:true}); toast("Treino fechado"); },
   trOpen: el => { const tr=D.events[el.dataset.id]; if(tr) put("events",el.dataset.id,{...tr,closed:false}); },
   dupTr: el => { const tr=D.events[el.dataset.id]; if(!tr) return; const id=uid("tr_"), date=addDays(tr.date,7);
-    put("events",id,{type:"treino",date,time:tr.time||"",dur:tr.dur||90,place:tr.place||"",theme:tr.theme||"",int:tr.int||"",plan:clone(tr.plan||[]),att:{},closed:false,notes:""}); openPage("treino",id); toast(`Duplicado para ${fmtLong(date)}`); },
+    put("events",id,{type:"treino",date,time:tr.time||"",dur:tr.dur||90,place:tr.place||"",theme:tr.theme||"",int:tr.int||"",ttype:tr.ttype||"",clima:tr.clima||"",mat:tr.mat||"",objG:tr.objG||"",objE:tr.objE||"",plan:clone(tr.plan||[]),att:{},closed:false,notes:""}); openPage("treino",id); toast(`Duplicado para ${fmtLong(date)}`); },
   delEvent: el => { const e=D.events[el.dataset.id]; if(!e) return;
     askConfirm(e.type==="jogo"?"Eliminar este jogo, a convocatória e a ficha de jogo?":"Eliminar este treino e as presenças?","Eliminar",true).then(ok=>{ if(ok){ del("events",el.dataset.id); back(); toast("Eliminado"); } }); },
   att: el => { const id=el.dataset.id, pid=el.dataset.p, s=el.dataset.s; const tr=clone(D.events[id]); if(!tr) return; tr.att=tr.att||{};
@@ -652,7 +673,10 @@ const A = {
   prOpp: el => printAsk("opp",el.dataset.id),
   prScale: el => { PRINT_PREF.scale=+el.dataset.k; try{ localStorage.setItem(LS+":print",JSON.stringify(PRINT_PREF)); }catch(e){}
     $$("#dlg [data-a=prScale]").forEach(b=>b.classList.toggle("on",b.dataset.k===el.dataset.k)); },
-  prGo: el => { if(!M||!M.print) return; const {run,id}=M.print; closeModal(); PRINT_MODE=el.dataset.k; run(id); },
+  prGo: el => { if(!M||!M.print) return; const {run,id}=M.print; closeModal(); PRINT_MODE=el.dataset.k;
+    // a aba abre já no clique (o plano demora a preparar e o browser bloquearia a aba depois)
+    PRINT_WIN=null; if(PRINT_MODE==="open"){ try{ PRINT_WIN=window.open("","_blank"); }catch(e){} }
+    run(id); },
   satt: el => { const id=el.dataset.id, pid=el.dataset.p, s=el.dataset.s; const tr=clone(D.events[id]); if(!tr) return; tr.satt=tr.satt||{};
     if((tr.satt[pid]||{}).s===s) delete tr.satt[pid]; else tr.satt[pid]={s}; put("events",id,tr); },
   sattAll: el => { const id=el.dataset.id; const tr=clone(D.events[id]); if(!tr) return; tr.satt=tr.satt||{}; let n=0;
@@ -674,7 +698,7 @@ const A = {
   minAuto: el => { const g=clone(D.events[el.dataset.id]); if(!g) return; delete g.minOv; put("events",el.dataset.id,g); toast("Minutos recalculados pelos eventos"); },
   drawEx: el => drawEditor(el.dataset.id),
   exPhoto: el => { exImgTarget=el.dataset.id; $("#exImgIn").click(); },
-  exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; delete x.img; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
+  exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },

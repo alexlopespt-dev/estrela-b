@@ -6,7 +6,7 @@ render();
 (async()=>{
   db = await use("db");
   assets = await use("assets");
-  if(!db){ lsLoad(); MODE="local"; render(); return; }
+  if(!db){ await idbLoadAll(); lsLoad(); MODE="local"; render(); return; }
   const got={};
   const ready=()=>{ if(MODE==="loading" && COLS.every(c=>got[c])){ MODE="db"; } schedule(); };
   COLS.forEach(c=>{

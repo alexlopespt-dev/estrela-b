@@ -25,10 +25,11 @@ with sync_playwright() as pw:
     pg.click('[data-a="exPick"]'); pg.wait_for_timeout(700); pg.click('#pickGrid .pick >> nth=3'); pg.wait_for_timeout(200); pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(300)
     # PDF: descarregar com 150%
     pg.click('[data-a="prPlan"]'); pg.wait_for_timeout(200)
-    pg.click('#dlg [data-a="prScale"][data-k="150"]')
+    print("plano sem escala:", pg.eval_on_selector_all('#dlg [data-a="prScale"]',"e=>e.length")==0)
     with pg.expect_download() as d: pg.click('#dlg [data-a="prGo"][data-k="dl"]')
     dl=d.value; html=open(dl.path()).read()
-    print("descarregado:", dl.suggested_filename, "| zoom 1.5:", "zoom:1.5" in html, "| sem print automático:", "window.print" not in html, "| imagem:", html.count("<img"))
+    print("descarregado:", dl.suggested_filename, "| modelo novo:", 'class="blk"' in html and "Descrição e Organização Metodológica" in html and "Nº Jogadores" in html, "| sem print automático:", "window.print" not in html, "| imagem:", html.count("<img"), "| sem blob:", "blob:" not in html)
+    if "window.print" in html or 'class="blk"' not in html: errs.append("PLANO PDF")
     pg.click('[data-a="prTrain"]'); pg.wait_for_timeout(200)
     with pg.expect_download() as d: pg.click('#dlg [data-a="prGo"][data-k="dl"]')
     html=open(d.value.path()).read(); print("relatório com staff:", "Equipa técnica" in html and "Tiago Isidoro" in html and "Falta justificada" in html)

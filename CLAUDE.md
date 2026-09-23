@@ -25,7 +25,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   cfg.js       categorias de exercícios e atributos de avaliação configuráveis
   draw.js      editor de desenho de exercícios (SVG 1050x680)
   quick.js     modo pós-jogo, grelha da época, importação da antiga app de ratings
-  print.js     documentos para imprimir/PDF (plano, relatório de treino, atleta, jogo, adversário)
+  print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
@@ -57,16 +57,16 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 
 ## Modelo de dados (coleções em COLS, um documento por registo)
 meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents.
-- Treino: `{type:"treino", date, time, dur, place, theme, int, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
+- Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
 - Exercício: `{name, cat, obj, desc, cp, dur, players, space, mat, pr:[principleId], imgk?, img?, drw?, auto?}`
-  - `imgk` aponta para `EXIMG` (imagem embutida), `img` é foto carregada pelo utilizador, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
+  - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
 - Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha).
 
 ## Regras e armadilhas (aprendidas à custa de erros)
-1. **Nunca guardar imagens dentro dos documentos da base de dados online.** Com imagens nos documentos, a app só recebia parte dos exercícios. Imagens fixas vão para `data/exercicios_imagens.json` (embutidas no build); fotos novas vão para `assets` (online) ou dataURL pequena (offline).
+1. **Nunca guardar imagens dentro dos documentos da base de dados online.** Fotos novas de exercícios (1800 px) vão por `saveImg()`: `assets` online, IndexedDB offline. A exportação volta a pô-las como dataURL e a importação tira-as outra vez. Com imagens nos documentos, a app só recebia parte dos exercícios. Imagens fixas vão para `data/exercicios_imagens.json` (embutidas no build); fotos novas vão para `assets` (online) ou dataURL pequena (offline).
 2. Os documentos vindos da base de dados estão congelados: usar sempre `clone(D.col[id])` antes de alterar e gravar com `put(col, id, obj)`.
 3. `D.cycles[id]` (e os outros documentos) **não têm o campo id** — as listas criadas por `cycles()`, `players()`, etc. é que o acrescentam. Usar o id da variável, não `doc.id`.
 4. `confirm()` e `alert()` estão bloqueados dentro do Claude: usar `askConfirm()`. `window.open` pode ser bloqueado: o PDF descarrega por omissão.

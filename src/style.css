@@ -158,6 +158,17 @@ button.alert:hover{background:var(--surface-2)}
 .cal .ev{font-size:11px;font-weight:600;border-radius:5px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 .cal .ev.t{background:var(--verde)} .cal .ev.j{background:var(--grena)} .cal .ev.done{opacity:.7}
 .cal .folga{font-size:10px;color:var(--muted);font-weight:600}
+.cal .ev.t.typed{border-left:5px solid var(--intc,transparent);padding-left:4px}
+.cal .ev .ttag{font-weight:800;margin-right:3px}
+.leg{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);padding:0 12px 12px}
+.leg .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.leg b{color:var(--text);font-size:12px}
+.ttype{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;color:#fff}
+.ttype i{width:9px;height:9px;border-radius:50%;background:var(--intc);box-shadow:0 0 0 1.5px #fff}
+.wkdays{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.wkday{display:grid;grid-template-columns:84px 1fr 1fr;gap:6px;align-items:center}
+.wkday .chip{justify-content:flex-start}
+.wkday select{padding:5px 8px;font-size:13px}
 @media (max-width:620px){
   .cal{gap:2px;padding:6px}
   .cal .d{min-height:54px;padding:3px}

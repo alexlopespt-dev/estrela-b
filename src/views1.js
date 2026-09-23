@@ -59,6 +59,10 @@ function alerts(){
 }
 const alertHTML = a => `<button class="alert ${a.cls}" data-a="${a.a}" ${a.p?`data-p="${a.p}" data-id="${esc(a.id)}"`:""} ${a.t?`data-t="${a.t}"`:""}><i></i><span class="main"><b>${esc(a.title)}</b><small>${esc(a.sub)}</small></span><span class="muted">›</span></button>`;
 
+/* ================= tipo e intensidade do treino ================= */
+const ttypeTag = e => { const t=TRT(e.ttype), c=INTC(e.int); if(!t&&!c) return "";
+  return `<span class="ttype" style="background:${t?t.c:"#8a7a80"};${c?`--intc:${c}`:""}">${c?"<i></i>":""}${esc(t?t.l:"Sem tipo")}${e.int?` — ${esc(e.int.toLowerCase())}`:""}</span>`; };
+
 /* ================= linhas reutilizáveis ================= */
 function eventRow(e){
   const isG=e.type==="jogo", d=toD(e.date);
@@ -68,7 +72,8 @@ function eventRow(e){
     right = e.closed ? `<span class="tag ok">Fechado</span>${att.length?` <span class="small muted num">${pres}/${att.length}</span>`:""}` : e.date<todayISO() ? `<span class="tag warn">Por fechar</span>` : `<span class="tag">Agendado</span>`; }
   const title = isG ? `${e.venue==="F"?"@ ":"vs "}${e.opp||"Adversário por definir"}` : (e.theme||"Treino");
   const sub = isG ? [e.comp,e.phase,e.time,e.venue==="F"?"Fora":"Casa"].filter(Boolean) : [e.time,e.dur?e.dur+"'":"",e.place,(cycleAt("micro",e.date)||{}).name].filter(Boolean);
-  return `<button class="li" data-a="page" data-p="${isG?"jogo":"treino"}" data-id="${esc(e.id)}"><span class="datebox ${isG?"jogo":""}"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${esc(title)}</b><small>${sub.map(esc).join(" — ")}</small></span>${right}</button>`;
+  const tt = isG ? "" : ttypeTag(e);
+  return `<button class="li" data-a="page" data-p="${isG?"jogo":"treino"}" data-id="${esc(e.id)}"><span class="datebox ${isG?"jogo":""}"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-PT",{month:"short"}).replace(".","")}</span></span><span class="main"><b>${esc(title)}</b><small>${sub.map(esc).join(" — ")}</small>${tt?`<small style="margin-top:3px">${tt}</small>`:""}</span>${right}</button>`;
 }
 function playerLine(p,right=""){
   return `<button class="li" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small><span class="pos">${esc(p.pos||"—")}</span>${p.n?"n.º "+esc(p.n):""}</small></span>${right}</button>`;
@@ -135,7 +140,9 @@ function vAgenda(){
     const evs=byDay[d]||[], wd=toD(d).getDay();
     cells+=`<button class="d ${d.slice(0,7)!==S.cal?"out":""} ${d===t?"today":""} ${d===S.day?"sel":""}" data-a="calDay" data-d="${d}">
       <span class="n">${toD(d).getDate()}</span>
-      ${evs.map(e=>`<span class="ev ${e.type==="jogo"?"j":"t"} ${e.closed?"done":""}">${e.type==="jogo"?esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"Jogo")):esc((e.time?e.time+" ":"")+(e.theme||"Treino"))}</span>`).join("")}
+      ${evs.map(e=>{ if(e.type==="jogo") return `<span class="ev j ${e.closed?"done":""}">${esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"Jogo"))}</span>`;
+        const t=TRT(e.ttype), c=INTC(e.int);
+        return `<span class="ev t ${t||c?"typed":""} ${e.closed?"done":""}" style="${t?`background:${t.c};`:""}${c?`--intc:${c}`:""}" title="${esc([t&&t.l,e.int&&"Intensidade "+e.int.toLowerCase(),e.theme].filter(Boolean).join(" — "))}">${t?`<span class="ttag">${t.s}</span>`:""}${esc((e.time?e.time+" ":"")+(e.theme||(t?"":"Treino")))}</span>`; }).join("")}
       ${!evs.length&&(wd===1||wd===6)?`<span class="folga">Folga</span>`:""}
     </button>`;
     d=addDays(d,1);
@@ -150,7 +157,8 @@ function vAgenda(){
     <button class="btn" data-a="calNav" data-n="1" aria-label="Mês seguinte">›</button>
     <button class="btn gold" data-a="weekGen">Gerar semana-tipo</button>
   </div>
-  <section class="card"><div class="cal">${cells}</div></section>
+  <section class="card"><div class="cal">${cells}</div>
+    <div class="leg"><b>Tipo</b>${TR_TYPES.map(t=>`<span><span class="sw" style="background:${t.c}"></span>${t.s} ${esc(t.l)}</span>`).join("")}<b style="margin-left:6px">Intensidade (faixa à esquerda)</b>${INTS.map(i=>`<span><span class="sw" style="background:${i.c}"></span>${esc(i.l)}</span>`).join("")}</div></section>
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>${esc(fmtLong(S.day))}</h3>
     <span style="display:flex;gap:6px"><button class="btn sm" data-a="newEvent" data-type="treino" data-d="${S.day}">+ Treino</button><button class="btn sm primary" data-a="newEvent" data-type="jogo" data-d="${S.day}">+ Jogo</button></span></div>
     ${me||mi?`<div class="card-b small muted" style="border-bottom:1px solid var(--line);padding-top:10px;padding-bottom:10px">${me?`<b style="color:var(--text)">${esc(me.name)}</b>${me.obj?" — "+esc(me.obj):""}`:""}${me&&mi?"<br>":""}${mi?`<b style="color:var(--text)">${esc(mi.name)}</b>${mi.obj?" — "+esc(mi.obj):""}`:""}</div>`:""}
@@ -199,7 +207,7 @@ function pTreino(id){
   const loads=pls.map(p=>{ const a=att[p.id]; const r=a&&(a.s==="P"||a.s==="AT")?parseNum(a.rpe):null; return r==null?null:r*(+e.dur||0); }).filter(x=>x!=null);
   return `
   <div class="phead"><button class="back" data-a="back" aria-label="Voltar">‹</button>
-    <div><h2>${esc(e.theme||"Treino")}</h2><p>${esc(fmtLong(e.date))}${e.time?" — "+esc(e.time):""}${mi?" — "+esc(mi.name):""}</p></div>
+    <div><h2>${esc(e.theme||"Treino")}</h2><p>${esc(fmtLong(e.date))}${e.time?" — "+esc(e.time):""}${mi?" — "+esc(mi.name):""}</p>${ttypeTag(e)?`<p style="margin-top:4px">${ttypeTag(e)}</p>`:""}</div>
     <div class="acts">${e.closed?`<span class="tag ok">Fechado</span><button class="btn" data-a="trOpen" data-id="${esc(id)}">Reabrir</button>`:`<button class="btn gold" data-a="trClose" data-id="${esc(id)}">Fechar treino</button>`}
       <button class="btn" data-a="prPlan" data-id="${esc(id)}">Plano em PDF</button>
       <button class="btn" data-a="prTrain" data-id="${esc(id)}">Relatório em PDF</button>
@@ -209,9 +217,17 @@ function pTreino(id){
     <section class="card"><div class="card-h"><h3>Dados da sessão</h3></div><div class="card-b"><div class="form">
       ${F("date","Data",e.date,"date")}${F("time","Hora",e.time,"time")}${F("dur","Duração (min)",e.dur,"text",'inputmode="numeric" data-t="num"')}
       ${F("place","Local",e.place)}
-      <label class="fld">Intensidade${sel("",["Baixa","Média","Alta","Muito alta"],e.int,`data-c="f" data-col="events" data-id="${esc(id)}" data-f="int"`,"—")}</label>
+      <label class="fld">Tipo de treino${sel("",TR_TYPES.map(t=>({v:t.k,l:t.l})),e.ttype,`data-c="f" data-col="events" data-id="${esc(id)}" data-f="ttype"`,"—")}</label>
+      <label class="fld">Intensidade${sel("",INTS.map(i=>i.l).concat(e.int&&!INTC(e.int)?[e.int]:[]),e.int,`data-c="f" data-col="events" data-id="${esc(id)}" data-f="int"`,"—")}</label>
+      ${F("clima","Clima",e.clima,"text",'list="climaList" placeholder="Ex.: Quente sem chuva"')}<datalist id="climaList">${CLIMAS.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
       <div class="full">${F("theme","Tema / objetivo da sessão",e.theme,"text",'placeholder="Ex.: Organização ofensiva — saída curta"')}</div>
     </div>
+    <details style="margin-top:12px"${e.mat||e.objG||e.objE?" open":""}><summary class="small" style="cursor:pointer;font-weight:700">Material e objetivos (plano em PDF)</summary>
+      <div class="form" style="margin-top:8px">
+        <label class="fld full">Material<textarea data-c="f" data-col="events" data-id="${esc(id)}" data-f="mat" placeholder="Vazio = junta o material dos exercícios">${esc(e.mat||"")}</textarea></label>
+        <label class="fld full">Objetivos gerais<textarea data-c="f" data-col="events" data-id="${esc(id)}" data-f="objG">${esc(e.objG||"")}</textarea></label>
+        <label class="fld full">Objetivos específicos<textarea data-c="f" data-col="events" data-id="${esc(id)}" data-f="objE">${esc(e.objE||"")}</textarea></label>
+      </div></details>
     ${me?`<p class="note"><b>${esc(me.name)}</b>${me.obj?" — "+esc(me.obj):""}</p>`:""}${mi&&mi.obj?`<p class="note"><b>${esc(mi.name)}</b> — ${esc(mi.obj)}</p>`:""}
     </div></section>
     <section class="card"><div class="card-h"><h3>Plano da sessão</h3><span class="sub">${totalMin}' planeados${e.dur?" de "+esc(e.dur)+"'":""}</span></div>
