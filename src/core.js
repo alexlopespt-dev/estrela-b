@@ -54,6 +54,7 @@ const TR_TYPES = [
   {k:"res",l:"Resistência",s:"RES",c:"#2f6fb0"},
   {k:"vel",l:"Velocidade",s:"VEL",c:"#d9731a"},
   {k:"pj",l:"Pré-jogo",s:"PJ",c:"#0c8a58"},
+  {k:"pos",l:"Treino específico de posição",s:"POS",c:"#6a44a8"},
   {k:"rec",l:"Recuperação",s:"REC",c:"#7a6d72"}
 ];
 const TRT = k => TR_TYPES.find(t=>t.k===k) || null;
