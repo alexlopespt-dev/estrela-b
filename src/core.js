@@ -40,12 +40,14 @@ const SC_ST = {obs:{l:"Em observação",c:"blue"},prio:{l:"Prioritário",c:"gold
 const SC_REC = ["Seguir","Contratar","Descartar"];
 const FEET = ["Direito","Esquerdo","Ambos"];
 const MOMENTS = [
-  {k:"oo",l:"Organização ofensiva"},
-  {k:"od",l:"Organização defensiva"},
-  {k:"tro",l:"Transição ofensiva"},
-  {k:"trd",l:"Transição defensiva"},
-  {k:"fbp",l:"Finalização / bolas paradas"}
+  {k:"oo",l:"Organização ofensiva",ab:"OF"},
+  {k:"od",l:"Organização defensiva",ab:"OD"},
+  {k:"tro",l:"Transição ofensiva",ab:"TO"},
+  {k:"trd",l:"Transição defensiva",ab:"TD"},
+  {k:"fbp",l:"Finalização / bolas paradas",ab:"BP"}
 ];
+// momentos de um exercício escolhidos à mão (campo mom), por ordem
+const exMoms = x => (x&&Array.isArray(x.mom)?x.mom:[]).map(MOMK).filter(k=>MOMENTS.some(m=>m.k===k));
 const MOM_LEGACY = {bp:"fbp",bpo:"fbp",bpd:"fbp",rep:"fbp",gr:"fbp",tad:"trd",tda:"tro"};
 const MOMK = k => MOM_LEGACY[k] || k;
 const PERIODS = ["Preparatório","Competitivo","Transitório"];
@@ -278,9 +280,11 @@ function modelTime(from,to){
     if(tr.date>t) return; if(from&&tr.date<from) return; if(to&&tr.date>to) return;
     let any=false;
     (tr.plan||[]).forEach(x=>{ const m=+x.min||0; if(!m) return; any=true; total+=m;
-      const ps=blockPrinciples(x); if(ps.length) linked+=m;
+      const ps=blockPrinciples(x);
       const moms=new Set();
       ps.forEach(id=>{ byP[id]=(byP[id]||0)+m; moms.add(MOMK(D.principles[id].moment)); });
+      if(!moms.size){ const ex=x.ex?D.exercises[x.ex]:null; exMoms(ex).forEach(k=>moms.add(k)); }   // momento escolhido no exercício
+      if(moms.size) linked+=m;
       const share = moms.size ? m/moms.size : 0;
       moms.forEach(k=>byM[k]=(byM[k]||0)+share); });
     if(any) sessions++;

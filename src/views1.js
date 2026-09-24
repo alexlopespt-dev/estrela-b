@@ -293,7 +293,7 @@ function vEx(sub){
     <div class="chips"><button class="chip ${!S.exCat?"on":""}" data-a="exCat" data-k="">Todos (${all.length})</button>${nSem?`<button class="chip ${S.exCat==="__sem"?"on":""}" data-a="exCat" data-k="__sem">Sem descrição (${nSem})</button>`:""}${nAuto?`<button class="chip ${S.exCat==="__auto"?"on":""}" data-a="exCat" data-k="__auto">Descrição por confirmar (${nAuto})</button>`:""}${exCatsAll().map(c=>{ const n=all.filter(x=>x.cat===c).length; return n?`<button class="chip ${S.exCat===c?"on":""}" data-a="exCat" data-k="${esc(c)}">${esc(c)} (${n})</button>`:""; }).join("")}</div>
   </div>
   ${list.length?`<div class="excards">${list.map(x=>`<button class="ex" data-a="exView" data-id="${esc(x.id)}" data-name="${esc((x.name+" "+(x.obj||"")+" "+(x.desc||"")).toLowerCase())}">
-    <span class="meta"><span class="tag grena">${esc(x.cat||"—")}</span>${x.dur?`<span class="tag">${esc(x.dur)}'</span>`:""}${x.players?`<span class="tag">${esc(x.players)} jog.</span>`:""}${used[x.id]?`<span class="tag ok">Usado ${used[x.id]}×</span>`:""}</span>
+    <span class="meta"><span class="tag grena">${esc(x.cat||"—")}</span>${x.dur?`<span class="tag">${esc(x.dur)}'</span>`:""}${x.players?`<span class="tag">${esc(x.players)} jog.</span>`:""}${used[x.id]?`<span class="tag ok">Usado ${used[x.id]}×</span>`:""}${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" title="${esc(m.l)}"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab}</span>`; }).join("")}</span>
     ${exThumb(x)}${x.auto?`<span class="tag warn" style="align-self:flex-start">Descrição por confirmar</span>`:""}<b>${esc(x.name)}</b><p>${x.obj||x.desc?esc(x.obj||x.desc):`<span style="color:var(--r6)">Sem descrição — toca para escrever</span>`}</p></button>`).join("")}</div><p class="empty" id="exNone" style="display:none"><b>Nenhum exercício encontrado</b></p>`:`<div class="empty"><b>Biblioteca vazia${S.exCat?" nesta categoria":""}</b>Cria o primeiro exercício.</div>`}`;
 }
 
@@ -362,6 +362,26 @@ function vPresencas(sub){
 }
 
 /* ================= distribuição por momentos ================= */
+// gráfico circular (anel) dos 5 momentos + legenda com sigla, nome, % e minutos (a cor nunca vai sozinha)
+function momentPie(mt){
+  const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
+  if(!base) return `<div class="small muted">Sem tempo ligado a momentos — escolhe o momento nos exercícios ou liga os blocos a princípios.</div>`;
+  const R=62, r=43, C=66, pt=(a,rad)=>[C+rad*Math.sin(a),C-rad*Math.cos(a)].map(v=>Math.round(v*100)/100).join(" ");
+  let a0=0, arcs="";
+  MOMENTS.forEach(m=>{ const v=mt.byM[m.k]||0; if(!v) return; const f=v/base;
+    const tip=`${m.ab} ${m.l}: ${fmt1(f*100)}% (${Math.round(v)}')`;
+    if(f>0.9999){ arcs+=`<path d="M${C} ${C-R}A${R} ${R} 0 1 1 ${C-0.01} ${C-R}L${C-0.01} ${C-r}A${r} ${r} 0 1 0 ${C} ${C-r}Z" fill="var(--m-${m.k})"><title>${esc(tip)}</title></path>`; return; }
+    const a1=a0+f*2*Math.PI, big=f>0.5?1:0;
+    arcs+=`<path d="M${pt(a0,R)}A${R} ${R} 0 ${big} 1 ${pt(a1,R)}L${pt(a1,r)}A${r} ${r} 0 ${big} 0 ${pt(a0,r)}Z" fill="var(--m-${m.k})"><title>${esc(tip)}</title></path>`;
+    a0=a1; });
+  const top=MOMENTS.slice().sort((a,b)=>(mt.byM[b.k]||0)-(mt.byM[a.k]||0))[0];
+  return `<div class="mpie"><svg viewBox="0 0 132 132" role="img" aria-label="Tempo por momento: ${esc(MOMENTS.map(m=>m.ab+" "+fmt1((mt.byM[m.k]||0)/base*100)+"%").join(", "))}">${arcs}
+      <text x="${C}" y="${C+2}" text-anchor="middle" style="font:700 22px var(--fc);fill:var(--text)">${esc(top.ab)}</text>
+      <text x="${C}" y="${C+16}" text-anchor="middle" style="font:600 9px var(--fb);fill:var(--muted)">mais trabalhado</text></svg>
+    <div class="mleg">${MOMENTS.map(m=>{ const v=mt.byM[m.k]||0;
+      return `<div class="${v?"":"zero"}"><i style="background:var(--m-${m.k})"></i><b>${m.ab}</b><span>${esc(m.l)}</span><span class="num">${fmt1(v/base*100)}%</span><span class="mut">${Math.round(v)}'</span></div>`; }).join("")}</div></div>
+    <p class="note" style="margin-top:8px">Um bloco que trabalhe dois momentos divide o tempo pelos dois.</p>`;
+}
 function momentBars(mt){
   const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
   return MOMENTS.map(m=>{ const v=mt.byM[m.k]||0, p=base?v/base*100:0;
@@ -385,7 +405,7 @@ function vDistrib(){
       MOMENTS.forEach(m=>out.byM[m.k]=(out.byM[m.k]||0)+(t.byM[m.k]||0)); });
     return out; };
   const season = modelTime(null,null);
-  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentBars(mt):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
+  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentPie(mt):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
   const pt = per?periodTime(per):null;
   return `<section class="card"><div class="card-h"><h3>O que temos trabalhado</h3>
     ${micros.length?`<span class="chips">${micros.slice(0,8).map(c=>`<button class="chip ${selId===c.id?"on":""}" data-a="distSel" data-k="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</span>`:""}</div>
@@ -399,10 +419,10 @@ function vDistrib(){
         ${pt?col("Período "+per.toLowerCase(), pt, `${plural(periodMicros(per).length,"microciclo")} — ${Math.round(pt.total)}'`):""}
         ${col("Época até agora", season, `${plural(season.sessions,"treino")} — ${season.total}'`)}
       </div>
-      <p class="note">${season.total?`Na época, ${pct(season.linked,season.total)}% do tempo planeado está ligado a princípios do modelo de jogo. Só esse tempo entra nas percentagens.`:""}</p>
+      <p class="note">${season.total?`Na época, ${pct(season.linked,season.total)}% do tempo planeado tem momento (escolhido no exercício ou pelos princípios do modelo de jogo). Só esse tempo entra nas percentagens.`:""}</p>
     </div></section>
   ${micros.length?`<section class="card" style="margin-top:14px"><div class="card-h"><h3>Microciclos por período da época</h3></div>
-    <div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Microciclo</th><th>Período</th>${MOMENTS.map(m=>`<th>${esc(m.l)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
+    <div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Microciclo</th><th>Período</th>${MOMENTS.map(m=>`<th title="${esc(m.l)}"><i class="mdot" style="background:var(--m-${m.k})"></i>${esc(m.ab)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
     ${micros.map(c=>{ const t=modelTime(c.start,c.end); const base=MOMENTS.reduce((s,m)=>s+(t.byM[m.k]||0),0);
       return `<tr><td class="l stk"><button class="lnk" data-a="cycEdit" data-id="${esc(c.id)}"><b>${esc(c.name)}</b><br><span class="small muted">${fmtD(c.start)} a ${fmtD(c.end)}</span></button></td>
         <td><span class="tag ${c.period?"grena":""}">${esc(c.period||"—")}</span></td>

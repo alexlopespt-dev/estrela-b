@@ -72,10 +72,10 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|pos|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
-- Exercício: `{name, cat, obj, desc, cp, dur, players, space, mat, pr:[principleId], imgk?, img?, drw?, auto?}`
+- Exercício: `{name, cat, obj, desc, cp, dur, players, space, mat, pr:[principleId], mom:[oo|od|tro|trd|fbp], imgk?, img?, drw?, auto?}` — `mom` = momento(s) escolhido(s) no formulário (siglas OF OD TO TD BP em `MOMENTS[].ab`, `exMoms(x)`)
   - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
-- Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha).
+- Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha: os dos princípios do bloco; se não tiver, os `mom` do exercício). "O que temos trabalhado" (Treinos → Planeamento) mostra um gráfico circular por microciclo/período/época (`momentPie`, cores `--m-<k>` validadas com o skill dataviz para os dois temas) + legenda com sigla, % e minutos (test24).
 
 ## Atualizações de dados (migr.js)
 - Os dados vivem no browser (offline) ou na base de dados online, por isso mudar o `seed_local.json` não chega a quem já usa a app. Para acrescentar dados, criar uma entrada em `MIGR` com id novo: corre uma vez por dispositivo/base de dados, só acrescenta ou preenche campos vazios e usa ids fixos (nunca duplica).

@@ -22,16 +22,19 @@
   --fb:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --fc:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   box-sizing:border-box; color-scheme:light;
+  --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){ color-scheme:dark;
+    --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
     --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
     --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
   }
 }
 :root[data-theme="dark"]{ color-scheme:dark;
+  --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
   --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
   --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
 }
@@ -397,6 +400,23 @@ dialog.wide{width:min(980px,calc(100vw - 20px))}
 .tb thead .stkr{background:var(--surface-2);z-index:2}
 @media (max-width:520px){ .rates{grid-template-columns:repeat(5,1fr)} .qstats{grid-template-columns:1fr} }
 
+/* gráfico circular dos momentos */
+.mpie{display:grid;grid-template-columns:132px 1fr;gap:14px;align-items:center}
+.mpie svg{width:132px;height:132px;display:block}
+.mpie svg path{stroke:var(--surface);stroke-width:2;cursor:default}
+.mpie svg path:hover{opacity:.82}
+.mleg{display:grid;gap:5px}
+.mleg div{display:grid;grid-template-columns:10px 26px 1fr auto auto;gap:6px;align-items:center;font-size:12px}
+.mleg i{width:10px;height:10px;border-radius:3px}
+.mleg b{font-family:var(--fc);font-size:13px}
+.mleg .num{text-align:right;font-weight:700;min-width:42px} .mleg .mut{color:var(--muted);text-align:right;min-width:30px}
+.mleg .zero{opacity:.55}
+.momchk{display:flex;flex-wrap:wrap;gap:6px}
+.momchk label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface-2)}
+.momchk input{width:16px;height:16px;accent-color:var(--grena);margin:0}
+.momchk label:has(input:checked){border-color:var(--grena);background:color-mix(in srgb,var(--grena) 14%,var(--surface-2))}
+.mdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:0}
+@media (max-width:420px){ .mpie{grid-template-columns:1fr} .mpie svg{margin:0 auto} }
 .mrow{display:grid;grid-template-columns:minmax(110px,1.3fr) 1fr 58px 44px;gap:8px;align-items:center;margin:7px 0}
 .mrow .num{text-align:right}
 @media (max-width:520px){ .mrow{grid-template-columns:1fr 46px 40px;grid-template-areas:"a a a" "b c d"} .mrow > span:first-child{grid-area:a} .mrow .meter{grid-area:b} }
@@ -513,12 +533,14 @@ const SC_ST = {obs:{l:"Em observação",c:"blue"},prio:{l:"Prioritário",c:"gold
 const SC_REC = ["Seguir","Contratar","Descartar"];
 const FEET = ["Direito","Esquerdo","Ambos"];
 const MOMENTS = [
-  {k:"oo",l:"Organização ofensiva"},
-  {k:"od",l:"Organização defensiva"},
-  {k:"tro",l:"Transição ofensiva"},
-  {k:"trd",l:"Transição defensiva"},
-  {k:"fbp",l:"Finalização / bolas paradas"}
+  {k:"oo",l:"Organização ofensiva",ab:"OF"},
+  {k:"od",l:"Organização defensiva",ab:"OD"},
+  {k:"tro",l:"Transição ofensiva",ab:"TO"},
+  {k:"trd",l:"Transição defensiva",ab:"TD"},
+  {k:"fbp",l:"Finalização / bolas paradas",ab:"BP"}
 ];
+// momentos de um exercício escolhidos à mão (campo mom), por ordem
+const exMoms = x => (x&&Array.isArray(x.mom)?x.mom:[]).map(MOMK).filter(k=>MOMENTS.some(m=>m.k===k));
 const MOM_LEGACY = {bp:"fbp",bpo:"fbp",bpd:"fbp",rep:"fbp",gr:"fbp",tad:"trd",tda:"tro"};
 const MOMK = k => MOM_LEGACY[k] || k;
 const PERIODS = ["Preparatório","Competitivo","Transitório"];
@@ -751,9 +773,11 @@ function modelTime(from,to){
     if(tr.date>t) return; if(from&&tr.date<from) return; if(to&&tr.date>to) return;
     let any=false;
     (tr.plan||[]).forEach(x=>{ const m=+x.min||0; if(!m) return; any=true; total+=m;
-      const ps=blockPrinciples(x); if(ps.length) linked+=m;
+      const ps=blockPrinciples(x);
       const moms=new Set();
       ps.forEach(id=>{ byP[id]=(byP[id]||0)+m; moms.add(MOMK(D.principles[id].moment)); });
+      if(!moms.size){ const ex=x.ex?D.exercises[x.ex]:null; exMoms(ex).forEach(k=>moms.add(k)); }   // momento escolhido no exercício
+      if(moms.size) linked+=m;
       const share = moms.size ? m/moms.size : 0;
       moms.forEach(k=>byM[k]=(byM[k]||0)+share); });
     if(any) sessions++;
@@ -1194,7 +1218,7 @@ function vEx(sub){
     <div class="chips"><button class="chip ${!S.exCat?"on":""}" data-a="exCat" data-k="">Todos (${all.length})</button>${nSem?`<button class="chip ${S.exCat==="__sem"?"on":""}" data-a="exCat" data-k="__sem">Sem descrição (${nSem})</button>`:""}${nAuto?`<button class="chip ${S.exCat==="__auto"?"on":""}" data-a="exCat" data-k="__auto">Descrição por confirmar (${nAuto})</button>`:""}${exCatsAll().map(c=>{ const n=all.filter(x=>x.cat===c).length; return n?`<button class="chip ${S.exCat===c?"on":""}" data-a="exCat" data-k="${esc(c)}">${esc(c)} (${n})</button>`:""; }).join("")}</div>
   </div>
   ${list.length?`<div class="excards">${list.map(x=>`<button class="ex" data-a="exView" data-id="${esc(x.id)}" data-name="${esc((x.name+" "+(x.obj||"")+" "+(x.desc||"")).toLowerCase())}">
-    <span class="meta"><span class="tag grena">${esc(x.cat||"—")}</span>${x.dur?`<span class="tag">${esc(x.dur)}'</span>`:""}${x.players?`<span class="tag">${esc(x.players)} jog.</span>`:""}${used[x.id]?`<span class="tag ok">Usado ${used[x.id]}×</span>`:""}</span>
+    <span class="meta"><span class="tag grena">${esc(x.cat||"—")}</span>${x.dur?`<span class="tag">${esc(x.dur)}'</span>`:""}${x.players?`<span class="tag">${esc(x.players)} jog.</span>`:""}${used[x.id]?`<span class="tag ok">Usado ${used[x.id]}×</span>`:""}${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" title="${esc(m.l)}"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab}</span>`; }).join("")}</span>
     ${exThumb(x)}${x.auto?`<span class="tag warn" style="align-self:flex-start">Descrição por confirmar</span>`:""}<b>${esc(x.name)}</b><p>${x.obj||x.desc?esc(x.obj||x.desc):`<span style="color:var(--r6)">Sem descrição — toca para escrever</span>`}</p></button>`).join("")}</div><p class="empty" id="exNone" style="display:none"><b>Nenhum exercício encontrado</b></p>`:`<div class="empty"><b>Biblioteca vazia${S.exCat?" nesta categoria":""}</b>Cria o primeiro exercício.</div>`}`;
 }
 
@@ -1263,6 +1287,26 @@ function vPresencas(sub){
 }
 
 /* ================= distribuição por momentos ================= */
+// gráfico circular (anel) dos 5 momentos + legenda com sigla, nome, % e minutos (a cor nunca vai sozinha)
+function momentPie(mt){
+  const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
+  if(!base) return `<div class="small muted">Sem tempo ligado a momentos — escolhe o momento nos exercícios ou liga os blocos a princípios.</div>`;
+  const R=62, r=43, C=66, pt=(a,rad)=>[C+rad*Math.sin(a),C-rad*Math.cos(a)].map(v=>Math.round(v*100)/100).join(" ");
+  let a0=0, arcs="";
+  MOMENTS.forEach(m=>{ const v=mt.byM[m.k]||0; if(!v) return; const f=v/base;
+    const tip=`${m.ab} ${m.l}: ${fmt1(f*100)}% (${Math.round(v)}')`;
+    if(f>0.9999){ arcs+=`<path d="M${C} ${C-R}A${R} ${R} 0 1 1 ${C-0.01} ${C-R}L${C-0.01} ${C-r}A${r} ${r} 0 1 0 ${C} ${C-r}Z" fill="var(--m-${m.k})"><title>${esc(tip)}</title></path>`; return; }
+    const a1=a0+f*2*Math.PI, big=f>0.5?1:0;
+    arcs+=`<path d="M${pt(a0,R)}A${R} ${R} 0 ${big} 1 ${pt(a1,R)}L${pt(a1,r)}A${r} ${r} 0 ${big} 0 ${pt(a0,r)}Z" fill="var(--m-${m.k})"><title>${esc(tip)}</title></path>`;
+    a0=a1; });
+  const top=MOMENTS.slice().sort((a,b)=>(mt.byM[b.k]||0)-(mt.byM[a.k]||0))[0];
+  return `<div class="mpie"><svg viewBox="0 0 132 132" role="img" aria-label="Tempo por momento: ${esc(MOMENTS.map(m=>m.ab+" "+fmt1((mt.byM[m.k]||0)/base*100)+"%").join(", "))}">${arcs}
+      <text x="${C}" y="${C+2}" text-anchor="middle" style="font:700 22px var(--fc);fill:var(--text)">${esc(top.ab)}</text>
+      <text x="${C}" y="${C+16}" text-anchor="middle" style="font:600 9px var(--fb);fill:var(--muted)">mais trabalhado</text></svg>
+    <div class="mleg">${MOMENTS.map(m=>{ const v=mt.byM[m.k]||0;
+      return `<div class="${v?"":"zero"}"><i style="background:var(--m-${m.k})"></i><b>${m.ab}</b><span>${esc(m.l)}</span><span class="num">${fmt1(v/base*100)}%</span><span class="mut">${Math.round(v)}'</span></div>`; }).join("")}</div></div>
+    <p class="note" style="margin-top:8px">Um bloco que trabalhe dois momentos divide o tempo pelos dois.</p>`;
+}
 function momentBars(mt){
   const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
   return MOMENTS.map(m=>{ const v=mt.byM[m.k]||0, p=base?v/base*100:0;
@@ -1286,7 +1330,7 @@ function vDistrib(){
       MOMENTS.forEach(m=>out.byM[m.k]=(out.byM[m.k]||0)+(t.byM[m.k]||0)); });
     return out; };
   const season = modelTime(null,null);
-  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentBars(mt):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
+  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentPie(mt):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
   const pt = per?periodTime(per):null;
   return `<section class="card"><div class="card-h"><h3>O que temos trabalhado</h3>
     ${micros.length?`<span class="chips">${micros.slice(0,8).map(c=>`<button class="chip ${selId===c.id?"on":""}" data-a="distSel" data-k="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</span>`:""}</div>
@@ -1300,10 +1344,10 @@ function vDistrib(){
         ${pt?col("Período "+per.toLowerCase(), pt, `${plural(periodMicros(per).length,"microciclo")} — ${Math.round(pt.total)}'`):""}
         ${col("Época até agora", season, `${plural(season.sessions,"treino")} — ${season.total}'`)}
       </div>
-      <p class="note">${season.total?`Na época, ${pct(season.linked,season.total)}% do tempo planeado está ligado a princípios do modelo de jogo. Só esse tempo entra nas percentagens.`:""}</p>
+      <p class="note">${season.total?`Na época, ${pct(season.linked,season.total)}% do tempo planeado tem momento (escolhido no exercício ou pelos princípios do modelo de jogo). Só esse tempo entra nas percentagens.`:""}</p>
     </div></section>
   ${micros.length?`<section class="card" style="margin-top:14px"><div class="card-h"><h3>Microciclos por período da época</h3></div>
-    <div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Microciclo</th><th>Período</th>${MOMENTS.map(m=>`<th>${esc(m.l)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
+    <div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Microciclo</th><th>Período</th>${MOMENTS.map(m=>`<th title="${esc(m.l)}"><i class="mdot" style="background:var(--m-${m.k})"></i>${esc(m.ab)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
     ${micros.map(c=>{ const t=modelTime(c.start,c.end); const base=MOMENTS.reduce((s,m)=>s+(t.byM[m.k]||0),0);
       return `<tr><td class="l stk"><button class="lnk" data-a="cycEdit" data-id="${esc(c.id)}"><b>${esc(c.name)}</b><br><span class="small muted">${fmtD(c.start)} a ${fmtD(c.end)}</span></button></td>
         <td><span class="tag ${c.period?"grena":""}">${esc(c.period||"—")}</span></td>
@@ -2571,7 +2615,7 @@ function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px;white-space:pre-line"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
-    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
+    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
     foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
@@ -2583,15 +2627,16 @@ function exForm(id){
     <label class="fld">N.º de jogadores<input name="players" value="${esc(x.players??"")}"></label>
     <label class="fld">Espaço<input name="space" value="${esc(x.space||"")}" placeholder="Ex.: 30x20 m"></label>
     <label class="fld full">Material<input name="mat" value="${esc(x.mat||"")}"></label>
-    <label class="fld full">Objetivo<input name="obj" value="${esc(x.obj||"")}"></label>
+    <label class="fld full">Objetivo<textarea name="obj" style="min-height:48px">${esc(x.obj||"")}</textarea></label>
     <label class="fld full">Descrição / organização<textarea name="desc">${esc(x.desc||"")}</textarea></label>
-    <label class="fld full">Pontos-chave e variantes<textarea name="cp">${esc(x.cp||"")}</textarea></label></div>
+    <label class="fld full">Pontos-chave e variantes<textarea name="cp">${esc(x.cp||"")}</textarea></label>
+    <div class="fld full">Momento(s) trabalhado(s)<div class="momchk">${MOMENTS.map(m=>`<label title="${esc(m.l)}"><input type="checkbox" name="mom_${m.k}" ${exMoms(x).includes(m.k)?"checked":""}><i class="mdot" style="background:var(--m-${m.k})"></i>${m.ab} <span class="small muted" style="font-weight:500">${esc(m.l)}</span></label>`).join("")}</div></div></div>
     ${prChecks(x.pr||[])}`;
   modal({title:id?"Editar exercício":"Novo exercício",big:true,body,foot:footSave("Guardar",id?"Eliminar":null),ctx:{
     save:()=>{ const name=fv("name"); if(!name){ toast("Dá um nome ao exercício."); return; }
       const nid=id||uid("ex_");
       const base0=id?clone(D.exercises[id]):{}; delete base0.auto;
-      put("exercises",nid,{...base0,pr:principles().filter(p=>fv("pr_"+p.id)).map(p=>p.id),name,cat:fv("cat"),dur:parseNum(fv("dur")),players:fv("players"),space:fv("space"),mat:fv("mat"),obj:fv("obj"),desc:fv("desc"),cp:fv("cp")});
+      put("exercises",nid,{...base0,pr:principles().filter(p=>fv("pr_"+p.id)).map(p=>p.id),mom:MOMENTS.filter(m=>fv("mom_"+m.k)).map(m=>m.k),name,cat:fv("cat"),dur:parseNum(fv("dur")),players:fv("players"),space:fv("space"),mat:fv("mat"),obj:fv("obj"),desc:fv("desc"),cp:fv("cp")});
       closeModal(); toast("Exercício guardado"); if(!id) setTimeout(()=>drawEditor(nid),60); },
     del:()=>askConfirm("Eliminar este exercício da biblioteca? Os treinos que o usam mantêm o nome do bloco.","Eliminar",true).then(ok=>{ if(ok){ del("exercises",id); closeModal(); } })
   }});
