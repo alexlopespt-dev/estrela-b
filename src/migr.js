@@ -42,6 +42,14 @@ const MIGR = [
     if(!allPlayers().some(p=>same(p.name,"Khan"))){ put("players","p_khan",{n:null,name:"Khan",pos:"",foot:"",photo:null}); msg.push("Khan adicionado ao plantel"); }
     return msg.join(". ");
   }}
+  ,{id:"exlib129", run(){
+    // Browsers com dados de antes da importação só tinham os 9 exercícios de exemplo: junta os que faltam dos dados iniciais
+    // (os 129 da biblioteca com desenho). Só acrescenta ids que não existem; nunca altera nem repõe exercícios apagados depois disto.
+    if(!SEED || !SEED.exercises) return "";
+    let n=0;
+    Object.entries(SEED.exercises).forEach(([id,x])=>{ if(!D.exercises[id]){ put("exercises",id,clone(x)); n++; } });
+    return n ? `${n} exercícios da biblioteca acrescentados` : "";
+  }}
 ];
 function runMigrations(){
   if(MODE!=="local" && MODE!=="db") return;

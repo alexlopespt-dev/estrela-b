@@ -22,7 +22,7 @@ async function monFetch(manual){
     try{ localStorage.setItem(MON_LS,JSON.stringify({data:d,at:MON.at})); }catch(e){}
     if(manual) toast(`Monitorização atualizada — ${d.jogadores.length} jogadores`);
   }catch(e){
-    MON.err = e&&e.name==="AbortError" ? "O Google demorou demasiado a responder." : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Não foi possível ligar ao Google Sheets (sem rede ou endereço errado).");
+    MON.err = e&&e.name==="AbortError" ? "O Google demorou demasiado a responder." : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Não foi possível ligar ao Google Sheets. Se tens um bloqueador de anúncios (AdBlock, uBlock…), desliga-o para este site; senão confirma a rede e o endereço.");
     if(manual) toast(MON.err);
   }finally{ clearTimeout(tm); MON.loading=false; VER++; schedule(); }
 }
