@@ -19,6 +19,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   shell.html   esqueleto HTML (/*CSS*/, /*JS*/ são substituídos)
   style.css    todo o CSS (tokens de cor em :root, tema escuro, ecrãs baixos)
   core.js      constantes, utilitários, camada de dados (D, put, del), cálculos (gameCalc, stats, modelTime)
+  vec.js       desenhos vetoriais dos exercícios da biblioteca (vecSVG, formato v2), escolha vetorial/original (EXV_MODE)
   views1.js    render principal, painel, agenda, treinos, planeamento, modelo, presenças, distribuição por momentos, staff, adversários
   views2.js    jogos, ficha de jogo, plantel, ficha do atleta, radar
   views3.js    testes físicos, clínico, scouting, estatísticas
@@ -34,11 +35,13 @@ data/
   seed_local.json         dados iniciais completos (versão offline)
   seed_db.json            os mesmos dados, usados para semear a base de dados online
   exercicios_imagens.json imagens dos 129 exercícios importados (chave imgk -> dataURL), embutidas na página
+  exercicios_vetor.json   os mesmos 129 redesenhados em vetor (imgk -> desenho v2), embutidos como EXVEC; gerado por tools/vetorizar/exportar.py
   emblema.b64             emblema do clube (dataURL)
   emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG 64 px, recortados de uma captura do zerozero), embutidos como OPPIMG
   copias/                 guarda aqui as cópias exportadas da app (Plantel -> Exportar cópia)
 tests/      testes Playwright (correr_testes.sh corre todos)
 tools/import-exercicios/  scripts usados para importar exercícios de capturas (recorte, OCR, descrições)
+tools/vetorizar/  pipeline que redesenhou as imagens em vetor (ver secção "Desenhos vetoriais")
 tools/apps-script/ligacao_app.gs  bloco a acrescentar ao Apps Script da monitorização (escreverApp_ + doGet); instruções no topo
 dist/       resultado do build (não editar à mão)
 ```
@@ -75,6 +78,12 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - `cal2627`: calendário AF Lisboa 3.ª Divisão Série 4 (J11 e J24 são folga), 12 fichas de adversário com emblema (`crk`), J1 com golos sofridos 0 e "Fora" (0-6 no zerozero).
 - Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
 
+## Desenhos vetoriais dos exercícios
+- `exImg(x)`: foto do utilizador (`imgA`/`imgL`/`img`) > desenho vetorial (`EXVEC[imgk]`, como SVG em data URL, em cache) > JPEG original (`EXIMG[imgk]`). Na ficha do exercício há "Desenho vetorial | Imagem original" (guardado por dispositivo em `estrela-tecnico-v1:exv`). No PDF do plano o desenho entra como `<svg>` embutido (`exVecOf`).
+- Formato v2: `{v:2,w,h,fld:{ori,s,asp,tx,ty,L,W,bands},it:[...]}` em píxeis da captura original (440x302; exi129 é 420x605 sem campo, `bgc`). Tipos de item e ordem de desenho no topo de `src/vec.js`.
+- Pipeline (Python, em `tools/vetorizar/`, pasta de trabalho DIR com `ex/*.png` = imagens originais): `fit_all.py` ajusta o campo (medidas do programa em `VEC_PROP`) -> `fld.json`; campo limpo renderizado para `bg/`; `rascunho.py DIR` deteta e classifica elementos -> `draft/`; `manual/exiNNN.json` tem as correções feitas à mão, imagem a imagem (`keep`/`del`/`mod`/`add`/`fld`/`nofld`, ou `custom`); `cmp.py DIR exi...` mostra original | vetorial; `exportar.py DIR` grava `data/exercicios_vetor.json`.
+- Todos os 129 foram revistos lado a lado com o original. Para corrigir um: editar `data/exercicios_vetor.json` diretamente (mais simples) ou o `manual/` + reexportar.
+
 ## Regras e armadilhas (aprendidas à custa de erros)
 1. **Nunca guardar imagens dentro dos documentos da base de dados online.** Fotos novas de exercícios (1800 px) vão por `saveImg()`: `assets` online, IndexedDB offline. A exportação volta a pô-las como dataURL e a importação tira-as outra vez. Com imagens nos documentos, a app só recebia parte dos exercícios. Imagens fixas vão para `data/exercicios_imagens.json` (embutidas no build); fotos novas vão para `assets` (online) ou dataURL pequena (offline).
 2. Os documentos vindos da base de dados estão congelados: usar sempre `clone(D.col[id])` antes de alterar e gravar com `put(col, id, obj)`.
@@ -91,5 +100,5 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Fotos do staff (Plantel → Equipa técnica → Adicionar foto).
 - J1 vs Tenente Valdez: falta o resultado do adversário para fechar o jogo; os pares de substituições foram deduzidos dos minutos.
 - Monitorização: o Apps Script (bem-estar Hooper 1-5, PSE × duração, ACWR, monotonia, prontidão/condição 0-100) grava um resumo JSON nas propriedades do script (`escreverApp_`, pedaços de 8000 caracteres) e a aplicação Web (`doGet?k=CHAVE_APP`) entrega-o. A app guarda URL/chave/ligações de nomes em `meta/cfg.mon` e o último resumo em localStorage (`estrela-tecnico-v1:mon`). Nomes ligam-se por igualdade, depois abreviaturas ("Bruno Vunge" = "Bruno V."), depois à mão. Teste com `tests/monitorizacao_exemplo.json` (gerado por `tests/gerar_monitorizacao_exemplo.py`). Deste ambiente não há acesso a docs.google.com/script.google.com.
-- Imagens dos exercícios (440 px): melhor caminho é o utilizador tirar capturas em "Ecrã inteiro" na origem e recortar de novo, comparando com a atual (só substituir se for praticamente idêntica).
+- Imagens dos exercícios: redesenhadas em vetor (ver acima); a equipa confirma se algum ficou diferente do original (fica a opção "Imagem original").
 - Ideias ainda não feitas: estatísticas só com jogos/treinos fechados; lista de locais de jogo; contas com cargos e permissões (precisa de base de dados própria); confirmação da convocatória pelos jogadores.

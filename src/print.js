@@ -120,12 +120,13 @@ async function planPrint(id){
   const tt=TRT(tr.ttype);
   const exs=plan.map(x=>x.ex?D.exercises[x.ex]:null);
   const mats=tr.mat || [...new Set(exs.filter(Boolean).map(x=>(x.mat||"").trim()).filter(Boolean))].join("\n");
-  const imgs=await Promise.all(exs.map(ex=>ex&&exImg(ex)?srcToData(exImg(ex)):Promise.resolve(null)));
+  const vecs=exs.map(exVecOf);   // desenhos vetoriais entram no documento como SVG (nítidos no PDF)
+  const imgs=await Promise.all(exs.map((ex,i)=>!vecs[i]&&ex&&exImg(ex)?srcToData(exImg(ex)):Promise.resolve(null)));
   const date=toD(tr.date), dstr=`${pad(date.getDate())}-${pad(date.getMonth()+1)}-${date.getFullYear()}, ${date.toLocaleDateString("pt-PT",{weekday:"long"})}`;
   const cell=(l,v)=>`<div><b>${esc(l)}</b>${esc(v==null||v===""?"—":v)}</div>`;
   const blocks=plan.map((x,i)=>{ const ex=exs[i];
     const prs=blockPrinciples(x).map(k=>D.principles[k]).filter(Boolean);
-    const pic = imgs[i] ? `<img src="${esc(imgs[i])}" alt="">` : (ex&&ex.drw&&(ex.drw.it||[]).length ? drawSVG(ex.drw) : "");
+    const pic = vecs[i] ? vecSVG(vecs[i],{r:0}) : imgs[i] ? `<img src="${esc(imgs[i])}" alt="">` : (ex&&ex.drw&&(ex.drw.it||[]).length ? drawSVG(ex.drw) : "");
     const obj=[ex&&ex.obj, prs.length?"Princípios: "+prs.map(p=>p.name).join(", "):""].filter(Boolean).join("\n");
     const desc=[ex&&ex.desc, ex&&ex.cp?"Pontos-chave e variantes:\n"+ex.cp:"", ex&&ex.mat?"Material: "+ex.mat:""].filter(Boolean).join("\n\n");
     return `<section class="blk"><h2><span class="dot"></span>${esc(x.name||(ex&&ex.name)||"Bloco")}${ex&&ex.cat?` <small style="font-size:14px;color:#777">— ${esc(ex.cat)}</small>`:""}</h2>
