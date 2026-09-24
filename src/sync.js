@@ -13,6 +13,8 @@ const syncOn = () => !!(SYNC.cfg && MODE==="local");
 const syncN = () => Object.keys(SYNC.q).length;
 function syncSaveCfg(){ try{ if(SYNC.cfg) localStorage.setItem(SYNC_LS,JSON.stringify({...SYNC.cfg,last:SYNC.last})); else localStorage.removeItem(SYNC_LS); }catch(e){} }
 function syncSaveQ(){ clearTimeout(SYNC.qs); SYNC.qs=null; try{ localStorage.setItem(SYNCQ_LS,JSON.stringify(SYNC.q)); }catch(e){} }
+// resposta de um pull que não traz registos: endereço errado (o da monitorização) ou script antigo
+const syncBadResp = d => new Error(d && Array.isArray(d.jogadores) ? "Esse endereço é o da monitorização. Usa o URL do script \"Estrela B — Dados da app\"." : "O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).");
 const gImg = id => "https://drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w1600";
 
 function syncQ(c,i,d){
@@ -64,7 +66,7 @@ async function syncPull(manual){
   SYNC.pulling=true; SYNC.manual=!!manual; syncBadge();
   try{
     const d=await syncGet({a:"pull",since:SYNC.last});
-    if(!Array.isArray(d.docs)) throw new Error("O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).");
+    if(!Array.isArray(d.docs)) throw syncBadResp(d);
     const ch=syncApply(d.docs);
     if(ch && d.docs.some(x=>x&&x.c==="staff")) dedupeStaff();   // repetidos vindos de outro dispositivo
     SYNC.last=Math.max(SYNC.last,+d.now||0); syncSaveCfg();
@@ -124,7 +126,7 @@ async function syncConnect(url,key){
   const prev={cfg:SYNC.cfg,last:SYNC.last};
   SYNC.cfg={url:url.trim(),key:key.trim()}; SYNC.last=0;
   let d;
-  try{ d=await syncGet({a:"pull",since:0}); if(!Array.isArray(d.docs)) throw new Error("O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão)."); }
+  try{ d=await syncGet({a:"pull",since:0}); if(!Array.isArray(d.docs)) throw syncBadResp(d); }
   catch(e){ SYNC.cfg=prev.cfg; SYNC.last=prev.last; throw new Error(syncErr(e)); }
   const srv={}; d.docs.forEach(x=>{ if(x&&COLS.includes(x.c)) srv[x.c+"/"+x.i]=x; });
   const hasOwnImg = o => o && (o.imgL || o.imgG || o.imgA || (typeof o.img==="string" && o.img.startsWith("data:")));
@@ -186,13 +188,13 @@ function syncStart(){
 
 /* janela de ligação */
 function syncForm(){
-  const c=SYNC.cfg||{}, mc=monCfg();
+  const c=SYNC.cfg||{};
   const on=syncOn();
-  modal({title:"Partilhar dados com a equipa técnica",sub:"Google Sheets através do Apps Script da monitorização",
+  modal({title:"Partilhar dados com a equipa técnica",sub:"Google Sheets através do script \"Estrela B — Dados da app\"",
     body:`${on?`<p class="small" style="margin:0 0 12px"><b>Ligado.</b> ${SYNC.err?`<span style="color:var(--r5)">${esc(SYNC.err)}</span>`:SYNC.at?"Última sincronização às "+new Date(SYNC.at).toLocaleTimeString("pt-PT")+".":""}${syncN()?` ${syncN()} alteração(ões) por enviar.`:""}</p>`:""}
-      <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||mc.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
-      <label class="fld full">Chave<input name="key" value="${esc(c.key||mc.key||"")}" autocomplete="off"></label></div>
-      <p class="note">É o mesmo endereço e a mesma chave da monitorização. Cada pessoa da equipa técnica liga uma vez no seu dispositivo.
+      <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+      <label class="fld full">Chave<input name="key" value="${esc(c.key||monCfg().key||"")}" autocomplete="off"></label></div>
+      <p class="note">É o URL do script "Estrela B — Dados da app" (diferente do da monitorização) e a mesma chave. Cada pessoa da equipa técnica liga uma vez no seu dispositivo.
       Ao ligar, o que existe só aqui é enviado e o que já está partilhado passa para este dispositivo (nos registos que existem nos dois, fica o partilhado).
       As alterações dos outros aparecem em cerca de ${SYNC_MS/1000} segundos.</p>`,
     foot:`${on?`<button class="btn ghost" data-a="mDel">Desligar</button>`:"<span></span>"}<span class="right"><button class="btn" data-a="mClose">Cancelar</button><button class="btn primary" data-a="mSave">${on?"Guardar":"Ligar"}</button></span>`,

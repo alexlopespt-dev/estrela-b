@@ -5,7 +5,7 @@
 //   GET  /__estado  -> folha "docs" e ficheiros do Drive (para os testes)
 const http = require("http"), fs = require("fs"), vm = require("vm"), path = require("path");
 const PORT = +process.argv[2] || 8765;
-const GS = process.argv[3] || path.join(__dirname, "..", "tools", "apps-script", "monitorizacao_completo.gs");
+const GS = process.argv[3] || path.join(__dirname, "..", "tools", "apps-script", "dados_app.gs");
 
 let nextId = 1; const uid = p => p + (nextId++);
 const chain = o => new Proxy(o,{ get:(t,k)=> k in t ? t[k] : (typeof k==="string" ? function(){ return chain(t); } : undefined) });
@@ -73,10 +73,15 @@ http.createServer((req,res)=>{
     const out=[]; triggers.slice().forEach(t=>{ try{ ctx[t.fn](); out.push(t.fn+": ok"); }catch(e){ out.push(t.fn+": "+e.message); } });
     return send({m:"application/json",s:JSON.stringify(out)});
   }
+  if(u.pathname==="/__props"){   // define propriedades do script (ex.: resumo da monitorização app_n/app_0)
+    let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ Object.assign(props,JSON.parse(body||"{}")); send({m:"application/json",s:"{}"}); });
+    return;
+  }
   if(u.pathname==="/__prep"){   // prepara o resumo da monitorização e linhas escritas à mão no separador Lesões
     let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ const p=JSON.parse(body||"{}");
-      if(p.nomes){ const t=JSON.stringify({jogadores:p.nomes.map(nome=>({nome}))}); props.app_n="1"; props.app_0=t; }
-      if(p.manual){ const f=ctx.destino_(); let sh=f.getSheetByName("· Lesões"); if(!sh){ ctx.lerLesoes_(f,new Date()); sh=f.getSheetByName("· Lesões"); }
+      if(p.nomes){ const f=ctx.destino_(); const pl=f.insertSheet("· Plantel"); pl.getRange(4,1,1,2).setValues([["Jogador","Posição"]]);
+        p.nomes.forEach((n,i)=>pl.getRange(5+i,1,1,2).setValues([[n,"Campo"]])); }
+      if(p.manual){ const f=ctx.destino_(); const sh=ctx.folhaLesoes_(f);
         p.manual.forEach(r=>sh.getRange(sh.getLastRow()+1,1,1,5).setValues([r])); }
       send({m:"application/json",s:"{}"}); });
     return;
