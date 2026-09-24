@@ -2149,8 +2149,10 @@ function dadosPush_(ops) {
     var res = { ok: true, t: t, erros: erros };
   } finally { lock.releaseLock(); }
   var mexeu = ops.some(function (o) { return o && (o.c === 'injuries' || o.c === 'players' || o.c === 'meta'); });
+  // a cópia das lesões e o recálculo ficam para um acionador (a app não espera por eles)
   if (mexeu) {
-    try { espelharLesoes_(); agendarAtualizacao_(); } catch (e) { Logger.log('Lesões da app: ' + e); }
+    try { PropertiesService.getScriptProperties().setProperty('lesoes_pend', '1'); agendarAtualizacao_(); }
+    catch (e) { Logger.log('Lesões da app: ' + e); }
   }
   return res;
 }
@@ -2186,11 +2188,14 @@ function doPost(e) {
  * e são atualizadas ou apagadas pela app; as linhas escritas à mão (coluna F vazia) nunca são tocadas.
  * Estados: Em tratamento -> Lesionado · Condicionado -> Condicionado · Alta -> linha fica com a data de fim.
  * O nome é o da folha de monitorização (as mesmas ligações que a app usa: à mão, igual, ou abreviatura).
- * Depois de copiar, a monitorização recalcula sozinha ~1 minuto depois.
+ * A cópia é feita por um acionador cerca de 30-60 s depois de a app gravar (a app não fica à espera);
+ * a monitorização só é recalculada se alguma linha mudou.
  */
 function copiarLesoesDaApp() {
-  var n = espelharLesoes_();
-  try { SpreadsheetApp.getUi().alert('Lesões da app', n + ' lesão(ões) da app no separador ' + PREFIXO + 'Lesões.', SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
+  var r = espelharLesoes_();
+  var msg = r.total + ' lesão(ões) da app no separador ' + PREFIXO + 'Lesões (' + r.mudadas + ' alterada(s)).';
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert('Lesões da app', msg, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
 }
 
 function dadosTodos_(cols) {
@@ -2245,7 +2250,7 @@ function dataApp_(iso) {
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : '';
 }
 
-/** Copia as lesões da app para o separador "· Lesões". Devolve quantas há. */
+/** Copia as lesões da app para o separador "· Lesões". Devolve {total, mudadas}. */
 function espelharLesoes_() {
   var reg = dadosTodos_(['injuries', 'players', 'meta']);
   var inj = reg.injuries, pl = reg.players, cfg = reg.meta.cfg || {};
@@ -2259,7 +2264,7 @@ function espelharLesoes_() {
   }
   var ult = f.getLastRow(), linhas = ult >= 5 ? f.getRange(5, 1, ult - 4, 6).getValues() : [], pos = {};
   linhas.forEach(function (l, j) { var t = String(l[5] || ''); if (t.indexOf('app:') === 0) pos[t.slice(4)] = j; });
-  var novas = [], total = 0;
+  var novas = [], total = 0, mudadas = 0;
   Object.keys(inj).forEach(function (id) {
     var x = inj[id];
     if (!x || !x.pid) return;
@@ -2278,22 +2283,30 @@ function espelharLesoes_() {
         var b = linha[k] instanceof Date ? linha[k].getTime() : String(linha[k]);
         if (a !== b) { igual = false; break; }
       }
-      if (!igual) f.getRange(5 + pos[id], 1, 1, 6).setValues([linha]);
+      if (!igual) { f.getRange(5 + pos[id], 1, 1, 6).setValues([linha]); mudadas++; }
     } else novas.push(linha);
   });
   // lesões apagadas na app: sai a linha (de baixo para cima, para não baralhar as posições)
   Object.keys(pos).filter(function (id) { return !inj[id]; }).map(function (id) { return pos[id]; })
-    .sort(function (a, b) { return b - a; }).forEach(function (j) { f.deleteRow(5 + j); });
+    .sort(function (a, b) { return b - a; }).forEach(function (j) { f.deleteRow(5 + j); mudadas++; });
   if (novas.length) f.getRange(f.getLastRow() + 1, 1, novas.length, 6).setValues(novas);
-  return total;
+  return { total: total, mudadas: mudadas + novas.length };
 }
 
-/** Recalcula a monitorização ~1 minuto depois de a app mexer nas lesões (um só agendamento de cada vez). */
+/** Um só agendamento de cada vez (a cache evita perguntar ao Google pelos acionadores em cada gravação). */
 function agendarAtualizacao_() {
+  var cache = CacheService.getScriptCache();
+  if (cache.get('lesoes_agendado')) return;
   var ja = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'atualizarDaApp'; });
-  if (!ja) ScriptApp.newTrigger('atualizarDaApp').timeBased().after(60 * 1000).create();
+  if (!ja) ScriptApp.newTrigger('atualizarDaApp').timeBased().after(30 * 1000).create();
+  cache.put('lesoes_agendado', '1', 90);
 }
 function atualizarDaApp() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'atualizarDaApp') ScriptApp.deleteTrigger(t); });
-  atualizar();
+  CacheService.getScriptCache().remove('lesoes_agendado');
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('lesoes_pend')) return;
+  props.deleteProperty('lesoes_pend');
+  var r = espelharLesoes_();
+  if (r.mudadas) atualizar();          // só recalcula a monitorização (demorada) se alguma lesão mudou
 }

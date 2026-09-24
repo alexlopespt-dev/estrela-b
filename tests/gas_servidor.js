@@ -48,7 +48,7 @@ const ctx = {
   PropertiesService: { getScriptProperties(){ return {
     getProperty(k){ return k in props ? props[k] : null; }, setProperty(k,v){ props[k]=String(v); return this; },
     setProperties(o){ Object.entries(o).forEach(([k,v])=>props[k]=String(v)); return this; }, deleteProperty(k){ delete props[k]; return this; } }; } },
-  CacheService: { getScriptCache(){ return { get(k){ return k in cache ? cache[k] : null; }, put(k,v){ cache[k]=String(v); } }; } },
+  CacheService: { getScriptCache(){ return { get(k){ return k in cache ? cache[k] : null; }, put(k,v){ cache[k]=String(v); }, remove(k){ delete cache[k]; } }; } },
   LockService: { getScriptLock(){ return { waitLock(){}, releaseLock(){} }; } },
   ContentService: { MimeType:{JSON:"application/json",JAVASCRIPT:"application/javascript"},
     createTextOutput(s){ return { s, m:"text/plain", setMimeType(m){ this.m=m; return this; } }; } },
@@ -68,6 +68,10 @@ http.createServer((req,res)=>{
     const dest=SSS[ctx.ID_DESTINO], les=dest&&dest.getSheetByName("· Lesões");
     return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props,
       lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn)})});
+  }
+  if(u.pathname==="/__triggers"){   // corre os acionadores agendados (como o Google faria passado o tempo)
+    const out=[]; triggers.slice().forEach(t=>{ try{ ctx[t.fn](); out.push(t.fn+": ok"); }catch(e){ out.push(t.fn+": "+e.message); } });
+    return send({m:"application/json",s:JSON.stringify(out)});
   }
   if(u.pathname==="/__prep"){   // prepara o resumo da monitorização e linhas escritas à mão no separador Lesões
     let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ const p=JSON.parse(body||"{}");

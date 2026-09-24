@@ -16,7 +16,8 @@ def fwd(route):
     r=urllib.request.urlopen(urllib.request.Request(u,data=rq.post_data_buffer if rq.method=="POST" else None,method=rq.method))
     route.fulfill(status=r.status,body=r.read(),headers={"Content-Type":r.headers.get("Content-Type"),"Access-Control-Allow-Origin":"*"})
 APP=open(os.path.join(DIST,"app_local.html")).read()
-def app_rows(): return [r for r in (estado()["lesoes"] or []) if str(r[5] if len(r)>5 else "").startswith("app:")]
+def corre(): return json.loads(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/__triggers").read())
+def app_rows(): corre(); return [r for r in (estado()["lesoes"] or []) if str(r[5] if len(r)>5 else "").startswith("app:")]
 try:
   prep({"nomes":["Abbiati","Bruno V.","Hugo R.","Valério"],"manual":[["Rui","Tratamento","2026-09-20","","escrito à mão"]]})
   with sync_playwright() as pw:
@@ -35,13 +36,15 @@ try:
     pg.click('nav [data-t="clinico"]'); pg.click('#main [data-a="injNew"]'); pg.wait_for_timeout(200)
     zonas=pg.eval_on_selector_all('#dlg [name=zone] option',"e=>e.map(o=>o.value).filter(Boolean)"); pg.click('#dlg [data-a="mClose"]')
     lesao("Rocha",zonas[0],"Entorse do tornozelo")
+    st=estado(); print("antes do acionador: agendado", st["triggers"], "| separador ainda sem linhas da app:", not any(len(r)>5 and str(r[5]).startswith("app:") for r in (st["lesoes"] or [])))
+    if st["triggers"].count("atualizarDaApp")!=1: errs.append("agendamento")
     lesao("Abbiati",zonas[1],"Contratura")
     rows=app_rows(); print("linhas da app:", [(r[0],r[1],r[2],r[3],r[4]) for r in rows])
     nm=sorted(r[0] for r in rows)
     if nm!=["Abbiati","Hugo R."]: errs.append("nomes "+str(nm))
     if any(r[1]!="Lesionado" for r in rows) or any(r[3] for r in rows): errs.append("estado")
-    st=estado(); print("à mão intacta:", st["lesoes"][0][:5], "| recálculo agendado:", st["triggers"])
-    if st["lesoes"][0][0]!="Rui" or st["triggers"].count("atualizarDaApp")!=1: errs.append("mão/trigger")
+    st=estado(); print("à mão intacta:", st["lesoes"][0][:5], "| acionadores pendentes depois de correr:", st["triggers"])
+    if st["lesoes"][0][0]!="Rui" or st["triggers"]: errs.append("mão/trigger")
     # condicionado e alta
     pg.click('nav [data-t="clinico"]'); pg.wait_for_timeout(300)
     pg.click('#main [data-a="injSt"][data-s="condicionado"] >> nth=0'); pg.wait_for_timeout(1800)
