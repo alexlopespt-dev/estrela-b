@@ -27,6 +27,16 @@ with sync_playwright() as pw:
     pg.click('nav [data-t="treinos"]'); pg.click('[data-a="tsub"][data-k="modelo"]'); pg.wait_for_timeout(500)
     print("tags Proposta:", pg.eval_on_selector_all('#main .tag.warn:has-text("Proposta")',"e=>e.length"))
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t25_modelo.png"), full_page=True)
+    # esquemas do PowerPoint
+    P=pg.evaluate(f"JSON.parse(localStorage.getItem('{LSK}')).principles")
+    ni=sum(1 for p in P.values() if p.get("imgs")); print("princípios com esquema:", ni, "| miniaturas:", pg.eval_on_selector_all('#main .li img',"e=>e.length"))
+    if ni<20 or pg.eval_on_selector_all('#main .li img',"e=>e.length")<20: errs.append("esquemas")
+    pg.click('[data-a="prEdit"][data-id="mj_oo_f2a"]'); pg.wait_for_timeout(300)
+    n2=pg.eval_on_selector_all('#dlg img',"e=>e.filter(i=>i.naturalWidth>500).length"); print("rotação do triângulo — esquemas na ficha:", n2)
+    if n2!=2: errs.append("esquemas na ficha")
+    pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t25_esquema.png"))
+    pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(300)
+    if pg.evaluate(f"JSON.parse(localStorage.getItem('{LSK}')).principles.mj_oo_f2a.imgs")!=["mj11","mj15"]: errs.append("guardar perdeu esquemas")
     # editar uma proposta tira a marca
     pg.click('[data-a="prEdit"][data-id="mj_to_r1"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(300)
     x=pg.evaluate(f"JSON.parse(localStorage.getItem('{LSK}')).principles.mj_to_r1"); print("depois de guardar:", x.get("prop"), x["parent"])

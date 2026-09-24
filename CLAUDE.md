@@ -37,6 +37,7 @@ data/
   seed_db.json            os mesmos dados, usados para semear a base de dados online
   exercicios_imagens.json imagens dos 129 exercícios importados (chave imgk -> dataURL), embutidas na página
   modelo_jogo_2627.json   modelo de jogo 2026/27 (do PowerPoint da equipa técnica): princípios/subprincípios por momento, `prop:1` = proposta a rever; embutido como MODELO_2627 (__MODELO__)
+  modelo_jogo_imagens.json  esquemas (campos) recortados dos diapositivos do PowerPoint (mjNN = n.º do diapositivo -> JPEG 660 px), embutidos como MJIMG (__MJIMG__); o princípio guarda só as chaves em `imgs` (`prImgs(p)`). Recorte: slides → PDF com LibreOffice Impress (`apt-get install libreoffice-impress`, `-env:UserInstallation=file:///tmp/lo`) → pymupdf 130 dpi → caixa verde na metade direita
   exercicios_vetor.json   os mesmos 129 redesenhados em vetor (imgk -> desenho v2), embutidos como EXVEC; gerado por tools/vetorizar/exportar.py
   emblema.b64             emblema do clube (dataURL)
   emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG 64 px, recortados de uma captura do zerozero), embutidos como OPPIMG
@@ -85,6 +86,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - `staffdup1` / `dedupeStaff()` (sync.js): staff com o mesmo nome e ids diferentes (criado à mão num dispositivo + dados iniciais noutro) fica um só (com foto > mais completo > id menor), presenças `satt` remapeadas; corre também ao ligar a partilha e quando chega staff por sincronização (test21).
 - `ex2609`: 3 exercícios enviados pela equipa (exi130 Meinhos, exi131 Lançamento + Variação, exi132 Vagas 3x2 Ancelotti), definidos em `EX_2609` (migr.js), com imagem em EXIMG e desenho em EXVEC (tools/vetorizar/manual/exi13x.json, `custom`; item `bib` = coletes).
 - `mj2627`: acrescenta o modelo de jogo (52 princípios; OO e OD do PowerPoint; TD Conter/Caçar do PowerPoint; "Após perda", TO e bolas paradas são propostas marcadas "Proposta", que desaparece ao guardar o princípio). Não repete nomes já existentes no mesmo momento (liga os subprincípios ao existente) (test25).
+- `mj2627img`: põe os esquemas (`imgs`) nos princípios do modelo que já existiam sem imagens.
 - `exlib129`: browsers com dados antigos (só os 9 exercícios de exemplo) recebem os exercícios do SEED que faltam (ids novos apenas; offline).
 - Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
 

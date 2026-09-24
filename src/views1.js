@@ -319,7 +319,7 @@ function vModelo(sub){
   const mt = modelTime(per?per.start:null, per?per.end:null);
   const maxM = Math.max(1,...MOMENTS.map(m=>mt.byM[m.k]||0));
   const exCount={}; exercises().forEach(x=>(x.pr||[]).forEach(k=>exCount[k]=(exCount[k]||0)+1));
-  const prRow=(p,isSub)=>`<button class="li" data-a="prEdit" data-id="${esc(p.id)}" style="${isSub?"padding-left:40px":""}"><span class="main"><b style="white-space:normal;${isSub?"font-weight:600":""}">${isSub?"— ":""}${esc(p.name)}${p.prop?` <span class="tag warn">Proposta</span>`:""}</b>${p.desc?`<small style="white-space:pre-line">${esc(p.desc)}</small>`:""}</span><span class="small muted num" style="text-align:right">${mt.byP[p.id]||0}'<br>${exCount[p.id]||0} exerc.</span></button>`;
+  const prRow=(p,isSub)=>`<button class="li" data-a="prEdit" data-id="${esc(p.id)}" style="${isSub?"padding-left:40px":""}"><span class="main"><b style="white-space:normal;${isSub?"font-weight:600":""}">${isSub?"— ":""}${esc(p.name)}${p.prop?` <span class="tag warn">Proposta</span>`:""}</b>${p.desc?`<small style="white-space:pre-line">${esc(p.desc)}</small>`:""}</span>${prImgs(p).length?`<img src="${MJIMG[prImgs(p)[0]]}" alt="" style="width:46px;height:50px;object-fit:cover;border-radius:6px;flex:none">`:""}<span class="small muted num" style="text-align:right">${mt.byP[p.id]||0}'<br>${exCount[p.id]||0} exerc.</span></button>`;
   return `
   <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span></div>
   <section class="card"><div class="card-h"><h3>Tempo de treino por momento do jogo</h3>

@@ -432,7 +432,7 @@ function prForm(id,moment,parent){
   if(!p) return;
   const tops=principles().filter(x=>!x.parent&&x.id!==id);
   const hasKids=id&&principles().some(x=>x.parent===id);
-  const body=`<div class="form">
+  const body=`${prImgs(p).length?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px">${prImgs(p).map(k=>`<img src="${MJIMG[k]}" alt="Esquema" style="width:100%;border-radius:10px;display:block">`).join("")}</div>`:""}<div class="form">
     <label class="fld full">Nome<input name="name" value="${esc(p.name||"")}" placeholder="${p.parent?"Ex.: Terceiro homem":"Ex.: Saída curta a 3"}"></label>
     <label class="fld">Momento${sel("moment",MOMENTS.map(m=>({v:m.k,l:m.l})),p.moment||"oo")}</label>
     <label class="fld">Tipo${sel("parent",[{v:"",l:"Princípio"},...tops.map(t=>({v:t.id,l:"Subprincípio de: "+t.name+" ("+MOM(t.moment)+")"}))],p.parent||"",hasKids?"disabled":"")}</label>
@@ -441,7 +441,7 @@ function prForm(id,moment,parent){
     save:()=>{ const name=fv("name"); if(!name){ toast("Dá um nome ao princípio."); return; }
       let par=hasKids?"":fv("parent"), mom=fv("moment");
       if(par&&D.principles[par]) mom=D.principles[par].moment; else par="";
-      put("principles",id||uid("pr_"),{name,moment:mom,parent:par,desc:fv("desc"),order:p.order??principles().length}); closeModal(); toast("Guardado"); },
+      put("principles",id||uid("pr_"),{name,moment:mom,parent:par,desc:fv("desc"),order:p.order??principles().length,...(prImgs(p).length?{imgs:p.imgs.slice()}:{})}); closeModal(); toast("Guardado"); },
     del:()=>askConfirm(hasKids?"Eliminar este princípio e os subprincípios? Os exercícios e treinos deixam de estar ligados a eles.":"Eliminar este princípio? Os exercícios e treinos deixam de estar ligados a ele.","Eliminar",true).then(ok=>{ if(!ok) return;
       principles().filter(x=>x.parent===id).forEach(x=>del("principles",x.id)); del("principles",id); closeModal(); })
   }});
