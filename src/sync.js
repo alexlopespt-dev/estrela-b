@@ -28,12 +28,19 @@ const syncErr = e => e&&e.name==="AbortError" ? "O Google demorou demasiado a re
   : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Sem ligação ao Google.");
 
 async function syncGet(params){
-  const u=SYNC.cfg.url.trim()+(SYNC.cfg.url.includes("?")?"&":"?")+"k="+encodeURIComponent(SYNC.cfg.key)+"&"+Object.entries(params).map(([k,v])=>k+"="+encodeURIComponent(v)).join("&");
+  const u=SYNC.cfg.url.trim()+(SYNC.cfg.url.includes("?")?"&":"?")+"k="+encodeURIComponent(SYNC.cfg.key)+"&"+Object.entries(params).map(([k,v])=>k+"="+encodeURIComponent(v)).join("&")+"&_="+Date.now().toString(36);   // evita respostas guardadas pelo browser
   const ctl=typeof AbortController!=="undefined"?new AbortController():null, tm=setTimeout(()=>ctl&&ctl.abort(),30000);
   try{
     let d;
-    try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined,cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
-    catch(e){ if(e&&e.name==="AbortError") throw e; SYNC.diag.jsonp=(SYNC.diag.jsonp||0)+1; SYNC.diag.fetchErr=String(e&&e.message||e); d=await monJsonp(u); }
+    // sem "cache:no-store": com esse cabeçalho o Google responde 404 e obrigava a ir pelo caminho lento (JSONP)
+    // se a leitura direta falhou 2 vezes seguidas, vai logo por JSONP (volta a tentar a direta de 10 em 10 min)
+    const direct = (SYNC.fails||0)<2 || Date.now()-(SYNC.failAt||0)>600000;
+    if(direct){
+      try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); SYNC.fails=0; }
+      catch(e){ if(e&&e.name==="AbortError") throw e; SYNC.fails=(SYNC.fails||0)+1; SYNC.failAt=Date.now();
+        SYNC.diag.jsonp=(SYNC.diag.jsonp||0)+1; SYNC.diag.fetchErr=String(e&&e.message||e); }
+    }
+    if(d===undefined) d=await monJsonp(u);
     if(d&&d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
     return d;
   }finally{ clearTimeout(tm); }
