@@ -99,6 +99,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 7. Ao editar ficheiros com scripts, **nunca** fazer `replace` com texto de origem vazio (já corrompeu um ficheiro para 150 MB). Verificar sempre que o texto a substituir existe exatamente uma vez.
 8. Depois de qualquer alteração: `./tests/correr_testes.sh`. Se um comportamento mudar de propósito, atualizar o teste correspondente.
 10. iPad/iPhone (Safari): campos com `appearance:none`, altura mínima e seta própria nas listas (senão datas/horas ficam centradas e com alturas diferentes); 16 px em ecrãs tácteis evita o zoom ao tocar. Aqui só há Chromium: testar no tamanho do iPad (820x1180 / 1180x820) e pedir captura ao utilizador.
+11. Tema: botão no cabeçalho (`#themeBt`, ação `theme`) roda automático → noite → dia; guardado por dispositivo em `estrela-tecnico-v1:theme` e aplicado em `data-theme` no `<html>` (boot.js). Qualquer regra de cor escura nova tem de existir para `prefers-color-scheme:dark` (sem `data-theme=light`) **e** para `[data-theme=dark]`; `color-scheme` acompanha (campos nativos do Safari ficam escuros).
 9. Ecrãs baixos (portátil com a app numa área pequena): as janelas têm regras compactas em `@media (max-height:620px)`; testar formulários novos também a 420 px de altura (test12).
 
 ## Em aberto

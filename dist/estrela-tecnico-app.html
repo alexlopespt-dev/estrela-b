@@ -21,17 +21,17 @@
   --shadow:0 1px 2px rgba(61,9,20,.06),0 8px 24px -14px rgba(61,9,20,.2);
   --fb:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --fc:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  box-sizing:border-box;
+  box-sizing:border-box; color-scheme:light;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
+  :root:not([data-theme="light"]){ color-scheme:dark;
     --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
     --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
   }
 }
-:root[data-theme="dark"]{
+:root[data-theme="dark"]{ color-scheme:dark;
   --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
   --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
 }
@@ -53,7 +53,10 @@ header.top{position:relative;color:#fff;overflow:hidden;
 header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--grena),var(--ouro) 50%,var(--verde))}
 .top-in{position:relative;max-width:1100px;margin:0 auto;padding:18px 14px 4px;display:flex;gap:16px;align-items:center}
 /* estado da partilha de dados (cabeçalho) */
-.syncst{margin-left:auto;align-self:flex-start;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:#fff;border-radius:999px;padding:4px 11px 4px 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.top-act{margin-left:auto;align-self:flex-start;display:flex;gap:8px;align-items:center}
+.themebt{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:#fff;display:grid;place-items:center;padding:0;flex:none}
+.themebt svg{width:18px;height:18px}
+.syncst{border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:#fff;border-radius:999px;padding:4px 11px 4px 9px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .syncst[hidden]{display:none}
 .syncst::before{content:"";width:8px;height:8px;border-radius:50%;background:#5bd07a;flex:none}
 .syncst.busy::before{background:#f2c02a}.syncst.err::before{background:#ff6b5e}
@@ -458,7 +461,7 @@ dialog.wide{width:min(980px,calc(100vw - 20px))}
   <div class="top-in">
     <img class="crest-img" id="crest" alt="Emblema do Estrela da Amadora" src="" style="cursor:pointer">
     <div class="team"><h1 id="tTeam">Estrela B</h1><p id="tSub">Departamento técnico</p></div>
-    <button class="syncst" id="syncSt" data-a="syncCfg" hidden></button>
+    <div class="top-act"><button class="syncst" id="syncSt" data-a="syncCfg" hidden></button><button class="themebt" id="themeBt" data-a="theme" aria-label="Tema"></button></div>
   </div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secções"></nav>
 </header>
@@ -3065,6 +3068,7 @@ const A = {
   exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; delete x.imgG; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
   syncCfg: () => syncForm(),
+  theme: () => { const i=THEMES.findIndex(t=>t[0]===THEME); THEME=THEMES[(i+1)%THEMES.length][0]; try{ localStorage.setItem(LS+":theme",THEME); }catch(e){} applyTheme(); toast(THEMES.find(t=>t[0]===THEME)[1]); },
   exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },
@@ -3620,6 +3624,18 @@ function syncForm(){
 /* ================= arranque ================= */
 const use = n => (window.claude && typeof window.claude.use==="function") ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
 document.getElementById("crest").src = CREST;
+/* tema: automático (segue o sistema), escuro ou claro — escolha guardada neste dispositivo */
+const THEMES=[["auto","Tema automático (segue o sistema)"],["dark","Modo noite"],["light","Modo dia"]];
+let THEME="auto"; try{ const t=localStorage.getItem(LS+":theme"); if(t==="dark"||t==="light") THEME=t; }catch(e){}
+const THEME_ICO={
+  auto:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>`,
+  dark:`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>`,
+  light:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>`};
+function applyTheme(){
+  const r=document.documentElement; if(THEME==="auto") delete r.dataset.theme; else r.dataset.theme=THEME;
+  const b=document.getElementById("themeBt"); if(b){ b.innerHTML=THEME_ICO[THEME]; const l=THEMES.find(t=>t[0]===THEME)[1]; b.title=l; b.setAttribute("aria-label",l+" — tocar para mudar"); }
+}
+applyTheme();
 (()=>{ const l=document.createElement("link"); l.rel="apple-touch-icon"; l.href=CREST; document.head.appendChild(l); })();
 render();
 (async()=>{
