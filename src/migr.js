@@ -42,6 +42,10 @@ const MIGR = [
     if(!allPlayers().some(p=>same(p.name,"Khan"))){ put("players","p_khan",{n:null,name:"Khan",pos:"",foot:"",photo:null}); msg.push("Khan adicionado ao plantel"); }
     return msg.join(". ");
   }}
+  ,{id:"staffdup1", run(){
+    // a partilha juntou o staff dos dados iniciais com o criado à mão noutro dispositivo: remove os repetidos
+    const n=dedupeStaff(); return n ? `${n} elemento(s) do staff repetido(s) juntado(s)` : "";
+  }}
   ,{id:"exlib129", run(){
     // Browsers com dados de antes da importação só tinham os 9 exercícios de exemplo: junta os que faltam dos dados iniciais
     // (os 129 da biblioteca com desenho). Só acrescenta ids que não existem; nunca altera nem repõe exercícios apagados depois disto.

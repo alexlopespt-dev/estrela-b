@@ -66,6 +66,7 @@ async function syncPull(manual){
     const d=await syncGet({a:"pull",since:SYNC.last});
     if(!Array.isArray(d.docs)) throw new Error("O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).");
     const ch=syncApply(d.docs);
+    if(ch && d.docs.some(x=>x&&x.c==="staff")) dedupeStaff();   // repetidos vindos de outro dispositivo
     SYNC.last=Math.max(SYNC.last,+d.now||0); syncSaveCfg();
     if(ch){ lsSave(); VER++; schedule(); }
     SYNC.err=""; SYNC.at=Date.now();
@@ -138,9 +139,28 @@ async function syncConnect(url,key){
     if(!s || (hasOwnImg(doc) && !s.x && !hasOwnImg(s.d))){ SYNC.q[k]={c,i,d:doc}; sent++; } }));
   SYNC.last=+d.now||0; SYNC.err=""; SYNC.at=Date.now();
   syncSaveCfg(); syncSaveQ(); lsSave(); VER++; schedule();
+  const dup=dedupeStaff();
   await syncMoveImgs();
   await syncPush();
-  return {got,sent,server:d.docs.length};
+  return {got,sent,server:d.docs.length,dup};
+}
+// staff repetido (mesmo nome, ids diferentes — p. ex. criado à mão num dispositivo e vindo dos dados iniciais noutro):
+// fica um só (o que tem foto; depois o mais completo; depois o id menor), com os campos vazios preenchidos pelo outro,
+// e as presenças do staff nos treinos passam para o que fica. Devolve quantos foram juntos.
+function dedupeStaff(){
+  const groups={};
+  Object.entries(D.staff).forEach(([id,s])=>{ const k=nameKey(s&&s.name); if(k) (groups[k]=groups[k]||[]).push(id); });
+  const score=id=>{ const s=D.staff[id]; return (s.photo||s.photoData?100:0)+Object.values(s).filter(v=>v!=null&&v!=="").length; };
+  const map={}; let n=0;
+  Object.values(groups).forEach(ids=>{ if(ids.length<2) return;
+    ids.sort((a,b)=>score(b)-score(a)||(a<b?-1:1));
+    const keep=ids[0], o=clone(D.staff[keep]);
+    ids.slice(1).forEach(id=>{ Object.entries(D.staff[id]).forEach(([f,v])=>{ if((o[f]==null||o[f]==="")&&v!=null&&v!=="") o[f]=v; }); map[id]=keep; });
+    put("staff",keep,o); ids.slice(1).forEach(id=>{ del("staff",id); n++; });
+  });
+  if(n) Object.entries(D.events).forEach(([eid,e])=>{ const sa=e&&e.satt; if(!sa||!Object.keys(sa).some(k=>map[k])) return;
+    const x=clone(e); Object.entries(sa).forEach(([k,v])=>{ if(map[k]){ if(!x.satt[map[k]]||!x.satt[map[k]].s) x.satt[map[k]]=v; delete x.satt[k]; } }); put("events",eid,x); });
+  return n;
 }
 function syncDisconnect(){ SYNC.cfg=null; SYNC.last=0; SYNC.q={}; SYNC.err=""; syncSaveCfg(); syncSaveQ(); syncBadge(); }
 

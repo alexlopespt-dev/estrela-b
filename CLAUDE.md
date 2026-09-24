@@ -79,6 +79,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Os dados vivem no browser (offline) ou na base de dados online, por isso mudar o `seed_local.json` não chega a quem já usa a app. Para acrescentar dados, criar uma entrada em `MIGR` com id novo: corre uma vez por dispositivo/base de dados, só acrescenta ou preenche campos vazios e usa ids fixos (nunca duplica).
 - Online só corre se todas as coleções carregaram sem erro (nunca sobre dados incompletos).
 - `cal2627`: calendário AF Lisboa 3.ª Divisão Série 4 (J11 e J24 são folga), 12 fichas de adversário com emblema (`crk`), J1 com golos sofridos 0 e "Fora" (0-6 no zerozero).
+- `staffdup1` / `dedupeStaff()` (sync.js): staff com o mesmo nome e ids diferentes (criado à mão num dispositivo + dados iniciais noutro) fica um só (com foto > mais completo > id menor), presenças `satt` remapeadas; corre também ao ligar a partilha e quando chega staff por sincronização (test21).
 - `exlib129`: browsers com dados antigos (só os 9 exercícios de exemplo) recebem os exercícios do SEED que faltam (ids novos apenas; offline).
 - Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
 
