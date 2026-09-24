@@ -319,13 +319,13 @@ function vModelo(sub){
   const mt = modelTime(per?per.start:null, per?per.end:null);
   const maxM = Math.max(1,...MOMENTS.map(m=>mt.byM[m.k]||0));
   const exCount={}; exercises().forEach(x=>(x.pr||[]).forEach(k=>exCount[k]=(exCount[k]||0)+1));
-  const prRow=(p,isSub)=>`<button class="li" data-a="prEdit" data-id="${esc(p.id)}" style="${isSub?"padding-left:40px":""}"><span class="main"><b style="${isSub?"font-weight:600":""}">${isSub?"— ":""}${esc(p.name)}</b>${p.desc?`<small>${esc(p.desc)}</small>`:""}</span><span class="small muted num" style="text-align:right">${mt.byP[p.id]||0}'<br>${exCount[p.id]||0} exerc.</span></button>`;
+  const prRow=(p,isSub)=>`<button class="li" data-a="prEdit" data-id="${esc(p.id)}" style="${isSub?"padding-left:40px":""}"><span class="main"><b style="white-space:normal;${isSub?"font-weight:600":""}">${isSub?"— ":""}${esc(p.name)}${p.prop?` <span class="tag warn">Proposta</span>`:""}</b>${p.desc?`<small style="white-space:pre-line">${esc(p.desc)}</small>`:""}</span><span class="small muted num" style="text-align:right">${mt.byP[p.id]||0}'<br>${exCount[p.id]||0} exerc.</span></button>`;
   return `
   <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span></div>
   <section class="card"><div class="card-h"><h3>Tempo de treino por momento do jogo</h3>
     <span class="chips"><button class="chip ${!S.mdl?"on":""}" data-a="mdlPer" data-k="">Época</button>${mesos.map(m=>`<button class="chip ${S.mdl===m.id?"on":""}" data-a="mdlPer" data-k="${esc(m.id)}">${esc(m.name)}</button>`).join("")}</span></div>
     <div class="card-b">
-      ${mt.total?`${momentBars(mt)}
+      ${mt.total?`${momentPie(mt)}
       <p class="note">${plural(mt.sessions,"treino")} com plano — ${mt.total}' planeados, dos quais ${mt.linked}' (${pct(mt.linked,mt.total)}%) ligados a princípios. Um bloco pode trabalhar mais do que um momento.</p>`
       :`<div class="small muted">Ainda não há treinos realizados com plano${per?" neste mesociclo":""}. O tempo aparece quando os blocos do plano estiverem ligados a princípios.</div>`}
     </div></section>

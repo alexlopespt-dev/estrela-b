@@ -36,6 +36,7 @@ data/
   seed_local.json         dados iniciais completos (versão offline)
   seed_db.json            os mesmos dados, usados para semear a base de dados online
   exercicios_imagens.json imagens dos 129 exercícios importados (chave imgk -> dataURL), embutidas na página
+  modelo_jogo_2627.json   modelo de jogo 2026/27 (do PowerPoint da equipa técnica): princípios/subprincípios por momento, `prop:1` = proposta a rever; embutido como MODELO_2627 (__MODELO__)
   exercicios_vetor.json   os mesmos 129 redesenhados em vetor (imgk -> desenho v2), embutidos como EXVEC; gerado por tools/vetorizar/exportar.py
   emblema.b64             emblema do clube (dataURL)
   emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG 64 px, recortados de uma captura do zerozero), embutidos como OPPIMG
@@ -83,6 +84,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - `cal2627`: calendário AF Lisboa 3.ª Divisão Série 4 (J11 e J24 são folga), 12 fichas de adversário com emblema (`crk`), J1 com golos sofridos 0 e "Fora" (0-6 no zerozero).
 - `staffdup1` / `dedupeStaff()` (sync.js): staff com o mesmo nome e ids diferentes (criado à mão num dispositivo + dados iniciais noutro) fica um só (com foto > mais completo > id menor), presenças `satt` remapeadas; corre também ao ligar a partilha e quando chega staff por sincronização (test21).
 - `ex2609`: 3 exercícios enviados pela equipa (exi130 Meinhos, exi131 Lançamento + Variação, exi132 Vagas 3x2 Ancelotti), definidos em `EX_2609` (migr.js), com imagem em EXIMG e desenho em EXVEC (tools/vetorizar/manual/exi13x.json, `custom`; item `bib` = coletes).
+- `mj2627`: acrescenta o modelo de jogo (52 princípios; OO e OD do PowerPoint; TD Conter/Caçar do PowerPoint; "Após perda", TO e bolas paradas são propostas marcadas "Proposta", que desaparece ao guardar o princípio). Não repete nomes já existentes no mesmo momento (liga os subprincípios ao existente) (test25).
 - `exlib129`: browsers com dados antigos (só os 9 exercícios de exemplo) recebem os exercícios do SEED que faltam (ids novos apenas; offline).
 - Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
 
