@@ -24,7 +24,7 @@ with sync_playwright() as pw:
     if ex["ex01"]["name"]!="Rondo 4x2 (meu)" or "ex_meu" not in ex: errs.append("mexeu nos existentes")
     pg.click('nav [data-t="treinos"]'); pg.click('[data-a="tsub"][data-k="ex"]'); pg.wait_for_timeout(800)
     nv=pg.eval_on_selector_all(".exthumb img","e=>e.filter(x=>x.src.startsWith('data:image/svg')).length"); print("desenhos vetoriais:", nv)
-    if nv!=129: errs.append("desenhos")
+    if nv!=sum(1 for k in seed["exercises"] if k.startswith("exi")): errs.append("desenhos")
     # apagar um exercício da biblioteca não o faz voltar
     d["exercises"].pop("exi005"); pg.evaluate(f"localStorage.setItem('{LSK}',JSON.stringify({json.dumps(d)}))")
     pg.reload(); pg.wait_for_timeout(1200)

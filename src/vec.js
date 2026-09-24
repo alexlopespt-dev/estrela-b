@@ -79,6 +79,8 @@ function vecItem(it,uid){
     case "x": { const s=it.s||4.5, c=it.c||"#d9262c";
       return `<g stroke-linecap="round"><path d="M${vn(it.x-s)} ${vn(it.y-s)}L${vn(it.x+s)} ${vn(it.y+s)}M${vn(it.x+s)} ${vn(it.y-s)}L${vn(it.x-s)} ${vn(it.y+s)}" stroke="#1c1c1c" stroke-width="${vn(s*0.85)}"/><path d="M${vn(it.x-s)} ${vn(it.y-s)}L${vn(it.x+s)} ${vn(it.y+s)}M${vn(it.x+s)} ${vn(it.y-s)}L${vn(it.x-s)} ${vn(it.y+s)}" stroke="${c}" stroke-width="${vn(s*0.42)}"/></g>`; }
     case "fig": return vecFig(it);
+    case "bib": { const r=it.r||5.7;   // coletes: disco preto com o colete (cinzento) ao centro
+      return `<g><circle cx="${x}" cy="${y}" r="${vn(r)}" fill="#0e0e0e" stroke="#000" stroke-width="${vn(r*0.12)}"/><rect x="${vn(it.x-r*0.3)}" y="${vn(it.y-r*0.45)}" width="${vn(r*0.6)}" height="${vn(r*0.9)}" rx="${vn(r*0.12)}" fill="#4a4a4a"/><path d="M${vn(it.x-r*0.2)} ${vn(it.y-r*0.28)}H${vn(it.x+r*0.2)}M${x} ${vn(it.y-r*0.28)}V${vn(it.y+r*0.32)}" stroke="#c8c8c8" stroke-width="${vn(r*0.09)}"/></g>`; }
     case "goal": return vecNet(it.x-it.w/2,it.y-it.h/2,it.w,it.h,uid,it.a);
     case "pole": { const h=it.h||12, c=it.c||"#e8742a";
       return `<g><ellipse cx="${x}" cy="${y}" rx="2.4" ry="1.2" fill="#000" fill-opacity=".3"/><rect x="${vn(it.x-1.1)}" y="${vn(it.y-h)}" width="2.2" height="${h}" rx="1" fill="${c}" stroke="#3a1a00" stroke-width=".4"/></g>`; }
@@ -119,7 +121,7 @@ function vecItem(it,uid){
 let VEC_UID=0, VEC_MK=0;
 function vecSVG(d,opts={}){
   const uid=(++VEC_UID).toString(36), w=d.w||440, h=d.h||302;
-  const order={rect:0,ln:1,goal:2,ladder:2,hurdle:2,stake:4,pen:4,dome:4,stick:4,mk:3,cone:3,pole:4,flag:4,ball:5,balls:5,sq:6,tri:6,x:6,fig:7,d:8,txt:9};
+  const order={bib:7,rect:0,ln:1,goal:2,ladder:2,hurdle:2,stake:4,pen:4,dome:4,stick:4,mk:3,cone:3,pole:4,flag:4,ball:5,balls:5,sq:6,tri:6,x:6,fig:7,d:8,txt:9};
   const its=(d.it||[]).map((it,i)=>({it,i})).sort((a,b)=>((order[a.it.t]??5)-(order[b.it.t]??5))||((a.it.z||0)-(b.it.z||0))||(a.i-b.i));
   return `<svg viewBox="0 0 ${w} ${h}"${opts.img?` width="${w}" height="${h}"`:""} style="width:100%;height:auto;display:block;border-radius:${opts.r??10}px" role="img" aria-label="Desenho do exercício" xmlns="http://www.w3.org/2000/svg">${vecDefs(uid)}${d.fld?vecField(d.fld,w,h,uid):`<rect width="${w}" height="${h}" fill="${d.bgc||VEC_GRASS[0]}"/>`}${its.map(({it})=>vecItem(it,uid)).join("")}</svg>`;
 }

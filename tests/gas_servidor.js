@@ -8,31 +8,37 @@ const PORT = +process.argv[2] || 8765;
 const GS = process.argv[3] || path.join(__dirname, "..", "tools", "apps-script", "monitorizacao_completo.gs");
 
 let nextId = 1; const uid = p => p + (nextId++);
-function Sheet(name){ this.name=name; this.cells=[]; this.fmt={}; }
+const chain = o => new Proxy(o,{ get:(t,k)=> k in t ? t[k] : (typeof k==="string" ? function(){ return chain(t); } : undefined) });
+function a1(ref){ const m=/^([A-Z]+)(\d+)$/.exec(ref); if(!m) return null; let c=0; for(const ch of m[1]) c=c*26+ch.charCodeAt(0)-64; return [+m[2],c]; }
+function Sheet(name){ this.name=name; this.cells=[]; this.fmt={}; return chain(this); }
 Sheet.prototype = {
   setName(n){ this.name=n; return this; }, getName(){ return this.name; },
-  setFrozenRows(){ return this; },
+  setFrozenRows(){ return this; }, deleteRow(r){ this.cells.splice(r-1,1); return this; },
   getLastRow(){ let n=this.cells.length; while(n>0 && !(this.cells[n-1]||[]).some(v=>v!==""&&v!=null)) n--; return n; },
   getRange(a,b,c,d){
-    if(typeof a==="string"){ const self=this; return { setNumberFormat(){ return this; }, setFontWeight(){ return this; } }; }
+    if(typeof a==="string"){ const rc=a1(a); if(!rc) return chain({}); return this.getRange(rc[0],rc[1]); }
     const r=a, col=b, nr=c||1, nc=d||1, sh=this;
-    return {
+    const rg = {
       getValues(){ const out=[]; for(let i=0;i<nr;i++){ const row=[]; for(let j=0;j<nc;j++){ const v=(sh.cells[r-1+i]||[])[col-1+j]; row.push(v===undefined?"":v); } out.push(row); } return out; },
       setValues(vals){ if(vals.length!==nr||vals.some(x=>x.length!==nc)) throw new Error("The number of rows/columns in the data does not match the range");
         vals.forEach((row,i)=>{ const k=r-1+i; sh.cells[k]=sh.cells[k]||[]; row.forEach((v,j)=>{ if(typeof v==="string"&&v.length>50000) throw new Error("Your input contains more than the maximum of 50000 characters in a single cell."); sh.cells[k][col-1+j]=v; }); }); return this; },
-      setFontWeight(){ return this; }, setNumberFormat(){ return this; }
+      getValue(){ return this.getValues()[0][0]; },
+      setValue(v){ return this.setValues([[v]]); }
     };
+    return chain(rg);
   }
 };
-function SS(name){ this.id=uid("ss"); this.name=name; this.sheets=[new Sheet("Folha1")]; }
+function SS(name,id){ this.id=id||uid("ss"); this.name=name; this.sheets=[new Sheet("Folha1")]; }
 SS.prototype = { getId(){ return this.id; }, getUrl(){ return "https://docs.google.com/spreadsheets/d/"+this.id; }, getSheets(){ return this.sheets; },
   getSheetByName(n){ return this.sheets.find(s=>s.name===n)||null; }, insertSheet(n){ const s=new Sheet(n); this.sheets.push(s); return s; }, toast(){} };
 const SSS = {};
-const props = {}, cache = {}, files = [];
+const props = {}, cache = {}, files = [], triggers = [];
 const ctx = {
   console, JSON, Math, Date, String, Number, Object, Array, RegExp, isNaN, parseInt, parseFloat, Error,
   Logger: { log(){ } },
-  SpreadsheetApp: { create(n){ const s=new SS(n); SSS[s.id]=s; return s; }, openById(id){ if(!SSS[id]) throw new Error("não existe"); return SSS[id]; },
+  SpreadsheetApp: { create(n){ const s=new SS(n); SSS[s.id]=s; return s; },
+    openById(id){ if(!SSS[id]){ if(/^ss\d+$/.test(id)) throw new Error("não existe"); SSS[id]=new SS("destino",id); } return SSS[id]; },   // ficheiros "verdadeiros" (ID_DESTINO) existem sempre
+    getActiveSpreadsheet(){ return null; }, newDataValidation(){ return chain({ build(){ return {}; } }); },
     flush(){}, getUi(){ throw new Error("sem UI"); } },
   DriveApp: { Access:{ANYONE_WITH_LINK:"A"}, Permission:{VIEW:"V"},
     createFolder(n){ const f={id:uid("fold"), name:n, getId(){ return this.id; }, getUrl(){ return "https://drive.google.com/drive/folders/"+this.id; },
@@ -48,7 +54,8 @@ const ctx = {
     createTextOutput(s){ return { s, m:"text/plain", setMimeType(m){ this.m=m; return this; } }; } },
   Utilities: { base64Decode(s){ return Array.from(Buffer.from(s,"base64")); }, newBlob(bytes,type,name){ return {bytes,type,name}; },
     formatDate(d){ return new Date(d).toISOString().replace(/[-:T]/g,"").slice(0,15); } },
-  ScriptApp: {}, MailApp: {}, Session: { getScriptTimeZone(){ return "Europe/Lisbon"; } }
+  ScriptApp: { getProjectTriggers(){ return triggers.slice(); }, deleteTrigger(t){ const i=triggers.indexOf(t); if(i>=0) triggers.splice(i,1); },
+    newTrigger(fn){ const t={fn, getHandlerFunction(){ return fn; }}; return chain({ create(){ triggers.push(t); return t; } }); } }, MailApp: {}, Session: { getScriptTimeZone(){ return "Europe/Lisbon"; } }
 };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(GS,"utf8"), ctx, {filename: path.basename(GS)});
@@ -58,7 +65,17 @@ http.createServer((req,res)=>{
   const send = (out,code=200) => { res.writeHead(code, {"Content-Type": out.m, "Access-Control-Allow-Origin":"*"}); res.end(out.s); };
   if(u.pathname==="/__estado"){
     const id=props.dados_id, ss=id&&SSS[id], sh=ss&&ss.getSheetByName("docs");
-    return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props})});
+    const dest=SSS[ctx.ID_DESTINO], les=dest&&dest.getSheetByName("· Lesões");
+    return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props,
+      lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn)})});
+  }
+  if(u.pathname==="/__prep"){   // prepara o resumo da monitorização e linhas escritas à mão no separador Lesões
+    let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ const p=JSON.parse(body||"{}");
+      if(p.nomes){ const t=JSON.stringify({jogadores:p.nomes.map(nome=>({nome}))}); props.app_n="1"; props.app_0=t; }
+      if(p.manual){ const f=ctx.destino_(); let sh=f.getSheetByName("· Lesões"); if(!sh){ ctx.lerLesoes_(f,new Date()); sh=f.getSheetByName("· Lesões"); }
+        p.manual.forEach(r=>sh.getRange(sh.getLastRow()+1,1,1,5).setValues([r])); }
+      send({m:"application/json",s:"{}"}); });
+    return;
   }
   if(req.method==="POST"){
     let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ try{ send(ctx.doPost({postData:{contents:body}})); }catch(e){ send({m:"text/plain",s:"ERRO "+e.message},500); } });

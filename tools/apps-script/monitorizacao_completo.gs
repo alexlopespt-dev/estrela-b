@@ -100,6 +100,7 @@ function onOpen() {
     .addItem('Reconstruir fichas de jogador', 'recriarFichas')
     .addSeparator()
     .addItem('Preparar dados partilhados da app', 'prepararDadosApp')
+    .addItem('Copiar lesões da app para o separador Lesões', 'copiarLesoesDaApp')
     .addSeparator()
     .addItem('Diagnóstico — de onde estou a ler?', 'diagnostico')
     .addItem('Limpar painéis dos ficheiros de origem', 'limparOrigens')
@@ -2145,8 +2146,13 @@ function dadosPush_(ops) {
     SpreadsheetApp.flush();
     props.setProperty('dados_t', String(t));
     CacheService.getScriptCache().put('dados_ver', String(t), 21600);
-    return { ok: true, t: t, erros: erros };
+    var res = { ok: true, t: t, erros: erros };
   } finally { lock.releaseLock(); }
+  var mexeu = ops.some(function (o) { return o && (o.c === 'injuries' || o.c === 'players' || o.c === 'meta'); });
+  if (mexeu) {
+    try { espelharLesoes_(); agendarAtualizacao_(); } catch (e) { Logger.log('Lesões da app: ' + e); }
+  }
+  return res;
 }
 
 /** Foto enviada pela app (base64) -> ficheiro no Drive, visível por quem tiver o link. */
@@ -2171,4 +2177,123 @@ function doPost(e) {
     else out = { erro: 'pedido desconhecido' };
   } catch (err) { out = { erro: String(err && err.message || err) }; }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============================================================ 12. LESÕES DA APP -> SEPARADOR "· Lesões"
+/*
+ * Cada lesão registada no Clínico da app aparece numa linha do separador "· Lesões" (é daí que a
+ * monitorização lê quem está lesionado/condicionado). As linhas da app têm na coluna F o id "app:…"
+ * e são atualizadas ou apagadas pela app; as linhas escritas à mão (coluna F vazia) nunca são tocadas.
+ * Estados: Em tratamento -> Lesionado · Condicionado -> Condicionado · Alta -> linha fica com a data de fim.
+ * O nome é o da folha de monitorização (as mesmas ligações que a app usa: à mão, igual, ou abreviatura).
+ * Depois de copiar, a monitorização recalcula sozinha ~1 minuto depois.
+ */
+function copiarLesoesDaApp() {
+  var n = espelharLesoes_();
+  try { SpreadsheetApp.getUi().alert('Lesões da app', n + ' lesão(ões) da app no separador ' + PREFIXO + 'Lesões.', SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
+}
+
+function dadosTodos_(cols) {
+  var f = dadosFolha_(), n = f.getLastRow() - 1, out = {};
+  cols.forEach(function (c) { out[c] = {}; });
+  if (n <= 0) return out;
+  f.getRange(2, 1, n, 5).getValues().forEach(function (r) {
+    var c = String(r[0]);
+    if (!(c in out) || r[4] || !r[2]) return;
+    try { out[c][String(r[1])] = JSON.parse(r[2]); } catch (e) {}
+  });
+  return out;
+}
+
+function chaveApp_(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** nome na folha -> id do atleta na app (a mesma regra da app: à mão, depois igual, depois abreviatura). */
+function ligacoesNomes_(nomes, players, manual) {
+  var map = {}, usados = {}, ids = Object.keys(players);
+  nomes.forEach(function (n) {
+    if (manual[n] !== undefined) { if (manual[n] && players[manual[n]]) { map[n] = manual[n]; usados[manual[n]] = 1; } else map[n] = null; }
+  });
+  nomes.forEach(function (n) {
+    if (n in map) return;
+    var p = ids.filter(function (id) { return !usados[id] && chaveApp_(players[id].name) === chaveApp_(n); })[0];
+    if (p) { map[n] = p; usados[p] = 1; }
+  });
+  var tok = function (s) { return chaveApp_(s).split(' ').filter(function (x) { return x; }); };
+  var cabe = function (app, folha) {
+    var a = tok(app), f = tok(folha);
+    return a.length && a.every(function (t) { return f.some(function (x) { return x === t || (t.length === 1 && x.indexOf(t) === 0); }); });
+  };
+  nomes.forEach(function (n) {
+    if (n in map) return;
+    var c = ids.filter(function (id) { return !usados[id] && cabe(players[id].name, n); });
+    if (c.length === 1) { map[n] = c[0]; usados[c[0]] = 1; }
+  });
+  return map;
+}
+
+function nomesMonitorizacao_() {
+  var props = PropertiesService.getScriptProperties(), n = parseInt(props.getProperty('app_n') || '0', 10), t = '';
+  for (var i = 0; i < n; i++) t += props.getProperty('app_' + i) || '';
+  try { return (JSON.parse(t).jogadores || []).map(function (j) { return j.nome; }); } catch (e) { return []; }
+}
+
+function dataApp_(iso) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : '';
+}
+
+/** Copia as lesões da app para o separador "· Lesões". Devolve quantas há. */
+function espelharLesoes_() {
+  var reg = dadosTodos_(['injuries', 'players', 'meta']);
+  var inj = reg.injuries, pl = reg.players, cfg = reg.meta.cfg || {};
+  var manual = (cfg.mon && cfg.mon.map) || {};
+  var map = ligacoesNomes_(nomesMonitorizacao_(), pl, manual), nomeDe = {};
+  Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; });
+  var ss = destino_(), nome = PREFIXO + 'Lesões', f = ss.getSheetByName(nome);
+  if (!f) { lerLesoes_(ss, dia_(new Date())); f = ss.getSheetByName(nome); }
+  if (!String(f.getRange(4, 6).getValue() || '')) {
+    f.getRange(4, 6).setValue('Da app (não mexer)').setFontColor('#999999').setFontSize(8);
+  }
+  var ult = f.getLastRow(), linhas = ult >= 5 ? f.getRange(5, 1, ult - 4, 6).getValues() : [], pos = {};
+  linhas.forEach(function (l, j) { var t = String(l[5] || ''); if (t.indexOf('app:') === 0) pos[t.slice(4)] = j; });
+  var novas = [], total = 0;
+  Object.keys(inj).forEach(function (id) {
+    var x = inj[id];
+    if (!x || !x.pid) return;
+    total++;
+    var p = pl[x.pid] || {};
+    var estado = x.status === 'condicionado' ? 'Condicionado' : 'Lesionado';
+    var fim = x.status === 'alta' ? dataApp_(x.ret || x.date) : '';
+    var zona = [x.type, x.zone, x.side && x.side !== '—' ? x.side : ''].filter(function (v) { return v; }).join(' · ');
+    var notas = [x.diag, zona, x.status !== 'alta' && x.exp ? 'regresso previsto ' + x.exp : '']
+      .filter(function (v) { return v; }).join(' — ');
+    var linha = [nomeDe[x.pid] || p.name || x.pid, estado, dataApp_(x.date), fim, notas, 'app:' + id];
+    if (id in pos) {
+      var velha = linhas[pos[id]], igual = true;
+      for (var k = 0; k < 6; k++) {
+        var a = velha[k] instanceof Date ? velha[k].getTime() : String(velha[k]);
+        var b = linha[k] instanceof Date ? linha[k].getTime() : String(linha[k]);
+        if (a !== b) { igual = false; break; }
+      }
+      if (!igual) f.getRange(5 + pos[id], 1, 1, 6).setValues([linha]);
+    } else novas.push(linha);
+  });
+  // lesões apagadas na app: sai a linha (de baixo para cima, para não baralhar as posições)
+  Object.keys(pos).filter(function (id) { return !inj[id]; }).map(function (id) { return pos[id]; })
+    .sort(function (a, b) { return b - a; }).forEach(function (j) { f.deleteRow(5 + j); });
+  if (novas.length) f.getRange(f.getLastRow() + 1, 1, novas.length, 6).setValues(novas);
+  return total;
+}
+
+/** Recalcula a monitorização ~1 minuto depois de a app mexer nas lesões (um só agendamento de cada vez). */
+function agendarAtualizacao_() {
+  var ja = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'atualizarDaApp'; });
+  if (!ja) ScriptApp.newTrigger('atualizarDaApp').timeBased().after(60 * 1000).create();
+}
+function atualizarDaApp() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'atualizarDaApp') ScriptApp.deleteTrigger(t); });
+  atualizar();
 }

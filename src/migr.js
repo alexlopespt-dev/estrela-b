@@ -12,6 +12,8 @@ const CAL_2627 = [
   [23,"2027-04-04","16:00","C","Malveira da Serra"],[25,"2027-04-18","16:00","C","Porto Salvo"],[26,"2027-04-25","16:00","F","Assoc. Torre"]
 ];
 const slug = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// exercícios novos enviados pela equipa (desenho vetorial e imagem original em EXVEC/EXIMG com a mesma chave)
+const EX_2609={"exi130": {"name": "Meinhos", "cat": "Aquecimento", "obj": "MPB", "desc": "Objetivo é manutenção da posse de bola para quem a tem; para quem está em recuperação o objetivo é roubar/tocar na bola o mais rápido possível, e reagir logo para entregar o colete a outros dois colegas de equipa para fazerem o mesmo.", "cp": "", "dur": 10, "players": "20", "space": "1/2 campo de 7", "mat": "Bolas, coletes", "pr": [], "imgk": "exi130"}, "exi131": {"name": "Lançamento + Variação", "cat": "Tático", "obj": "Trabalhar a saída curta e apoiada a partir de lançamentos laterais, criando continuidade de jogo.\n\nEstimular a variação rápida de corredor após reposição lateral, para surpreender a organização defensiva.\n\nDesenvolver a coordenação e sincronização entre lateral, extremo, ponta de lança e médios centro em contexto ofensivo.\n\nPromover a utilização de apoios próximos (quadrado do lançador) e ao mesmo tempo a procura de mudança rápida de lado.", "desc": "Organização:\n\nAtacantes (5): lateral (lançador), extremo do lado do lançamento, ponta de lança e 2 médios centros.\n\nDefesas (4): organizados para condicionar a variação e proteger a baliza.\n\nUm quadrado delimitado à frente do lançador, que só pode ser ocupado pelo jogador que lançou a bola, para recebê-la de primeira após devolução do colega de equipa.\n\nDinâmica:\n\nO exercício começa sempre com um lançamento lateral feito pelo lateral.\n\nO lateral pode jogar curto, mas a regra é que apenas um jogador pode entrar no quadrado para devolver-lhe de imediato a bola.\n\nA partir daí, o objetivo é variar rapidamente o jogo para o lado contrário e atacar a baliza adversária.\n\nSituação é jogada em 5x4 até à finalização.", "cp": "", "dur": 10, "players": "20", "space": "1/2 campo de 11 (Sul)", "mat": "2 balizas, bolas", "pr": [], "imgk": "exi131"}, "exi132": {"name": "Vagas 3x2 (Ancelotti)", "cat": "Tático", "obj": "Vagas em velocidade.\nAtaque a zonas de finalização.\nTransição OF", "desc": "Bola reposta pelo Guarda Redes no espaço.\nAtaque 3v2 nos dois sentidos.\n\n2 Tempos de 7 minutos. No fim do primeiro tempo troca-se as funções (Ataque/Defesa).", "cp": "", "dur": 15, "players": "17", "space": "1/2 campo de 11", "mat": "2 balizas, bolas, sinalizadores", "pr": [], "imgk": "exi132"}};
 const MIGR = [
   {id:"cal2627", run(){
     const comp=meta().comp||"III Distrital", same=(a,b)=>String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase();
@@ -45,6 +47,10 @@ const MIGR = [
   ,{id:"staffdup1", run(){
     // a partilha juntou o staff dos dados iniciais com o criado à mão noutro dispositivo: remove os repetidos
     const n=dedupeStaff(); return n ? `${n} elemento(s) do staff repetido(s) juntado(s)` : "";
+  }}
+  ,{id:"ex2609", run(){
+    let n=0; Object.entries(EX_2609).forEach(([id,x])=>{ if(!D.exercises[id]){ put("exercises",id,clone(x)); n++; } });
+    return n ? `${n} exercícios novos na biblioteca` : "";
   }}
   ,{id:"exlib129", run(){
     // Browsers com dados de antes da importação só tinham os 9 exercícios de exemplo: junta os que faltam dos dados iniciais
