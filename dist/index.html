@@ -3213,8 +3213,9 @@ async function monFetch(manual){
   const ctl=typeof AbortController!=="undefined"?new AbortController():null, tm=setTimeout(()=>ctl&&ctl.abort(),25000);
   try{
     const u=c.url.trim()+(c.url.includes("?")?"&":"?")+"k="+encodeURIComponent(c.key||"");
-    const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status);
-    const d=await r.json();
+    let d;
+    try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
+    catch(e){ if(e&&e.name==="AbortError") throw e; d=await monJsonp(u); }   // leitura direta bloqueada pelo browser: tenta por <script>
     if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
     if(!Array.isArray(d.jogadores)) throw new Error("A resposta não tem jogadores.");
     MON.data=d; MON.at=new Date().toISOString();
@@ -3224,6 +3225,19 @@ async function monFetch(manual){
     MON.err = e&&e.name==="AbortError" ? "O Google demorou demasiado a responder." : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Não foi possível ligar ao Google Sheets. Se tens um bloqueador de anúncios (AdBlock, uBlock…), desliga-o para este site; senão confirma a rede e o endereço.");
     if(manual) toast(MON.err);
   }finally{ clearTimeout(tm); MON.loading=false; VER++; schedule(); }
+}
+// Segundo caminho (JSONP): o Apps Script devolve cb(dados) quando recebe ?cb=; não depende de CORS.
+function monJsonp(u){
+  return new Promise((res,rej)=>{
+    const cb="__estrelaMon"+Date.now().toString(36), s=document.createElement("script");
+    const fail=()=>{ end(); rej(new Error("O browser bloqueou a ligação ao Google (confirma extensões como AdBlock/uBlock) ou o script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).")); };
+    const end=()=>{ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } s.remove(); clearTimeout(t); };
+    const t=setTimeout(()=>{ end(); rej(new Error("O Google demorou demasiado a responder.")); },20000);
+    window[cb]=d=>{ end(); res(d); };
+    s.onerror=fail;
+    s.onload=()=>{ if(window[cb]) fail(); };   // carregou mas não chamou cb: script antigo (devolve só JSON)
+    s.src=u+"&cb="+cb; document.head.appendChild(s);
+  });
 }
 function monAuto(){ const c=monCfg(); if(!c.url) return; if(MON.at && Date.now()-new Date(MON.at).getTime()<10*60*1000) return; monFetch(false); }
 

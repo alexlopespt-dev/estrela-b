@@ -74,5 +74,10 @@ function doGet(e) {
     for (var i = 0; i < n; i++) partes.push(props.getProperty('app_' + i) || '');
     body = n ? partes.join('') : JSON.stringify({ erro: 'sem dados — corre "Atualizar agora" no menu ⚽ Monitorização' });
   }
+  // ?cb=nome: resposta em JavaScript (JSONP), para browsers que bloqueiam a leitura direta
+  var cb = e && e.parameter ? String(e.parameter.cb || '') : '';
+  if (/^[A-Za-z_][A-Za-z0-9_]{0,40}$/.test(cb)) {
+    return ContentService.createTextOutput(cb + '(' + body + ');').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
 }
