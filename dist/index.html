@@ -411,6 +411,10 @@ dialog.wide{width:min(980px,calc(100vw - 20px))}
 .mleg b{font-family:var(--fc);font-size:13px}
 .mleg .num{text-align:right;font-weight:700;min-width:42px} .mleg .mut{color:var(--muted);text-align:right;min-width:30px}
 .mleg .zero{opacity:.55}
+.mbtns{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.mbtns button{display:inline-flex;align-items:center;gap:1px;min-height:30px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);font:700 12px var(--fb);color:var(--muted)}
+.mbtns button.on{color:var(--text);border-color:var(--grena);background:color-mix(in srgb,var(--grena) 16%,var(--surface-2))}
+.mbtns button:not(.on) .mdot{opacity:.45}
 .momchk{display:flex;flex-wrap:wrap;gap:6px}
 .momchk label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-size:13px;font-weight:600;cursor:pointer;background:var(--surface-2)}
 .momchk input{width:16px;height:16px;accent-color:var(--grena);margin:0}
@@ -541,6 +545,7 @@ const MOMENTS = [
 ];
 // momentos de um exercício escolhidos à mão (campo mom), por ordem
 const exMoms = x => (x&&Array.isArray(x.mom)?x.mom:[]).map(MOMK).filter(k=>MOMENTS.some(m=>m.k===k));
+const blockMoms = x => Array.isArray(x&&x.mom) ? exMoms(x) : exMoms(x&&x.ex?D.exercises[x.ex]:null);
 const MOM_LEGACY = {bp:"fbp",bpo:"fbp",bpd:"fbp",rep:"fbp",gr:"fbp",tad:"trd",tda:"tro"};
 const MOMK = k => MOM_LEGACY[k] || k;
 const PERIODS = ["Preparatório","Competitivo","Transitório"];
@@ -776,7 +781,7 @@ function modelTime(from,to){
       const ps=blockPrinciples(x);
       const moms=new Set();
       ps.forEach(id=>{ byP[id]=(byP[id]||0)+m; moms.add(MOMK(D.principles[id].moment)); });
-      if(!moms.size){ const ex=x.ex?D.exercises[x.ex]:null; exMoms(ex).forEach(k=>moms.add(k)); }   // momento escolhido no exercício
+      if(!moms.size) blockMoms(x).forEach(k=>moms.add(k));   // momento escolhido no treino (ou, se não, no exercício)
       if(moms.size) linked+=m;
       const share = moms.size ? m/moms.size : 0;
       moms.forEach(k=>byM[k]=(byM[k]||0)+share); });
@@ -1159,7 +1164,8 @@ function pTreino(id){
     </div></section>
     <section class="card"><div class="card-h"><h3>Plano da sessão</h3><span class="sub">${totalMin}' planeados${e.dur?" de "+esc(e.dur)+"'":""}</span></div>
       <div>${plan.length?plan.map((x,i)=>{ const ex=x.ex?D.exercises[x.ex]:null;
-        return `<div class="plan"><span class="o">${i+1}</span><div style="min-width:0"><input class="inp" value="${esc(x.name||(ex&&ex.name)||"")}" data-c="plan" data-id="${esc(id)}" data-i="${i}" data-f="name" aria-label="Nome do bloco">${ex?`<button class="lnk small muted" data-a="exView" data-id="${esc(x.ex)}">${esc(ex.cat||"")} — ver exercício</button>`:""}${prs.length?prSelect(x,ex,id,i):""}</div>
+        return `<div class="plan"><span class="o">${i+1}</span><div style="min-width:0"><input class="inp" value="${esc(x.name||(ex&&ex.name)||"")}" data-c="plan" data-id="${esc(id)}" data-i="${i}" data-f="name" aria-label="Nome do bloco">${ex?`<button class="lnk small muted" data-a="exView" data-id="${esc(x.ex)}">${esc(ex.cat||"")} — ver exercício</button>`:""}${prs.length?prSelect(x,ex,id,i):""}
+          <div class="mbtns" role="group" aria-label="Momento trabalhado">${MOMENTS.map(m=>{ const on=blockMoms(x).includes(m.k); return `<button class="${on?"on":""}" data-a="planMom" data-id="${esc(id)}" data-i="${i}" data-k="${m.k}" title="${esc(m.l)}" aria-pressed="${on}"><i class="mdot" style="background:var(--m-${m.k})"></i>${m.ab}</button>`; }).join("")}</div></div>
           <input class="inp" inputmode="numeric" value="${esc(x.min??"")}" data-c="plan" data-id="${esc(id)}" data-i="${i}" data-f="min" aria-label="Minutos" placeholder="min">
           <span class="acts"><button class="btn sm" data-a="planMove" data-id="${esc(id)}" data-i="${i}" data-n="-1" ${i===0?"disabled":""} aria-label="Subir">↑</button><button class="btn sm" data-a="planMove" data-id="${esc(id)}" data-i="${i}" data-n="1" ${i===plan.length-1?"disabled":""} aria-label="Descer">↓</button><button class="btn sm" data-a="planDel" data-id="${esc(id)}" data-i="${i}" aria-label="Remover">✕</button></span></div>`; }).join(""):`<div class="empty"><b>Plano vazio</b>Adiciona exercícios da biblioteca ou blocos livres.</div>`}</div>
       <div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)">
@@ -3009,6 +3015,11 @@ const A = {
     players().forEach(p=>{ if(!tr.att[p.id]||!tr.att[p.id].s){ tr.att[p.id]={s:avail(p.id)==="les"?"L":"P"}; n++; } });
     put("events",id,tr); toast(n?`${n} atletas marcados`:"Todos já tinham presença marcada"); },
   planMove: el => { const id=el.dataset.id, i=+el.dataset.i, n=+el.dataset.n; const tr=clone(D.events[id]); const p=tr.plan||[]; const j=i+n; if(j<0||j>=p.length) return; [p[i],p[j]]=[p[j],p[i]]; put("events",id,tr); },
+  planMom: el => { const id=el.dataset.id, i=+el.dataset.i, k=el.dataset.k; const tr=clone(D.events[id]); const x=(tr.plan||[])[i]; if(!x) return;
+    const cur=blockMoms(x), nx=cur.includes(k)?cur.filter(v=>v!==k):cur.concat(k);
+    x.mom=MOMENTS.map(m=>m.k).filter(v=>nx.includes(v)); put("events",id,tr);
+    // o exercício sem momento fica com este, para a próxima vez que for usado
+    const ex=x.ex&&D.exercises[x.ex]; if(ex&&!exMoms(ex).length&&x.mom.length) put("exercises",x.ex,{...clone(ex),mom:x.mom.slice()}); },
   planDel: el => { const id=el.dataset.id; const tr=clone(D.events[id]); (tr.plan||[]).splice(+el.dataset.i,1); put("events",id,tr); },
   planFree: el => { const id=el.dataset.id; const tr=clone(D.events[id]); tr.plan=tr.plan||[]; tr.plan.push({ex:null,name:"Novo bloco",min:10}); put("events",id,tr); },
   jComp: el => { S.jComp=el.dataset.k; render(); },

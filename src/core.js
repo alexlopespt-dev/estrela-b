@@ -48,6 +48,7 @@ const MOMENTS = [
 ];
 // momentos de um exercício escolhidos à mão (campo mom), por ordem
 const exMoms = x => (x&&Array.isArray(x.mom)?x.mom:[]).map(MOMK).filter(k=>MOMENTS.some(m=>m.k===k));
+const blockMoms = x => Array.isArray(x&&x.mom) ? exMoms(x) : exMoms(x&&x.ex?D.exercises[x.ex]:null);
 const MOM_LEGACY = {bp:"fbp",bpo:"fbp",bpd:"fbp",rep:"fbp",gr:"fbp",tad:"trd",tda:"tro"};
 const MOMK = k => MOM_LEGACY[k] || k;
 const PERIODS = ["Preparatório","Competitivo","Transitório"];
@@ -283,7 +284,7 @@ function modelTime(from,to){
       const ps=blockPrinciples(x);
       const moms=new Set();
       ps.forEach(id=>{ byP[id]=(byP[id]||0)+m; moms.add(MOMK(D.principles[id].moment)); });
-      if(!moms.size){ const ex=x.ex?D.exercises[x.ex]:null; exMoms(ex).forEach(k=>moms.add(k)); }   // momento escolhido no exercício
+      if(!moms.size) blockMoms(x).forEach(k=>moms.add(k));   // momento escolhido no treino (ou, se não, no exercício)
       if(moms.size) linked+=m;
       const share = moms.size ? m/moms.size : 0;
       moms.forEach(k=>byM[k]=(byM[k]||0)+share); });

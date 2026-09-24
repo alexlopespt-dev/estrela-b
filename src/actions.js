@@ -621,6 +621,11 @@ const A = {
     players().forEach(p=>{ if(!tr.att[p.id]||!tr.att[p.id].s){ tr.att[p.id]={s:avail(p.id)==="les"?"L":"P"}; n++; } });
     put("events",id,tr); toast(n?`${n} atletas marcados`:"Todos já tinham presença marcada"); },
   planMove: el => { const id=el.dataset.id, i=+el.dataset.i, n=+el.dataset.n; const tr=clone(D.events[id]); const p=tr.plan||[]; const j=i+n; if(j<0||j>=p.length) return; [p[i],p[j]]=[p[j],p[i]]; put("events",id,tr); },
+  planMom: el => { const id=el.dataset.id, i=+el.dataset.i, k=el.dataset.k; const tr=clone(D.events[id]); const x=(tr.plan||[])[i]; if(!x) return;
+    const cur=blockMoms(x), nx=cur.includes(k)?cur.filter(v=>v!==k):cur.concat(k);
+    x.mom=MOMENTS.map(m=>m.k).filter(v=>nx.includes(v)); put("events",id,tr);
+    // o exercício sem momento fica com este, para a próxima vez que for usado
+    const ex=x.ex&&D.exercises[x.ex]; if(ex&&!exMoms(ex).length&&x.mom.length) put("exercises",x.ex,{...clone(ex),mom:x.mom.slice()}); },
   planDel: el => { const id=el.dataset.id; const tr=clone(D.events[id]); (tr.plan||[]).splice(+el.dataset.i,1); put("events",id,tr); },
   planFree: el => { const id=el.dataset.id; const tr=clone(D.events[id]); tr.plan=tr.plan||[]; tr.plan.push({ex:null,name:"Novo bloco",min:10}); put("events",id,tr); },
   jComp: el => { S.jComp=el.dataset.k; render(); },
