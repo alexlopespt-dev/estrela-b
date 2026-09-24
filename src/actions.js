@@ -726,6 +726,7 @@ const A = {
   exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; delete x.imgG; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
   syncCfg: () => syncForm(),
+  syncPing: () => syncPing(),
   theme: () => { const i=THEMES.findIndex(t=>t[0]===THEME); THEME=THEMES[(i+1)%THEMES.length][0]; try{ localStorage.setItem(LS+":theme",THEME); }catch(e){} applyTheme(); toast(THEMES.find(t=>t[0]===THEME)[1]); },
   exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;

@@ -3070,6 +3070,7 @@ const A = {
   exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; delete x.imgG; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
   syncCfg: () => syncForm(),
+  syncPing: () => syncPing(),
   theme: () => { const i=THEMES.findIndex(t=>t[0]===THEME); THEME=THEMES[(i+1)%THEMES.length][0]; try{ localStorage.setItem(LS+":theme",THEME); }catch(e){} applyTheme(); toast(THEMES.find(t=>t[0]===THEME)[1]); },
   exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
@@ -3425,7 +3426,7 @@ function monCfgForm(){
 // - enquanto há alteração local por enviar para um registo, a versão do servidor desse registo é ignorada.
 // A ligação (URL, chave, última versão) fica só neste browser: não vai nos dados partilhados.
 const SYNC_LS=LS+":sync", SYNCQ_LS=LS+":syncq", SYNC_MS=15000;
-const SYNC={cfg:null,last:0,q:{},err:"",at:null,pulling:false,pushing:false,busy:""};
+const SYNC={cfg:null,last:0,q:{},err:"",at:null,pulling:false,pushing:false,busy:"",diag:{}};   // diag: tempos para o diagnóstico
 try{ const c=JSON.parse(localStorage.getItem(SYNC_LS)||"null"); if(c&&c.url&&c.key){ SYNC.cfg={url:c.url,key:c.key}; SYNC.last=+c.last||0; } }catch(e){}
 try{ const q=JSON.parse(localStorage.getItem(SYNCQ_LS)||"null"); if(q&&typeof q==="object") SYNC.q=q; }catch(e){}
 const syncOn = () => !!(SYNC.cfg && MODE==="local");
@@ -3452,7 +3453,7 @@ async function syncGet(params){
   try{
     let d;
     try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined,cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
-    catch(e){ if(e&&e.name==="AbortError") throw e; d=await monJsonp(u); }
+    catch(e){ if(e&&e.name==="AbortError") throw e; SYNC.diag.jsonp=(SYNC.diag.jsonp||0)+1; SYNC.diag.fetchErr=String(e&&e.message||e); d=await monJsonp(u); }
     if(d&&d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
     return d;
   }finally{ clearTimeout(tm); }
@@ -3484,7 +3485,8 @@ async function syncPull(manual){
   if(!syncOn()||SYNC.pulling) return;
   SYNC.pulling=true; SYNC.manual=!!manual; syncBadge();
   try{
-    const d=await syncGet({a:"pull",since:SYNC.last});
+    const t0=Date.now(); const d=await syncGet({a:"pull",since:SYNC.last});
+    SYNC.diag.pull={ms:Date.now()-t0,n:(d.docs||[]).length,at:Date.now()};
     if(!Array.isArray(d.docs)) throw syncBadResp(d);
     const ch=syncApply(d.docs);
     if(ch && d.docs.some(x=>x&&x.c==="staff")) dedupeStaff();   // repetidos vindos de outro dispositivo
@@ -3503,12 +3505,13 @@ async function syncPush(){
   try{
     const batch=[]; let size=0;
     for(const [k,op] of Object.entries(SYNC.q)){ const s=JSON.stringify(op).length; if(batch.length&&size+s>250000) break; batch.push([k,op]); size+=s; }
-    const r=await syncPost({a:"push",ops:batch.map(([,o])=>o)});
+    const t0=Date.now(); const r=await syncPost({a:"push",ops:batch.map(([,o])=>o)});
+    SYNC.diag.push={ms:Date.now()-t0,n:batch.length,kb:Math.round(size/1024),at:Date.now()};
     batch.forEach(([k,o])=>{ if(SYNC.q[k]===o) delete SYNC.q[k]; });   // se mudou entretanto, segue no próximo envio
     (r.erros||[]).forEach(x=>{ delete SYNC.q[x.c+"/"+x.i]; });
     if((r.erros||[]).length) toast(`Não foi possível partilhar ${r.erros.length} registo(s): ${r.erros.some(x=>x.m==="grande")?"são grandes demais (fotos muito pesadas?).":"dados inválidos."}`);
     syncSaveQ(); SYNC.err=""; SYNC.at=Date.now(); again=syncN()>0;
-  }catch(e){ SYNC.err=syncErr(e); }
+  }catch(e){ SYNC.err=syncErr(e); SYNC.diag.pushErr={m:SYNC.err,at:Date.now()}; }
   finally{ SYNC.pushing=false; syncBadge(); }
   if(again) setTimeout(syncPush,50);
 }
@@ -3605,12 +3608,34 @@ function syncStart(){
   window.addEventListener("pagehide",()=>{ if(SYNC.qs) syncSaveQ(); });
 }
 
+/* diagnóstico (tempos reais dos pedidos ao Google) */
+function syncDiagHTML(){
+  const g=SYNC.diag, s=ms=>ms==null?"—":(ms/1000).toFixed(1).replace(".",",")+" s", h=t=>t?new Date(t).toLocaleTimeString("pt-PT"):"";
+  const row=(l,v)=>`<div style="display:flex;justify-content:space-between;gap:10px"><span class="muted">${l}</span><b>${v}</b></div>`;
+  return `<div class="small" id="syncDiag" style="margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;display:grid;gap:4px">
+    <b style="margin-bottom:2px">Diagnóstico</b>
+    ${row("Último envio", g.push?`${s(g.push.ms)} — ${g.push.n} registo(s), ${g.push.kb} KB às ${h(g.push.at)}`:"—")}
+    ${row("Última receção", g.pull?`${s(g.pull.ms)} — ${g.pull.n} registo(s) às ${h(g.pull.at)}`:"—")}
+    ${row("Teste de ligação", g.ping?`${s(g.ping.ms)}${g.ping.err?" — "+esc(g.ping.err):""}`:"—")}
+    ${row("Por enviar", syncN())}
+    ${g.jsonp?row("Leitura direta bloqueada", `${g.jsonp}× (${esc(g.fetchErr||"")})`):""}
+    ${g.pushErr?row("Último erro ao enviar", `${esc(g.pushErr.m)} às ${h(g.pushErr.at)}`):""}
+    <div><button class="btn sm" data-a="syncPing" style="margin-top:6px">Testar ligação</button></div></div>`;
+}
+async function syncPing(){
+  if(!syncOn()) return;
+  const t0=Date.now(); let err="";
+  try{ await syncGet({a:"pull",since:Number.MAX_SAFE_INTEGER}); }catch(e){ err=syncErr(e); }
+  SYNC.diag.ping={ms:Date.now()-t0,err};
+  const el=document.getElementById("syncDiag"); if(el) el.outerHTML=syncDiagHTML();
+}
+
 /* janela de ligação */
 function syncForm(){
   const c=SYNC.cfg||{};
   const on=syncOn();
   modal({title:"Partilhar dados com a equipa técnica",sub:"Google Sheets através do script \"Estrela B — Dados da app\"",
-    body:`${on?`<p class="small" style="margin:0 0 12px"><b>Ligado.</b> ${SYNC.err?`<span style="color:var(--r5)">${esc(SYNC.err)}</span>`:SYNC.at?"Última sincronização às "+new Date(SYNC.at).toLocaleTimeString("pt-PT")+".":""}${syncN()?` ${syncN()} alteração(ões) por enviar.`:""}</p>`:""}
+    body:`${on?syncDiagHTML():""}${on?`<p class="small" style="margin:0 0 12px"><b>Ligado.</b> ${SYNC.err?`<span style="color:var(--r5)">${esc(SYNC.err)}</span>`:SYNC.at?"Última sincronização às "+new Date(SYNC.at).toLocaleTimeString("pt-PT")+".":""}${syncN()?` ${syncN()} alteração(ões) por enviar.`:""}</p>`:""}
       <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
       <label class="fld full">Chave<input name="key" value="${esc(c.key||monCfg().key||"")}" autocomplete="off"></label></div>
       <p class="note">É o URL do script "Estrela B — Dados da app" (diferente do da monitorização) e a mesma chave. Cada pessoa da equipa técnica liga uma vez no seu dispositivo.
