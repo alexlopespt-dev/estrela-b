@@ -114,8 +114,8 @@ function vPlantel(){
       <label class="fld">Época<input value="${esc(m.season||"")}" data-c="meta" data-f="season"></label>
       <label class="fld">Competição principal<input value="${esc(m.comp||"")}" data-c="meta" data-f="comp"></label>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button><button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
-    <p class="note">${MODE==="local"?"Nesta versão os dados ficam só neste dispositivo e browser. Exporta uma cópia regularmente.":"Os dados ficam guardados online e sincronizados. A cópia serve de backup ou para a versão offline."}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button><button class="btn" data-a="syncCfg">${MODE==="local"&&SYNC.cfg?"Partilha com a equipa técnica":"Partilhar com a equipa técnica"}</button><button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
+    <p class="note">${MODE==="local"?(SYNC.cfg?"Dados partilhados com a equipa técnica através do Google Sheets (cópia também neste browser, para funcionar sem rede).":"Sem partilha ligada, os dados ficam só neste dispositivo e browser. Liga a partilha para a equipa técnica ver o mesmo, e exporta uma cópia de vez em quando."):"Os dados ficam guardados online e sincronizados. A cópia serve de backup ou para a versão offline."}</p>
   </div></section>`;
 }
 

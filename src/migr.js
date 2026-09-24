@@ -19,7 +19,7 @@ const MIGR = [
     [...new Set(CAL_2627.map(r=>r[4]))].forEach(name=>{
       const ex=opponents().find(o=>same(o.name,name));
       if(!ex){ put("opponents","op_"+slug(name),{name,comp,crk:OPPIMG[name]?name:"",keys:[],reports:[]}); nO++; }
-      else if(!ex.crk && !ex.imgA && !ex.imgL && OPPIMG[name]){ put("opponents",ex.id,{...clone(D.opponents[ex.id]),crk:name}); }
+      else if(!ex.crk && !ex.imgA && !ex.imgL && !ex.imgG && OPPIMG[name]){ put("opponents",ex.id,{...clone(D.opponents[ex.id]),crk:name}); }
     });
     CAL_2627.forEach(([j,date,time,venue,opp])=>{
       const phase="Jornada "+j, g=games().find(x=>x.date===date);
@@ -60,7 +60,7 @@ function runMigrations(){
 
 /* ================= emblemas dos adversários ================= */
 const oppByName = name => { const n=String(name||"").trim().toLowerCase(); return n ? opponents().find(o=>String(o.name).trim().toLowerCase()===n) || null : null; };
-const oppCrestSrc = o => o && ((o.imgA && "/_blob/"+o.imgA) || (o.imgL && IMGC[o.imgL]) || o.crest || (o.crk && OPPIMG[o.crk]) || null);
+const oppCrestSrc = o => o && ((o.imgA && "/_blob/"+o.imgA) || (o.imgL && IMGC[o.imgL]) || (o.imgG && gImg(o.imgG)) || o.crest || (o.crk && OPPIMG[o.crk]) || null);
 function oppCrest(nameOrOpp, size=34){
   const o = typeof nameOrOpp==="object" ? nameOrOpp : oppByName(nameOrOpp);
   const name = o ? o.name : nameOrOpp, src = oppCrestSrc(o);

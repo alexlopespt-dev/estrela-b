@@ -99,6 +99,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Reconstruir fichas de jogador', 'recriarFichas')
     .addSeparator()
+    .addItem('Preparar dados partilhados da app', 'prepararDadosApp')
+    .addSeparator()
     .addItem('Diagnóstico — de onde estou a ler?', 'diagnostico')
     .addItem('Limpar painéis dos ficheiros de origem', 'limparOrigens')
     .addToUi();
@@ -2015,10 +2017,15 @@ function escreverApp_(res) {
 }
 
 function doGet(e) {
-  var k = e && e.parameter ? String(e.parameter.k || '') : '';
+  var prm = (e && e.parameter) || {};
+  var k = String(prm.k || '');
   var body;
   if (k !== CHAVE_APP) {
     body = JSON.stringify({ erro: 'chave' });
+  } else if (prm.a === 'pull') {
+    // dados partilhados da app (secção 11)
+    try { body = JSON.stringify(dadosPull_(Number(prm.since || 0))); }
+    catch (err) { body = JSON.stringify({ erro: String(err && err.message || err) }); }
   } else {
     var props = PropertiesService.getScriptProperties();
     var n = parseInt(props.getProperty('app_n') || '0', 10), partes = [];
@@ -2026,9 +2033,142 @@ function doGet(e) {
     body = n ? partes.join('') : JSON.stringify({ erro: 'sem dados — corre "Atualizar agora" no menu ⚽ Monitorização' });
   }
   // ?cb=nome: resposta em JavaScript (JSONP), para browsers que bloqueiam a leitura direta
-  var cb = e && e.parameter ? String(e.parameter.cb || '') : '';
+  var cb = String(prm.cb || '');
   if (/^[A-Za-z_][A-Za-z0-9_]{0,40}$/.test(cb)) {
     return ContentService.createTextOutput(cb + '(' + body + ');').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============================================================ 11. DADOS PARTILHADOS DA APP
+/*
+ * Guarda os dados da app (treinos, jogos, plantel, exercícios…) num Google Sheet próprio,
+ * para toda a equipa técnica ver as mesmas coisas. Uma linha por registo.
+ * As fotos novas (exercícios, emblemas) vão para uma pasta do Google Drive.
+ *
+ * Instalar (uma vez): menu ⚽ Monitorização → Preparar dados partilhados da app
+ * (ou escolhe a função prepararDadosApp aqui em cima e carrega em Executar). O Google pede
+ * autorização para o Drive e cria o ficheiro "Estrela B — Dados da app" e a pasta das fotos.
+ * Depois: Implementar → Gerir implementações → lápis → Versão: Nova versão → Implementar.
+ *
+ * Não edites o ficheiro dos dados à mão: a app é que o escreve.
+ */
+var DADOS_NOME = 'Estrela B — Dados da app';
+var DADOS_PASTA = 'Estrela B — Fotos da app';
+var DADOS_MAX = 49000;        // limite de caracteres de uma célula do Sheets (50 000)
+
+function prepararDadosApp() {
+  var ss = dadosSS_(), pasta = dadosPasta_();
+  var msg = 'Pronto. Dados: ' + ss.getUrl() + '\nFotos: ' + pasta.getUrl() +
+            '\n\nAgora: Implementar → Gerir implementações → lápis → Versão: Nova versão → Implementar.';
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert('Dados partilhados da app', msg, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
+}
+
+function dadosSS_() {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('dados_id'), ss = null;
+  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create(DADOS_NOME);
+    props.setProperty('dados_id', ss.getId());
+    var f = ss.getSheets()[0];
+    f.setName('docs');
+    f.getRange('A:C').setNumberFormat('@');      // texto: ids como "2026" não viram números
+    f.getRange(1, 1, 1, 5).setValues([['coleção', 'id', 'dados (JSON)', 'versão', 'apagado']]).setFontWeight('bold');
+    f.setFrozenRows(1);
+  }
+  return ss;
+}
+function dadosFolha_() {
+  var ss = dadosSS_(), f = ss.getSheetByName('docs');
+  if (!f) { f = ss.insertSheet('docs'); f.getRange('A:C').setNumberFormat('@'); f.getRange(1, 1, 1, 5).setValues([['coleção', 'id', 'dados (JSON)', 'versão', 'apagado']]); f.setFrozenRows(1); }
+  return f;
+}
+function dadosPasta_() {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('dados_pasta'), pasta = null;
+  if (id) { try { pasta = DriveApp.getFolderById(id); } catch (e) { pasta = null; } }
+  if (!pasta) { pasta = DriveApp.createFolder(DADOS_PASTA); props.setProperty('dados_pasta', pasta.getId()); }
+  return pasta;
+}
+function dadosVer_() {
+  var c = CacheService.getScriptCache().get('dados_ver');
+  return Number(c !== null && c !== undefined ? c : (PropertiesService.getScriptProperties().getProperty('dados_t') || 0));
+}
+
+/** Registos alterados depois de "since" (versão). A app guarda a última versão que recebeu. */
+function dadosPull_(since) {
+  if (since && since >= dadosVer_()) return { now: dadosVer_(), docs: [] };   // nada de novo: resposta rápida
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);                          // nunca ler a meio de uma gravação
+  try {
+    var now = Number(PropertiesService.getScriptProperties().getProperty('dados_t') || 0);
+    var f = dadosFolha_(), n = f.getLastRow() - 1, docs = [];
+    if (n > 0) {
+      f.getRange(2, 1, n, 5).getValues().forEach(function (r) {
+        var t = Number(r[3]) || 0;
+        if (t <= since || !r[0]) return;
+        if (r[4]) docs.push({ c: String(r[0]), i: String(r[1]), t: t, x: 1 });
+        else { try { docs.push({ c: String(r[0]), i: String(r[1]), t: t, d: JSON.parse(r[2]) }); } catch (e) {} }
+      });
+    }
+    return { now: now, docs: docs };
+  } finally { lock.releaseLock(); }
+}
+
+/** Grava alterações: ops = [{c, i, d}] (d = null apaga). Todas ficam com a mesma versão nova. */
+function dadosPush_(ops) {
+  if (!ops || !ops.length) return { ok: true, t: dadosVer_(), erros: [] };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var t = Math.max(Date.now(), Number(props.getProperty('dados_t') || 0) + 1);
+    var f = dadosFolha_(), n = f.getLastRow() - 1;
+    var linhas = n > 0 ? f.getRange(2, 1, n, 5).getValues() : [];
+    var idx = {};
+    linhas.forEach(function (r, j) { idx[String(r[0]) + '/' + String(r[1])] = j; });
+    var mudadas = {}, novas = [], idxNova = {}, erros = [];
+    ops.forEach(function (o) {
+      var c = String(o && o.c || ''), i = String(o && o.i || '');
+      if (!/^[a-z]{2,20}$/.test(c) || !/^[A-Za-z0-9_.:\-]{1,120}$/.test(i)) { erros.push({ c: c, i: i, m: 'id inválido' }); return; }
+      var json = (o.d === null || o.d === undefined) ? '' : JSON.stringify(o.d);
+      if (json.length > DADOS_MAX) { erros.push({ c: c, i: i, m: 'grande' }); return; }
+      var row = [c, i, json, t, json ? '' : 1], k = c + '/' + i;
+      if (k in idx) { linhas[idx[k]] = row; mudadas[idx[k]] = true; }
+      else if (k in idxNova) novas[idxNova[k]] = row;
+      else { idxNova[k] = novas.length; novas.push(row); }
+    });
+    var js = Object.keys(mudadas).map(Number);
+    if (js.length > 8) f.getRange(2, 1, linhas.length, 5).setValues(linhas);       // muitas: reescreve tudo de uma vez
+    else js.forEach(function (j) { f.getRange(j + 2, 1, 1, 5).setValues([linhas[j]]); });
+    if (novas.length) f.getRange(f.getLastRow() + 1, 1, novas.length, 5).setValues(novas);
+    SpreadsheetApp.flush();
+    props.setProperty('dados_t', String(t));
+    CacheService.getScriptCache().put('dados_ver', String(t), 21600);
+    return { ok: true, t: t, erros: erros };
+  } finally { lock.releaseLock(); }
+}
+
+/** Foto enviada pela app (base64) -> ficheiro no Drive, visível por quem tiver o link. */
+function dadosImg_(p) {
+  var tipo = /^image\/(jpeg|png|webp|gif)$/.test(String(p.type || '')) ? String(p.type) : 'image/jpeg';
+  var bytes = Utilities.base64Decode(String(p.data || ''));
+  if (!bytes.length) return { erro: 'imagem vazia' };
+  var nome = 'foto_' + Utilities.formatDate(new Date(), TZ, 'yyyyMMdd_HHmmss') + '_' + Math.floor(Math.random() * 1e6) + (tipo === 'image/png' ? '.png' : '.jpg');
+  var file = dadosPasta_().createFile(Utilities.newBlob(bytes, tipo, nome));
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }
+  catch (e) { return { erro: 'O Google não deixou partilhar a foto por link (conta com restrições).' }; }
+  return { ok: true, id: file.getId() };
+}
+
+function doPost(e) {
+  var out;
+  try {
+    var p = JSON.parse(e && e.postData ? e.postData.contents : '{}');
+    if (String(p.k || '') !== CHAVE_APP) out = { erro: 'chave' };
+    else if (p.a === 'push') out = dadosPush_(p.ops || []);
+    else if (p.a === 'img') out = dadosImg_(p);
+    else out = { erro: 'pedido desconhecido' };
+  } catch (err) { out = { erro: String(err && err.message || err) }; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }

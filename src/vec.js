@@ -129,7 +129,7 @@ let EXV_MODE="v"; try{ if(localStorage.getItem(LS+":exv")==="o") EXV_MODE="o"; }
 const EXV_URL={};
 function setExvMode(m){ EXV_MODE=m==="o"?"o":"v"; try{ localStorage.setItem(LS+":exv",EXV_MODE); }catch(e){} }
 // desenho vetorial em uso para o exercício (null se tiver foto própria, se não houver desenho ou se estiver a ver as originais)
-const exVecOf = x => (x && x.imgk && !(x.imgA||x.imgL||x.img) && EXV_MODE!=="o" && EXVEC[x.imgk]) || null;
+const exVecOf = x => (x && x.imgk && !(x.imgA||x.imgL||x.imgG||x.img) && EXV_MODE!=="o" && EXVEC[x.imgk]) || null;
 // SVG como imagem (data URL, em cache): leve nas grelhas com muitos exercícios
 function exVecSrc(k){ if(EXV_MODE==="o"||!EXVEC[k]) return null;
   return EXV_URL[k] || (EXV_URL[k]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(vecSVG(EXVEC[k],{r:0,img:1}))); }

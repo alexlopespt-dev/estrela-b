@@ -84,7 +84,7 @@ onFile("fileIn", async e=>{
     s.photoData=await blobToData(blob); s.photo=null; put("staff",sid,s); toast("Foto guardada"); closeModal(); return; }
   if(String(photoTarget).startsWith("opp:")){ const oid=photoTarget.slice(4); if(!D.opponents[oid]) return;
     let blob; try{ blob=await imgBlob(f,256,0.9); }catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir."); return; }
-    const st=await saveImg(blob); const o=clone(D.opponents[oid]); if(!o) return; dropImg(o); delete o.imgA; delete o.imgL; delete o.crk;
+    const st=await saveImg(blob); const o=clone(D.opponents[oid]); if(!o) return; dropImg(o); delete o.imgA; delete o.imgL; delete o.imgG; delete o.crk;
     if(st) Object.assign(o,st); else o.crest=await blobToData(blob);
     put("opponents",oid,o); toast("Emblema guardado"); return; }
   if(!D.players[photoTarget]) return;
@@ -127,7 +127,7 @@ onFile("exImgIn", async e=>{
   const tid=exImgTarget;
   try{ toast("A preparar a imagem…");
     const blob=await imgBlob(f); const stored=await saveImg(blob);
-    const x=clone(D.exercises[tid]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL;
+    const x=clone(D.exercises[tid]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; delete x.imgG;
     if(stored) Object.assign(x,stored); else x.img=await imgResize(f, db?560:1000, db?0.62:0.75);
     put("exercises",tid,x); toast(stored?"Imagem guardada em alta resolução":"Imagem guardada"); exView(tid); }
   catch(err){ toast("Esse ficheiro não é uma imagem que o browser consiga abrir. Usa JPG ou PNG."); }
@@ -227,8 +227,8 @@ function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
-    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!(x.img||x.imgA||x.imgL)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
-    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
+    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
+    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
   const x=id?D.exercises[id]:{};
@@ -723,8 +723,9 @@ const A = {
   minAuto: el => { const g=clone(D.events[el.dataset.id]); if(!g) return; delete g.minOv; put("events",el.dataset.id,g); toast("Minutos recalculados pelos eventos"); },
   drawEx: el => drawEditor(el.dataset.id),
   exPhoto: el => { exImgTarget=el.dataset.id; pickFile("exImgIn"); },
-  exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
+  exImgDel: el => { const x=clone(D.exercises[el.dataset.id]); if(!x) return; dropImg(x); delete x.img; delete x.imgA; delete x.imgL; delete x.imgG; put("exercises",el.dataset.id,x); exView(el.dataset.id); },
   exPick: el => exPicker(el.dataset.id),
+  syncCfg: () => syncForm(),
   exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },

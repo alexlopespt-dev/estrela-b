@@ -6,7 +6,7 @@ render();
 (async()=>{
   db = await use("db");
   assets = await use("assets");
-  if(!db){ await idbLoadAll(); lsLoad(); MODE="local"; runMigrations(); render(); monAuto(); return; }
+  if(!db){ await idbLoadAll(); lsLoad(); MODE="local"; runMigrations(); render(); monAuto(); syncStart(); return; }
   const got={}, ok={};
   // as atualizações de dados só correm se todas as coleções chegaram bem (nunca sobre dados incompletos)
   const ready=()=>{ if(MODE==="loading" && COLS.every(c=>got[c])){ MODE="db"; if(COLS.every(c=>ok[c])) runMigrations(); monAuto(); } schedule(); };

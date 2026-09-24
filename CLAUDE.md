@@ -29,6 +29,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
+  sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
@@ -42,7 +43,7 @@ data/
 tests/      testes Playwright (correr_testes.sh corre todos)
 tools/import-exercicios/  scripts usados para importar exercícios de capturas (recorte, OCR, descrições)
 tools/vetorizar/  pipeline que redesenhou as imagens em vetor (ver secção "Desenhos vetoriais")
-tools/apps-script/ligacao_app.gs  bloco a acrescentar ao Apps Script da monitorização (escreverApp_ + doGet); instruções no topo
+tools/apps-script/monitorizacao_completo.gs  Apps Script completo (monitorização + secção 10 resumo para a app + secção 11 dados partilhados); ligacao_app.gs é a versão antiga
 dist/       resultado do build (não editar à mão)
 ```
 
@@ -59,7 +60,9 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 
 ## Duas versões, o mesmo código
 - **Online** (artifact em https://claude.ai/artifact/HKyQ4gaFrLYMhEhYe2r5ig): usa `window.claude.use("db")`, `"assets"` e `"downloads"`. Dados partilhados por quem tem acesso na organização. **O Claude Code não consegue publicar este artifact nem escrever na base de dados dele**: para atualizar, leva o ficheiro `dist/estrela-tecnico-app.html` para uma conversa no claude.ai e pede para publicar no mesmo link.
-- **Offline** (`dist/index.html`): sem `window.claude`, carrega `SEED` e guarda em `localStorage` (chave `estrela-tecnico-v1`). Cada dispositivo tem os seus dados.
+- **Offline / Netlify** (`dist/index.html`): sem `window.claude`, carrega `SEED` e guarda em `localStorage` (chave `estrela-tecnico-v1`). Sem partilha, cada dispositivo tem os seus dados.
+- **Partilha na versão Netlify** (`sync.js`, test20): Plantel → "Partilhar com a equipa técnica" (mesmo URL/chave da monitorização; ligação guardada só no browser em `estrela-tecnico-v1:sync`). O Apps Script (secção 11) guarda um registo por linha no Sheet "Estrela B — Dados da app" (`coleção | id | JSON | versão | apagado`, criado por `prepararDadosApp`) e as fotos na pasta do Drive (partilha por link, `imgG` → `gImg()`). `put/del` → `syncQ` (fila em `estrela-tecnico-v1:syncq`, enviada por POST text/plain); receção `?a=pull&since=versão` de 15 em 15 s, ao voltar à app e ao voltar a rede (JSONP se o fetch falhar). Enquanto um registo tem alteração local por enviar, a versão do servidor é ignorada; no resto ganha a última gravada. Primeira ligação: junta (servidor ganha nos comuns, exceto se só aqui houver foto; o que só existe aqui é enviado). Célula do Sheets ≤ 50 000 caracteres: registos maiores são recusados (aviso).
+- Testar o Apps Script: `node tests/gas_servidor.js PORTA` corre o .gs verdadeiro com Sheets/Drive/Properties simulados (usado pelo test20).
 - Os dados reais da versão online **não estão nesta pasta**. Para ter uma cópia: na app, Plantel → Exportar cópia, e guarda o JSON em `data/copias/`.
 
 ## Modelo de dados (coleções em COLS, um documento por registo)

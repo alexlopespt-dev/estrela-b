@@ -7,7 +7,7 @@ const EXVEC = __EXVEC__;   // desenhos vetoriais das imagens da biblioteca (imgk
 const OPPIMG = __OPPIMG__;   // emblemas dos adversários (nome -> dataURL), embutidos no build
 const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
 // foto do utilizador > desenho vetorial da biblioteca (salvo se escolheu ver as originais) > imagem original
-const exImg = x => x && ((x.imgA && "/_blob/"+x.imgA) || (x.imgL && IMGC[x.imgL]) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
+const exImg = x => x && ((x.imgA && "/_blob/"+x.imgA) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];
 const GROUP = p => { p=(p||"").toUpperCase(); if(p==="GR")return "GR"; if(p==="LAT"||p==="DC")return "DEF"; if(p==="MDF"||p==="MC")return "MED"; if(!p) return "X"; return "ATA"; };
 const GORDER = {GR:0,DEF:1,MED:2,ATA:3,X:4};
@@ -123,11 +123,11 @@ async function flush(key){
 }
 function put(col,id,obj){
   obj=clone(obj); D[col][id]=obj; VER++; schedule();
-  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else lsSave();
+  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj); }
 }
 function del(col,id){
   delete D[col][id]; VER++; schedule();
-  if(db){ const key=col+"/"+id; pending[key]={col,id,del:true}; flush(key); } else lsSave();
+  if(db){ const key=col+"/"+id; pending[key]={col,id,del:true}; flush(key); } else { lsSave(); syncQ(col,id,null); }
 }
 const busy = key => inflight[key] || pending[key]!==undefined;
 
@@ -140,6 +140,7 @@ async function idbLoadAll(){
     rq.onsuccess=()=>{ const c=rq.result; if(!c) return res(); if(!IMGC[c.key]) IMGC[c.key]=URL.createObjectURL(c.value); c.continue(); }; rq.onerror=()=>res(); }); }catch(e){}
 }
 async function saveImg(blob){
+  if(!db && syncOn()){ const g=await syncImg(blob); if(g) return {imgG:g}; }   // partilha ligada: Drive
   if(assets){ try{ const r=await assets.upload(blob,{type:blob.type||"image/jpeg"}); return {imgA:r.id}; }catch(e){} }
   if(!db){ try{ const id=uid("im_"); await idbDo("readwrite",st=>st.put(blob,id)); IMGC[id]=URL.createObjectURL(blob); return {imgL:id}; }catch(e){} }
   return null;

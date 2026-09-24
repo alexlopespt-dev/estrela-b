@@ -1,3 +1,4 @@
+// ANTIGO: a versão atual (monitorização + dados partilhados da app) está em monitorizacao_completo.gs.
 // ============================================================ 10. LIGAÇÃO À APP DA EQUIPA TÉCNICA
 /*
  * Acrescento ao script "ESTRELA B — Monitorização diária".
