@@ -2105,11 +2105,15 @@ function dadosPull_(since) {
     var now = Number(PropertiesService.getScriptProperties().getProperty('dados_t') || 0);
     var f = dadosFolha_(), n = f.getLastRow() - 1, docs = [];
     if (n > 0) {
-      f.getRange(2, 1, n, 5).getValues().forEach(function (r) {
-        var t = Number(r[3]) || 0;
-        if (t <= since || !r[0]) return;
-        if (r[4]) docs.push({ c: String(r[0]), i: String(r[1]), t: t, x: 1 });
-        else { try { docs.push({ c: String(r[0]), i: String(r[1]), t: t, d: JSON.parse(r[2]) }); } catch (e) {} }
+      // lê primeiro só ids e versões (leve); o JSON só das linhas que mudaram
+      var ids = f.getRange(2, 1, n, 2).getValues(), vs = f.getRange(2, 4, n, 2).getValues(), mud = [];
+      for (var j = 0; j < n; j++) { var t = Number(vs[j][0]) || 0; if (t > since && ids[j][0]) mud.push(j); }
+      var json = mud.length > 15 ? f.getRange(2, 3, n, 1).getValues() : null;
+      mud.forEach(function (j) {
+        var c = String(ids[j][0]), i = String(ids[j][1]), t = Number(vs[j][0]);
+        if (vs[j][1]) { docs.push({ c: c, i: i, t: t, x: 1 }); return; }
+        var txt = json ? json[j][0] : f.getRange(j + 2, 3).getValue();
+        try { docs.push({ c: c, i: i, t: t, d: JSON.parse(txt) }); } catch (e) {}
       });
     }
     return { now: now, docs: docs };
@@ -2125,9 +2129,8 @@ function dadosPush_(ops) {
     var props = PropertiesService.getScriptProperties();
     var t = Math.max(Date.now(), Number(props.getProperty('dados_t') || 0) + 1);
     var f = dadosFolha_(), n = f.getLastRow() - 1;
-    var linhas = n > 0 ? f.getRange(2, 1, n, 5).getValues() : [];
-    var idx = {};
-    linhas.forEach(function (r, j) { idx[String(r[0]) + '/' + String(r[1])] = j; });
+    var idx = {};                                     // só as colunas coleção/id (o JSON não é lido ao gravar)
+    if (n > 0) f.getRange(2, 1, n, 2).getValues().forEach(function (r, j) { idx[String(r[0]) + '/' + String(r[1])] = j; });
     var mudadas = {}, novas = [], idxNova = {}, erros = [];
     ops.forEach(function (o) {
       var c = String(o && o.c || ''), i = String(o && o.i || '');
@@ -2135,13 +2138,11 @@ function dadosPush_(ops) {
       var json = (o.d === null || o.d === undefined) ? '' : JSON.stringify(o.d);
       if (json.length > DADOS_MAX) { erros.push({ c: c, i: i, m: 'grande' }); return; }
       var row = [c, i, json, t, json ? '' : 1], k = c + '/' + i;
-      if (k in idx) { linhas[idx[k]] = row; mudadas[idx[k]] = true; }
+      if (k in idx) mudadas[idx[k]] = row;
       else if (k in idxNova) novas[idxNova[k]] = row;
       else { idxNova[k] = novas.length; novas.push(row); }
     });
-    var js = Object.keys(mudadas).map(Number);
-    if (js.length > 8) f.getRange(2, 1, linhas.length, 5).setValues(linhas);       // muitas: reescreve tudo de uma vez
-    else js.forEach(function (j) { f.getRange(j + 2, 1, 1, 5).setValues([linhas[j]]); });
+    Object.keys(mudadas).forEach(function (j) { f.getRange(Number(j) + 2, 1, 1, 5).setValues([mudadas[j]]); });
     if (novas.length) f.getRange(f.getLastRow() + 1, 1, novas.length, 5).setValues(novas);
     SpreadsheetApp.flush();
     props.setProperty('dados_t', String(t));

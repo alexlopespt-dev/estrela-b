@@ -3480,7 +3480,7 @@ function syncApply(docs){
 
 async function syncPull(manual){
   if(!syncOn()||SYNC.pulling) return;
-  SYNC.pulling=true; syncBadge();
+  SYNC.pulling=true; SYNC.manual=!!manual; syncBadge();
   try{
     const d=await syncGet({a:"pull",since:SYNC.last});
     if(!Array.isArray(d.docs)) throw new Error("O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).");
@@ -3491,7 +3491,7 @@ async function syncPull(manual){
     SYNC.err=""; SYNC.at=Date.now();
     if(manual) toast(ch?`${ch} alteraç${ch===1?"ão":"ões"} recebida${ch===1?"":"s"}`:"Tudo atualizado");
   }catch(e){ SYNC.err=syncErr(e); if(manual) toast(SYNC.err); }
-  finally{ SYNC.pulling=false; syncBadge(); }
+  finally{ SYNC.pulling=false; SYNC.manual=false; syncBadge(); }
 }
 
 async function syncPush(){
@@ -3587,7 +3587,7 @@ function syncDisconnect(){ SYNC.cfg=null; SYNC.last=0; SYNC.q={}; SYNC.err=""; s
 function syncBadge(){
   const el=document.getElementById("syncSt"); if(!el) return;
   if(!syncOn()){ el.hidden=true; return; }
-  const n=syncN(), busy=SYNC.pulling||SYNC.pushing;
+  const n=syncN(), busy=SYNC.pushing||(SYNC.pulling&&SYNC.manual);   // consultas automáticas em silêncio
   const t = SYNC.err ? `Sem ligação${n?` · ${n} por enviar`:""}` : busy ? "A sincronizar…" : n ? `${n} por enviar` : "Partilhado";
   el.hidden=false; el.className="syncst "+(SYNC.err?"err":busy||n?"busy":"ok"); el.textContent=t;
   el.title = SYNC.err ? SYNC.err : SYNC.at ? "Última sincronização: "+new Date(SYNC.at).toLocaleTimeString("pt-PT") : "";
