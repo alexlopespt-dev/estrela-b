@@ -1,0 +1,63 @@
+import os, json, sys
+sys.path.insert(0,os.path.dirname(__file__))
+from demo import demo
+from playwright.sync_api import sync_playwright
+SP=os.path.dirname(__file__)+"/shots/"; ROOT="/home/user/estrela-b"; LSK="estrela-tecnico-v1"
+FIX=open(ROOT+"/tests/monitorizacao_exemplo.json").read()
+APP=open(ROOT+"/dist/app_local.html").read()
+def setup(pg,dark=False):
+    pg.route("https://estrela.test/**",lambda r:r.fulfill(status=200,body=APP,headers={"Content-Type":"text/html"}))
+    def mon(route):
+        u=route.request.url
+        if "cb=" in u:
+            cb=u.split("cb=")[1].split("&")[0]; route.fulfill(status=200,body=f"{cb}({FIX});",headers={"Content-Type":"application/javascript"})
+        else: route.fulfill(status=200,body=FIX,headers={"Content-Type":"application/json","Access-Control-Allow-Origin":"*"})
+    pg.route("https://script.google.com/**",mon)
+    pg.goto("https://estrela.test/"); pg.wait_for_timeout(1500)
+    db=pg.evaluate(f"JSON.parse(localStorage.getItem('{LSK}'))")
+    db=demo(db)
+    db["meta"].setdefault("cfg",{})["mon"]={"url":"https://script.google.com/macros/s/DEMO/exec","key":"x","map":{}}
+    pg.evaluate(f"localStorage.setItem('{LSK}',JSON.stringify({json.dumps(db)}))")
+    if dark: pg.evaluate(f"localStorage.setItem('{LSK}:theme','dark')")
+    pg.reload(); pg.wait_for_timeout(1800)
+def tab(pg,t): pg.click(f'nav [data-t="{t}"]'); pg.wait_for_timeout(600)
+def shot(pg,name,full=False): pg.wait_for_timeout(300); pg.screenshot(path=SP+name+".png",full_page=full); print(name)
+with sync_playwright() as pw:
+    b=pw.chromium.launch()
+    ctx=b.new_context(viewport={"width":1440,"height":900},device_scale_factor=2,accept_downloads=True); pg=ctx.new_page()
+    errs=[]; pg.on("pageerror",lambda e:errs.append(str(e)))
+    setup(pg)
+    tab(pg,"painel"); shot(pg,"01_painel")
+    tab(pg,"agenda"); shot(pg,"02_agenda")
+    tab(pg,"treinos"); shot(pg,"03_sessoes")
+    pg.click('[data-p="treino"][data-id="tr_demo10"]'); pg.wait_for_timeout(600); shot(pg,"04_treino"); pg.mouse.wheel(0,900); shot(pg,"04b_treino_plano")
+    tab(pg,"treinos"); pg.click('[data-a="tsub"][data-k="plan"]'); pg.wait_for_timeout(700); shot(pg,"05_planeamento"); pg.mouse.wheel(0,700); shot(pg,"05b_momentos"); pg.mouse.wheel(0,700); shot(pg,"05c_carga")
+    tab(pg,"treinos"); pg.click('[data-a="tsub"][data-k="modelo"]'); pg.wait_for_timeout(700); shot(pg,"06_modelo")
+    tab(pg,"treinos"); pg.click('[data-a="tsub"][data-k="ex"]'); pg.wait_for_timeout(900); shot(pg,"07_exercicios")
+    pg.click('[data-a="exView"] >> nth=4'); pg.wait_for_timeout(600); shot(pg,"08_exercicio"); pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    tab(pg,"jogos"); pg.click('[data-p="jogo"][data-id="jg_j1"]'); pg.wait_for_timeout(700); shot(pg,"09_jogo"); pg.mouse.wheel(0,1500); shot(pg,"09b_jogo_ficha")
+    tab(pg,"jogos"); pg.click('[data-a="jsub"][data-k="conv"]'); pg.wait_for_timeout(700); pg.select_option('[data-c="convG"]',"jg_2627_j2"); pg.wait_for_timeout(600); shot(pg,"10_convocatoria")
+    pg.evaluate("document.querySelector('.convdocs').scrollIntoView({block:'center'})"); shot(pg,"10b_docs")
+    tab(pg,"bp"); shot(pg,"11_bolas_paradas")
+    pg.click('[data-a="bpOpen"][data-id="bp_livlat1"]'); pg.wait_for_timeout(700); shot(pg,"12_quadro"); pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    tab(pg,"plantel"); shot(pg,"13_plantel")
+    pg.click('[data-p="atleta"] >> nth=9'); pg.wait_for_timeout(700); shot(pg,"14_atleta"); pg.mouse.wheel(0,800); shot(pg,"14b_atleta")
+    tab(pg,"testes"); shot(pg,"15_testes")
+    tab(pg,"clinico"); shot(pg,"16_clinico")
+    tab(pg,"mon"); pg.wait_for_timeout(1500); shot(pg,"17_monitorizacao")
+    tab(pg,"scouting"); shot(pg,"18_scouting")
+    tab(pg,"adv"); shot(pg,"19_adversarios")
+    tab(pg,"stats"); shot(pg,"20_estatisticas")
+    print("erros:",errs)
+    b.close()
+    # iPad escuro
+    b=pw.chromium.launch(); ctx=b.new_context(viewport={"width":1180,"height":820},device_scale_factor=2,has_touch=True,color_scheme="dark"); pg=ctx.new_page()
+    setup(pg,dark=True)
+    tab(pg,"painel"); shot(pg,"21_ipad_escuro")
+    tab(pg,"treinos"); pg.click('[data-a="tsub"][data-k="plan"]'); pg.wait_for_timeout(700); pg.mouse.wheel(0,700); shot(pg,"22_ipad_momentos")
+    b.close()
+    b=pw.chromium.launch(); ctx=b.new_context(viewport={"width":390,"height":844},device_scale_factor=3,has_touch=True,is_mobile=True); pg=ctx.new_page()
+    setup(pg)
+    tab(pg,"painel"); shot(pg,"23_iphone")
+    tab(pg,"jogos"); pg.click('[data-p="jogo"][data-id="jg_j1"]'); pg.wait_for_timeout(700); shot(pg,"24_iphone_jogo")
+    b.close()
