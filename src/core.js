@@ -126,8 +126,9 @@ async function flush(key){
   inflight[key]=false;
 }
 function put(col,id,obj){
+  const prev=D[col][id];   // versão anterior: a partilha envia só o que mudou (ver syncQ)
   obj=clone(obj); D[col][id]=obj; VER++; schedule();
-  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj); }
+  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj,prev); }
 }
 function del(col,id){
   delete D[col][id]; VER++; schedule();

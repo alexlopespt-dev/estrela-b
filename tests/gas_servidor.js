@@ -32,7 +32,7 @@ function SS(name,id){ this.id=id||uid("ss"); this.name=name; this.sheets=[new Sh
 SS.prototype = { getId(){ return this.id; }, getUrl(){ return "https://docs.google.com/spreadsheets/d/"+this.id; }, getSheets(){ return this.sheets; },
   getSheetByName(n){ return this.sheets.find(s=>s.name===n)||null; }, insertSheet(n){ const s=new Sheet(n); this.sheets.push(s); return s; }, toast(){} };
 const SSS = {};
-const props = {}, cache = {}, files = [], triggers = [];
+const props = {}, cache = {}, files = [], triggers = [], copies = [];
 const ctx = {
   console, JSON, Math, Date, String, Number, Object, Array, RegExp, isNaN, parseInt, parseFloat, Error,
   Logger: { log(){ } },
@@ -42,7 +42,11 @@ const ctx = {
     flush(){}, getUi(){ throw new Error("sem UI"); } },
   DriveApp: { Access:{ANYONE_WITH_LINK:"A"}, Permission:{VIEW:"V"},
     createFolder(n){ const f={id:uid("fold"), name:n, getId(){ return this.id; }, getUrl(){ return "https://drive.google.com/drive/folders/"+this.id; },
-      createFile(blob){ const fi={id:uid("file"), blob, shared:false, getId(){ return this.id; }, setSharing(){ this.shared=true; }}; files.push(fi); return fi; } }; ctx.__folders[f.id]=f; return f; },
+      createFile(blob){ const fi={id:uid("file"), blob, shared:false, getId(){ return this.id; }, setSharing(){ this.shared=true; }}; files.push(fi); return fi; },
+      kids:[], getFiles(){ const l=this.kids.filter(k=>!k.trashed); let i=0; return {hasNext:()=>i<l.length, next:()=>l[i++]}; } }; ctx.__folders[f.id]=f; return f; },
+    getFileById(id){ return { makeCopy(name,folder){ const src=SSS[id]; const cp={id:uid("copy"),name,created:new Date(Date.now()+copies.length),trashed:false,
+        rows:src?JSON.parse(JSON.stringify(src.getSheetByName("docs").cells)):[], getDateCreated(){ return this.created; }, setTrashed(v){ this.trashed=v; }};
+        folder.kids.push(cp); copies.push(cp); return cp; } }; },
     getFolderById(id){ if(!ctx.__folders[id]) throw new Error("não existe"); return ctx.__folders[id]; } },
   __folders: {},
   PropertiesService: { getScriptProperties(){ return {
@@ -67,7 +71,12 @@ http.createServer((req,res)=>{
     const id=props.dados_id, ss=id&&SSS[id], sh=ss&&ss.getSheetByName("docs");
     const dest=SSS[ctx.ID_DESTINO], les=dest&&dest.getSheetByName("· Lesões");
     return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props,
-      lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn)})});
+      lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn),
+      copias: copies.filter(c=>!c.trashed).map(c=>({name:c.name,rows:c.rows.length}))})});
+  }
+  if(u.pathname==="/__run"){   // corre uma função do script (ex.: prepararDadosApp, copiaDiaria)
+    try{ ctx[u.searchParams.get("f")](); send({m:"application/json",s:'"ok"'}); }catch(e){ send({m:"text/plain",s:"ERRO "+e.message},500); }
+    return;
   }
   if(u.pathname==="/__triggers"){   // corre os acionadores agendados (como o Google faria passado o tempo)
     const out=[]; triggers.slice().forEach(t=>{ try{ ctx[t.fn](); out.push(t.fn+": ok"); }catch(e){ out.push(t.fn+": "+e.message); } });

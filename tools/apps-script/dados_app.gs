@@ -33,8 +33,8 @@ function destino_() { return SpreadsheetApp.openById(ID_DESTINO); }
 function doGet(e) {
   var prm = (e && e.parameter) || {}, body;
   if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
-  else if (prm.a === 'pull') {
-    try { body = JSON.stringify(dadosPull_(Number(prm.since || 0))); }
+  else if (prm.a === 'pull' || prm.a === 'lixo') {
+    try { body = JSON.stringify(prm.a === 'lixo' ? dadosLixo_() : dadosPull_(Number(prm.since || 0))); }
     catch (err) { body = JSON.stringify({ erro: String(err && err.message || err) }); }
   } else body = JSON.stringify({ erro: 'pedido desconhecido' });
   // ?cb=nome: resposta em JavaScript (JSONP), para browsers que bloqueiam a leitura direta
@@ -52,7 +52,8 @@ var DADOS_MAX = 49000;        // limite de caracteres de uma célula do Sheets (
 
 function prepararDadosApp() {
   var ss = dadosSS_(), pasta = dadosPasta_();
-  var msg = 'Pronto. Dados: ' + ss.getUrl() + '\nFotos: ' + pasta.getUrl() +
+  instalarCopiaDiaria_(); copiaDiaria();          // cópia de segurança todos os dias às 3h (e uma já agora)
+  var msg = 'Pronto. Dados: ' + ss.getUrl() + '\nFotos: ' + pasta.getUrl() + '\nCópia de segurança diária (3h) na pasta "Estrela B — Cópias da app".' +
             '\n\nAgora: Implementar → Nova implementação (Aplicação Web) e cola o URL na app.';
   Logger.log(msg);
   try { SpreadsheetApp.getUi().alert('Dados partilhados da app', msg, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
@@ -124,12 +125,29 @@ function dadosPush_(ops) {
     var idx = {};                                     // só as colunas coleção/id (o JSON não é lido ao gravar)
     if (n > 0) f.getRange(2, 1, n, 2).getValues().forEach(function (r, j) { idx[String(r[0]) + '/' + String(r[1])] = j; });
     var mudadas = {}, novas = [], idxNova = {}, erros = [];
+    // conteúdo atual de um registo (já com o que este pedido mudou)
+    var atual = function (k) {
+      if (k in idxNova) { var r = novas[idxNova[k]]; return { json: r[2], apagado: !!r[4] }; }
+      if (!(k in idx)) return null;
+      var j = idx[k];
+      if (j in mudadas) return { json: mudadas[j][2], apagado: !!mudadas[j][4] };
+      var v = f.getRange(j + 2, 3, 1, 3).getValues()[0];
+      return { json: String(v[0] || ''), apagado: !!v[2] };
+    };
     ops.forEach(function (o) {
       var c = String(o && o.c || ''), i = String(o && o.i || '');
       if (!/^[a-z]{2,20}$/.test(c) || !/^[A-Za-z0-9_.:\-]{1,120}$/.test(i)) { erros.push({ c: c, i: i, m: 'id inválido' }); return; }
-      var json = (o.d === null || o.d === undefined) ? '' : JSON.stringify(o.d);
-      if (json.length > DADOS_MAX) { erros.push({ c: c, i: i, m: 'grande' }); return; }
-      var row = [c, i, json, t, json ? '' : 1], k = c + '/' + i;
+      var k = c + '/' + i, json, apagado = false;
+      if (o.d === null || o.d === undefined) {            // apagar: guarda o último conteúdo para se poder recuperar
+        var a0 = atual(k); json = a0 ? a0.json : ''; apagado = true;
+      } else if (o.p && o.p.length) {                     // só o que mudou, por cima do que lá está (duas pessoas no mesmo treino)
+        var a1 = atual(k);
+        if (a1 && !a1.apagado && a1.json) {
+          try { json = JSON.stringify(aplicarMudancas_(JSON.parse(a1.json), o.p)); } catch (e) { json = JSON.stringify(o.d); }
+        } else json = JSON.stringify(o.d);
+      } else json = JSON.stringify(o.d);
+      if (!apagado && json.length > DADOS_MAX) { erros.push({ c: c, i: i, m: 'grande' }); return; }
+      var row = [c, i, json, t, apagado ? 1 : ''];
       if (k in idx) mudadas[idx[k]] = row;
       else if (k in idxNova) novas[idxNova[k]] = row;
       else { idxNova[k] = novas.length; novas.push(row); }
@@ -148,6 +166,51 @@ function dadosPush_(ops) {
     catch (e) { Logger.log('Lesões da app: ' + e); }
   }
   return res;
+}
+
+/** Aplica a lista de mudanças da app: [[caminho, valor]] = pôr, [[caminho]] = tirar, caminho [] = registo inteiro. */
+function aplicarMudancas_(obj, p) {
+  p.forEach(function (e) {
+    var path = e[0] || [];
+    if (!path.length) { if (e.length > 1) obj = e[1]; return; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    var o = obj;
+    for (var j = 0; j < path.length - 1; j++) {
+      if (!o[path[j]] || typeof o[path[j]] !== 'object' || Array.isArray(o[path[j]])) o[path[j]] = {};
+      o = o[path[j]];
+    }
+    var k = path[path.length - 1];
+    if (e.length > 1) o[k] = e[1]; else delete o[k];
+  });
+  return obj;
+}
+
+/** Registos apagados nos últimos 60 dias (para "Recuperar apagados" na app). */
+function dadosLixo_() {
+  var f = dadosFolha_(), n = f.getLastRow() - 1, out = [], lim = Date.now() - 60 * 864e5;
+  if (n <= 0) return { docs: [] };
+  f.getRange(2, 1, n, 5).getValues().forEach(function (r) {
+    if (!r[4] || !r[2] || Number(r[3]) < lim) return;
+    try { out.push({ c: String(r[0]), i: String(r[1]), t: Number(r[3]), d: JSON.parse(r[2]) }); } catch (e) {}
+  });
+  out.sort(function (a, b) { return b.t - a.t; });
+  return { docs: out.slice(0, 200) };
+}
+
+/** Cópia de segurança diária do ficheiro dos dados (pasta "Estrela B — Cópias da app"; ficam as últimas 30). */
+function copiaDiaria() {
+  var ss = dadosSS_(), props = PropertiesService.getScriptProperties(), pasta = null, id = props.getProperty('copias_pasta');
+  if (id) { try { pasta = DriveApp.getFolderById(id); } catch (e) { pasta = null; } }
+  if (!pasta) { pasta = DriveApp.createFolder('Estrela B — Cópias da app'); props.setProperty('copias_pasta', pasta.getId()); }
+  DriveApp.getFileById(ss.getId()).makeCopy('Cópia ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm') + ' — ' + DADOS_NOME, pasta);
+  var fs = [], it = pasta.getFiles();
+  while (it.hasNext()) fs.push(it.next());
+  fs.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
+  fs.slice(30).forEach(function (x) { x.setTrashed(true); });
+}
+function instalarCopiaDiaria_() {
+  var ja = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'copiaDiaria'; });
+  if (!ja) ScriptApp.newTrigger('copiaDiaria').timeBased().atHour(3).everyDays(1).create();
 }
 
 /** Foto enviada pela app (base64) -> ficheiro no Drive, visível por quem tiver o link. */

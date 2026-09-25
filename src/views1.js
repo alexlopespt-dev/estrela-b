@@ -270,6 +270,7 @@ function vPlan(sub){
     <button class="btn" data-a="cycNew" data-k="meso">+ Mesociclo</button>
     <button class="btn primary" data-a="cycNew" data-k="micro">+ Microciclo</button></div>
   ${vDistrib()}
+  ${vCarga()}
   <div class="grid2" style="margin-top:14px">
     <section class="card"><div class="card-h"><h3>Mesociclos</h3><span class="sub">Blocos de várias semanas</span></div>
       <div class="list">${mesos.length?mesos.map(row).join(""):`<div class="empty"><b>Sem mesociclos</b>Ex.: “Mesociclo 1 — consolidação do modelo”, 4 semanas.</div>`}</div></section>
@@ -432,6 +433,110 @@ function vDistrib(){
     ${PERIODS.filter(p=>periodMicros(p).length).map(p=>{ const t=periodTime(p); const base=MOMENTS.reduce((s,m)=>s+(t.byM[m.k]||0),0);
       return `<tr><td class="l stk"><b>Total ${esc(p.toLowerCase())}</b></td><td><span class="tag">${plural(periodMicros(p).length,"micro")}</span></td>${MOMENTS.map(m=>`<td class="num"><b>${base?fmt1((t.byM[m.k]||0)/base*100)+"%":"–"}</b></td>`).join("")}<td class="num"><b>${Math.round(t.total)}'</b></td></tr>`; }).join("")}
     </tbody></table></div></section>`:""}`;
+}
+
+/* ================= carga planeada vs. real (por dia do microciclo) ================= */
+// planeada = intensidade escolhida (Baixa 3 · Média 5 · Alta 7 · Muito alta 9, na escala do RPE) × minutos planeados
+// real = RPE médio dos presentes × duração (carga da sessão, UA). Jogos aparecem no dia mas não entram nas contas.
+const INT_RPE = {"Baixa":3,"Média":5,"Alta":7,"Muito alta":9};
+function distMicro(){   // o microciclo escolhido em "O que temos trabalhado" (ou o desta semana)
+  const micros=cycles("micro").slice().reverse();
+  if(S.dist && !D.cycles[S.dist]) S.dist="";
+  const cur=micros.find(c=>c.start<=todayISO()&&c.end>=todayISO());
+  const id=S.dist||(cur?cur.id:(micros[0]?micros[0].id:""));
+  return id?{id,...D.cycles[id]}:null;
+}
+function trLoad(t){
+  const planMin=(t.plan||[]).reduce((s,x)=>s+(+x.min||0),0), dur=+t.dur||planMin||0;
+  const planned = INT_RPE[t.int] && (planMin||dur) ? INT_RPE[t.int]*(planMin||dur) : null;
+  const pres=Object.values(t.att||{}).filter(a=>a&&(a.s==="P"||a.s==="AT")), rpes=pres.map(a=>parseNum(a.rpe)).filter(v=>v!=null);
+  const rpe=rpes.length?avg(rpes):null;
+  return {planned, real: rpe!=null&&dur ? rpe*dur : null, rpe, n:pres.length, nr:rpes.length, dur, planMin};
+}
+function cargaSemana(start,end){
+  const days=[]; for(let d=start; d<=end && days.length<14; d=addDays(d,1)) days.push(d);
+  const trs=trainings().filter(t=>t.date>=start&&t.date<=end), gms=games().filter(g=>g.date>=start&&g.date<=end);
+  const rows=days.map(d=>{ const ts=trs.filter(t=>t.date===d).map(t=>({t,...trLoad(t)}));
+    const sum=k=>ts.some(x=>x[k]!=null)?ts.reduce((s,x)=>s+(x[k]||0),0):null;
+    return {d, ts, games:gms.filter(g=>g.date===d), planned:sum("planned"), real:sum("real")}; });
+  const tot=k=>rows.some(r=>r[k]!=null)?rows.reduce((s,r)=>s+(r[k]||0),0):null;
+  return {start,end,rows,planned:tot("planned"),real:tot("real"),trs,gms};
+}
+function cargaHabitual(start){   // média da carga real dos (até) 4 microciclos anteriores com dados
+  const prev=cycles("micro").filter(c=>c.end<start).slice(-4).map(c=>cargaSemana(c.start,c.end).real).filter(v=>v);
+  return prev.length?{v:avg(prev),n:prev.length}:null;
+}
+// gráfico de barras agrupadas: planeada (contorno) e real (cheia) por dia; cores explícitas para o PDF
+function cargaChart(w,{print=false}={}){
+  const cR=print?"#2a78d6":"var(--m-oo)", ink=print?"#555":"var(--muted)", grid=print?"#ddd":"var(--line)";
+  const W=560, H=220, L=40, B=36, T=12, n=w.rows.length, gw=(W-L-8)/n, bw=Math.min(22,gw*0.32);
+  const mx=Math.max(100,...w.rows.map(r=>Math.max(r.planned||0,r.real||0)));
+  const step=[100,200,250,500,1000].find(s=>mx/s<=5)||1000, top=Math.ceil(mx/step)*step, y=v=>T+(H-T-B)*(1-v/top);
+  let g=""; for(let v=0; v<=top; v+=step) g+=`<line x1="${L}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="${grid}" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="${ink}">${v}</text>`;
+  const bar=(x,v,real,tip)=>{ if(v==null) return ""; const h=Math.max(1.5,y(0)-y(v)), yy=y(v);
+    const d=`M${x} ${y(0)}V${yy+3}Q${x} ${yy} ${x+3} ${yy}H${x+bw-3}Q${x+bw} ${yy} ${x+bw} ${yy+3}V${y(0)}Z`;
+    return real ? `<path d="${d}" fill="${cR}"><title>${esc(tip)}</title></path>` : `<path d="${d}" fill="${cR}" fill-opacity=".18" stroke="${cR}" stroke-width="1.5"><title>${esc(tip)}</title></path>`; };
+  w.rows.forEach((r,i)=>{ const cx=L+gw*i+gw/2, dn=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][toD(r.d).getDay()];
+    g+=bar(cx-bw-1,r.planned,false,`${fmtD(r.d)} — planeada ${Math.round(r.planned||0)} UA`)+bar(cx+1,r.real,true,`${fmtD(r.d)} — real ${Math.round(r.real||0)} UA`);
+    g+=`<text x="${cx}" y="${H-B+14}" text-anchor="middle" font-size="12" font-weight="700" fill="${ink}">${esc(dn)}</text><text x="${cx}" y="${H-B+28}" text-anchor="middle" font-size="11" fill="${ink}">${r.games.length?"Jogo":toD(r.d).getDate()}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Carga planeada e real por dia">${g}<line x1="${L}" x2="${W-4}" y1="${y(0)}" y2="${y(0)}" stroke="${ink}" stroke-width="1"/></svg>`;
+}
+function cargaLegend(w,print){
+  const cR=print?"#2a78d6":"var(--m-oo)";
+  const it=(real,l,v)=>`<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px"><i style="display:inline-block;width:14px;height:10px;border-radius:2px;${real?`background:${cR}`:`border:1.5px solid ${cR};background:color-mix(in srgb,${print?"#2a78d6":"var(--m-oo)"} 18%,transparent)`}"></i>${l} <b>${v==null?"—":Math.round(v)+" UA"}</b></span>`;
+  return it(false,"Planeada",w.planned)+it(true,"Real",w.real);
+}
+function cargaAlerta(w){
+  const h=cargaHabitual(w.start); if(!h) return "";
+  const out=[]; const p=v=>Math.round((v/h.v-1)*100);
+  if(w.real!=null && w.real>h.v*1.2) out.push(`<span class="tag bad">⚠ Carga real ${p(w.real)}% acima do habitual</span>`);
+  else if(w.planned!=null && w.planned>h.v*1.2) out.push(`<span class="tag warn">⚠ Planeado ${p(w.planned)}% acima do habitual</span>`);
+  return `${out.join(" ")}<span class="small muted">Habitual (média real de ${plural(h.n,"microciclo anterior","microciclos anteriores")}): <b>${Math.round(h.v)} UA</b></span>`;
+}
+function vCarga(){
+  const mc=distMicro(), start=mc?mc.start:mondayOf(todayISO()), end=mc?mc.end:addDays(mondayOf(todayISO()),6);
+  const w=cargaSemana(start,end), semInt=w.trs.filter(t=>!INT_RPE[t.int]).length, semRpe=w.trs.filter(t=>t.date<=todayISO()&&trLoad(t).real==null).length;
+  return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Carga planeada vs. real</h3><span class="sub">${mc?esc(mc.name):"Esta semana"}</span>
+      <button class="btn sm gold" data-a="prWeek" data-k="${esc(start)}" data-e="${esc(end)}">Relatório PDF</button></div>
+    <div class="card-b">
+      ${w.trs.length?`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">${cargaLegend(w)}${cargaAlerta(w)}</div>${cargaChart(w)}
+      <p class="note">Planeada = intensidade do treino (Baixa 3 · Média 5 · Alta 7 · Muito alta 9) × minutos do plano. Real = RPE médio dos presentes × duração. Os jogos aparecem no dia mas não entram nas contas.${semInt?` ${plural(semInt,"treino")} sem intensidade.`:""}${semRpe?` ${plural(semRpe,"treino já feito","treinos já feitos")} sem RPE.`:""}</p>`
+      :`<div class="small muted">Sem treinos ${mc?"neste microciclo":"nesta semana"}.</div>`}
+    </div></section>`;
+}
+
+/* ================= relatório semanal (PDF) ================= */
+function weekPrint(start,end){
+  const mc=cycles("micro").find(c=>c.start===start&&c.end===end), w=cargaSemana(start,end), mt=modelTime(start,end);
+  const title=mc?`Relatório semanal — ${mc.name}`:"Relatório semanal";
+  const trs=w.trs, pls=players(), done=trs.filter(t=>Object.keys(t.att||{}).length);
+  const attP=pls.map(p=>{ let pr=0,base=0; done.forEach(t=>{ const a=(t.att||{})[p.id]; if(!a||!a.s) return; if(a.s==="P"||a.s==="AT"){pr++;base++;} else if(a.s==="FJ"||a.s==="FI") base++; }); return {p,pr,base}; }).filter(x=>x.base);
+  const pres=attP.reduce((s,x)=>s+x.pr,0), base=attP.reduce((s,x)=>s+x.base,0);
+  const tev=pls.map(p=>{ const v=trs.map(t=>parseNum(((t.pev||{})[p.id]||{}).r)).filter(x=>x!=null); return {p,m:v.length?avg(v):null,n:v.length}; }).filter(x=>x.m!=null).sort((a,b)=>b.m-a.m);
+  const newInj=injuries().filter(i=>i.date>=start&&i.date<=end), actInj=injuries().filter(i=>i.date<=end&&(i.status!=="alta"||(i.ret&&i.ret>end)));
+  const MC={oo:"#2a78d6",od:"#eb6834",tro:"#1baf7a",trd:"#eda100",fbp:"#e87ba4"};
+  const baseM=MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
+  let pie=""; if(baseM){ const R=56,r=36,C=60,pt=(a,rad)=>[C+rad*Math.sin(a),C-rad*Math.cos(a)].map(v=>v.toFixed(2)).join(" "); let a0=0;
+    MOMENTS.forEach(m=>{ const v=mt.byM[m.k]||0; if(!v) return; const f=v/baseM;
+      if(f>0.9999){ pie+=`<circle cx="${C}" cy="${C}" r="${(R+r)/2}" fill="none" stroke="${MC[m.k]}" stroke-width="${R-r}"/>`; return; }
+      const a1=a0+f*2*Math.PI, big=f>0.5?1:0; pie+=`<path d="M${pt(a0,R)}A${R} ${R} 0 ${big} 1 ${pt(a1,R)}L${pt(a1,r)}A${r} ${r} 0 ${big} 0 ${pt(a0,r)}Z" fill="${MC[m.k]}" stroke="#fff" stroke-width="1.5"/>`; a0=a1; }); }
+  const gm=w.gms.map(g=>{ const c=gameCalc(g); const sc=Object.entries(c.res).filter(([,x])=>x.g).map(([pid,x])=>pname(pid)+(x.g>1?" ×"+x.g:"")).join(", ");
+    const best=Object.entries(g.rt||{}).map(([pid,v])=>({pid,v:parseNum(v)})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v).slice(0,3).map(x=>pname(x.pid)+" "+fmt1(x.v)).join(", ");
+    return `<tr><td>${fmtD(g.date)}</td><td>${g.venue==="F"?"@ ":"vs "}${esc(g.opp||"")}</td><td class="c"><b>${g.closed||c.ga!=null?esc(scoreTxt(g,c)):"—"}</b></td><td>${esc(sc||"—")}</td><td>${esc(best||"—")}</td></tr>`; }).join("");
+  const body=`<div class="kv">${pRow("Período",`${fmtD(start,{day:"numeric",month:"long"})} a ${fmtD(end,{day:"numeric",month:"long",year:"numeric"})}`)}${pRow("Fase",mc&&mc.period)}${pRow("Treinos",trs.length)}${pRow("Minutos",trs.reduce((s,t)=>s+(trLoad(t).dur||0),0)+"'")}${pRow("Assiduidade",base?pct(pres,base)+"%":"")}${pRow("Carga planeada",w.planned!=null?Math.round(w.planned)+" UA":"")}${pRow("Carga real",w.real!=null?Math.round(w.real)+" UA":"")}${pRow("Jogos",w.gms.length)}</div>
+    ${mc&&mc.obj?`<p><b>Objetivo do microciclo:</b> ${esc(mc.obj)}</p>`:""}
+    <h2>Carga planeada vs. real</h2><div style="font-size:11px;margin-bottom:4px">${cargaLegend(w,true)}${(()=>{ const h=cargaHabitual(start); return h?` Habitual: <b>${Math.round(h.v)} UA</b>${w.real!=null?` (${w.real>=h.v?"+":""}${Math.round((w.real/h.v-1)*100)}%)`:""}`:""; })()}</div>${cargaChart(w,{print:true})}
+    <h2>Treinos</h2><table><thead><tr><th>Dia</th><th>Tipo</th><th>Intensidade</th><th class="c">Min</th><th class="c">Presentes</th><th class="c">RPE</th><th class="c">Planeada</th><th class="c">Real</th><th>Tema</th></tr></thead><tbody>
+    ${trs.map(t=>{ const l=trLoad(t), tt=TRT(t.ttype); return `<tr><td>${esc(cap1(fmtD(t.date,{weekday:"short",day:"numeric",month:"short"})))}</td><td>${esc(tt?tt.l:"—")}</td><td>${esc(t.int||"—")}</td><td class="c">${l.dur||"—"}</td><td class="c">${l.n||"—"}</td><td class="c">${l.rpe!=null?fmt1(l.rpe):"—"}</td><td class="c">${l.planned!=null?Math.round(l.planned):"—"}</td><td class="c">${l.real!=null?Math.round(l.real):"—"}</td><td>${esc(t.theme||"")}</td></tr>`; }).join("")||`<tr><td colspan="9">Sem treinos.</td></tr>`}</tbody></table>
+    <div style="break-inside:avoid;page-break-inside:avoid"><h2>Momentos trabalhados</h2>${baseM?`<div style="display:flex;gap:18px;align-items:center"><svg viewBox="0 0 120 120" style="width:120px;height:120px;flex:none">${pie}</svg>
+      <table style="width:auto"><tbody>${MOMENTS.map(m=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${MC[m.k]};margin-right:6px"></span><b>${m.ab}</b> ${esc(m.l)}</td><td class="c"><b>${fmt1((mt.byM[m.k]||0)/baseM*100)}%</b></td><td class="c">${Math.round(mt.byM[m.k]||0)}'</td></tr>`).join("")}</tbody></table></div>`:`<p>Sem momentos marcados nos blocos dos treinos.</p>`}</div>
+    ${w.gms.length?`<h2>Jogo${w.gms.length>1?"s":""}</h2><table><thead><tr><th>Data</th><th>Adversário</th><th class="c">Resultado</th><th>Marcadores</th><th>Melhores notas</th></tr></thead><tbody>${gm}</tbody></table>`:""}
+    <h2>Lesões</h2>${newInj.length||actInj.length?`<table><thead><tr><th>Atleta</th><th>Lesão</th><th class="c">Desde</th><th>Estado</th></tr></thead><tbody>${actInj.map(i=>`<tr><td>${esc(pname(i.pid))}${newInj.includes(i)?" <b>(nova)</b>":""}</td><td>${esc([i.diag||i.type,i.zone].filter(Boolean).join(" — "))}</td><td class="c">${fmtD(i.date)}</td><td>${esc((INJ_ST[i.status]||{}).l||"")}${i.exp?" · regresso "+fmtD(i.exp):""}</td></tr>`).join("")}</tbody></table>`:`<p>Sem lesões ativas nem novas.</p>`}
+    <h2>Destaques individuais</h2>${tev.length?`<p><b>Melhores notas de treino:</b> ${tev.slice(0,3).map(x=>`${esc(x.p.name)} (${fmt1(x.m)})`).join(", ")}</p>`:""}
+    ${attP.filter(x=>x.pr<x.base).length?`<p><b>Faltas:</b> ${attP.filter(x=>x.pr<x.base).sort((a,b)=>(a.pr-a.base)-(b.pr-b.base)).map(x=>`${esc(x.p.name)} (${x.base-x.pr})`).join(", ")}</p>`:`<p>Sem faltas registadas.</p>`}
+    ${attP.length?`<h2>Presenças</h2><table><thead><tr><th>Atleta</th><th class="c">Presenças</th><th class="c">%</th></tr></thead><tbody>${attP.sort((a,b)=>a.p.name.localeCompare(b.p.name)).map(x=>`<tr><td>${esc(x.p.name)}</td><td class="c">${x.pr}/${x.base}</td><td class="c">${pct(x.pr,x.base)}%</td></tr>`).join("")}</tbody></table>`:""}
+    <div class="sign"><div>Treinador</div><div>Data</div></div>`;
+  printDoc(`relatorio-semana-${start}`, title, body);
 }
 
 function trEvalHTML(e,id){

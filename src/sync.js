@@ -17,9 +17,28 @@ function syncSaveQ(){ clearTimeout(SYNC.qs); SYNC.qs=null; try{ localStorage.set
 const syncBadResp = d => new Error(d && Array.isArray(d.jogadores) ? "Esse endereço é o da monitorização. Usa o URL do script \"Estrela B — Dados da app\"." : "O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).");
 const gImg = id => "https://drive.google.com/thumbnail?id="+encodeURIComponent(id)+"&sz=w1600";
 
-function syncQ(c,i,d){
+// diferenças entre duas versões de um registo, até 2 níveis (ex.: ["att","p1"] = presença de um atleta):
+// [[caminho, valor]] = mudou/novo, [[caminho]] = apagado, [[[], registo]] = registo inteiro
+function syncDiff(a,b,path=[],out=[],depth=0){
+  const isO=v=>v&&typeof v==="object"&&!Array.isArray(v);
+  if(depth<2 && isO(a) && isO(b)){
+    new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{
+      if(!(k in b)) out.push([path.concat(k)]);
+      else if(!(k in a)) out.push([path.concat(k),b[k]]);
+      else if(JSON.stringify(a[k])!==JSON.stringify(b[k])) syncDiff(a[k],b[k],path.concat(k),out,depth+1);
+    });
+    return out;
+  }
+  out.push([path,b]); return out;
+}
+// fila: registo novo ou apagado vai inteiro; registo alterado leva também a lista de mudanças (p), que o script
+// aplica por cima do que lá estiver — duas pessoas a mexer em campos diferentes do mesmo treino não se apagam
+function syncQ(c,i,d,prev){
   if(!syncOn()) return;
-  SYNC.q[c+"/"+i]={c,i,d:d==null?null:d};
+  const k=c+"/"+i, old=SYNC.q[k];
+  if(d==null) SYNC.q[k]={c,i,d:null};
+  else if(prev==null || (old && !old.p)) SYNC.q[k]={c,i,d};
+  else { const p=syncDiff(prev,d); if(!p.length && !old) return; SYNC.q[k]={c,i,d,p:(old?old.p:[]).concat(p)}; }
   if(!SYNC.qs) SYNC.qs=setTimeout(syncSaveQ,300);
   clearTimeout(SYNC.pt); SYNC.pt=setTimeout(syncPush,700);
   syncBadge();
@@ -207,7 +226,7 @@ function syncDiagHTML(){
     ${row("Por enviar", syncN())}
     ${g.jsonp?row("Leitura direta bloqueada", `${g.jsonp}× (${esc(g.fetchErr||"")})`):""}
     ${g.pushErr?row("Último erro ao enviar", `${esc(g.pushErr.m)} às ${h(g.pushErr.at)}`):""}
-    <div><button class="btn sm" data-a="syncPing" style="margin-top:6px">Testar ligação</button></div></div>`;
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-a="syncPing">Testar ligação</button><button class="btn sm" data-a="syncTrash">Recuperar apagados</button></div></div>`;
 }
 async function syncPing(){
   if(!syncOn()) return;
@@ -215,6 +234,33 @@ async function syncPing(){
   try{ await syncGet({a:"pull",since:Number.MAX_SAFE_INTEGER}); }catch(e){ err=syncErr(e); }
   SYNC.diag.ping={ms:Date.now()-t0,err};
   const el=document.getElementById("syncDiag"); if(el) el.outerHTML=syncDiagHTML();
+}
+
+/* recuperar registos apagados (o script guarda o último conteúdo dos apagados nos últimos 60 dias) */
+const COL_L = {events:"Treino/jogo",players:"Atleta",exercises:"Exercício",injuries:"Lesão",evals:"Avaliação",tests:"Testes físicos",scout:"Scouting",cycles:"Ciclo",principles:"Princípio",staff:"Staff",opponents:"Adversário",statdefs:"Estatística",meta:"Configuração"};
+function lixoNome(x){
+  const d=x.d||{};
+  if(x.c==="events") return (d.type==="jogo"?`Jogo ${d.venue==="F"?"@":"vs"} ${d.opp||""}`:`Treino${d.theme?" — "+d.theme:""}`)+(d.date?" · "+fmtD(d.date,{day:"numeric",month:"short",year:"numeric"}):"");
+  if(x.c==="injuries") return `${pname(d.pid)} · ${d.zone||d.type||""}${d.date?" · "+fmtD(d.date):""}`;
+  return d.name||d.title||x.i;
+}
+async function syncLixo(){
+  if(!syncOn()){ toast("Liga primeiro a partilha."); return; }
+  toast("A procurar apagados…");
+  let d; try{ d=await syncGet({a:"lixo"}); }catch(e){ toast(syncErr(e)); return; }
+  if(!Array.isArray(d.docs)){ toast("O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão)."); return; }
+  const list=d.docs.filter(x=>COLS.includes(x.c) && !D[x.c][x.i] && x.c!=="meta");
+  modal({title:"Recuperar apagados",sub:"Apagados nos últimos 60 dias por qualquer pessoa da equipa técnica",big:list.length>8,
+    body: list.length ? `<div class="list">${list.map((x,j)=>`<div class="li" style="cursor:default"><span class="main"><b>${esc(lixoNome(x))}</b><small>${esc(COL_L[x.c]||x.c)} · apagado ${new Date(x.t).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</small></span><button class="btn sm primary" data-a="syncRestore" data-j="${j}">Recuperar</button></div>`).join("")}</div>`
+      : `<div class="empty"><b>Nada para recuperar</b>Não há registos apagados nos últimos 60 dias.</div>`,
+    foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`, ctx:{lixo:list}});
+}
+function syncRestore(j){
+  const x=M&&M.lixo&&M.lixo[j]; if(!x) return;
+  if(D[x.c][x.i]){ toast("Já existe."); return; }
+  put(x.c,x.i,x.d); M.lixo[j]=null;
+  const b=document.querySelector(`#dlg [data-a="syncRestore"][data-j="${j}"]`); if(b){ b.disabled=true; b.textContent="Recuperado"; }
+  toast(`${COL_L[x.c]||"Registo"} recuperado`);
 }
 
 /* janela de ligação */
