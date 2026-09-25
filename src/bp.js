@@ -374,16 +374,37 @@ async function bpPng(){
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); a.remove(); toast("Imagem descarregada");
   }catch(e){ console.error(e); toast("Não foi possível criar a imagem."); }
 }
-function bpPrint(id){
-  const ids = id==="all" ? setpieces().map(b=>b.id) : [id];
+// id: "all", um id, ou vários separados por vírgulas (escolhidos em bpPrintForm); lay "2" = seguidas (dois campos por folha)
+function bpPrint(id,lay){
+  const ids = id==="all" ? setpieces().map(b=>b.id) : String(id).split(",").filter(Boolean);
   const docs = ids.map(i=>D.setpieces[i]?{id:i,...D.setpieces[i]}:null).filter(Boolean);
   if(!docs.length) return toast("Sem bolas paradas para imprimir.");
   const one=b=>`<section class="bpp"><h2>${esc(b.name||"")} <small style="color:#6b5a5f;text-transform:none;letter-spacing:0">— ${esc(BPT(b.type).l)}</small></h2>
     ${(b.fr||[]).map((f,i)=>`<div class="bpf">${(b.fr||[]).length>1?`<div class="note"><b>Passo ${i+1}</b></div>`:""}${bpSVG({...b,tt:b.tt},i)}</div>`).join("")}
     ${b.notes?`<div class="blk"><h3>Notas</h3><p>${esc(b.notes).replace(/\n/g,"<br>")}</p></div>`:""}</section>`;
-  const css=`<style>.bpp{page-break-after:always}.bpp:last-child{page-break-after:auto}.bpf{margin:6px 0 10px;page-break-inside:avoid}.bpf svg{width:100%;height:auto;display:block;border-radius:4px}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style>`;
-  printDoc(id==="all"?"bolas-paradas":"bola-parada-"+(slug(docs[0].name)||"sem-nome"), id==="all"?"Bolas paradas":docs[0].name||"Bola parada", css+docs.map(one).join(""));
+  const css=`<style>${lay==="2"?`.bpp{margin-bottom:14px}.bpp h2{page-break-after:avoid}.bpf svg{max-height:${Math.round(9800/(PRINT_PREF.scale||100))}mm;width:auto;max-width:100%;margin:0 auto}.bpf{margin:2px 0 6px}`:".bpp{page-break-after:always}.bpp:last-child{page-break-after:auto}"}.bpf{margin:6px 0 10px;page-break-inside:avoid}.bpf svg{width:100%;height:auto;display:block;border-radius:4px}.bpidx{columns:2;margin:0 0 6px;padding-left:18px}.bpidx li{margin:2px 0}html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style>`;
+  const many=docs.length>1;
+  const idx = many ? `<ol class="bpidx">${docs.map(b=>`<li><b>${esc(b.name||"")}</b> <span class="note">— ${esc(BPT(b.type).l)}</span></li>`).join("")}</ol>${lay==="2"?"":`<div style="page-break-after:always"></div>`}` : "";
+  printDoc(many?"bolas-paradas":"bola-parada-"+(slug(docs[0].name)||"sem-nome"), many?"Bolas paradas":docs[0].name||"Bola parada", css+idx+docs.map(one).join(""));
 }
+// escolher que bolas paradas entram no PDF
+function bpPrintForm(){
+  const all=setpieces(); if(!all.length) return toast("Sem bolas paradas para imprimir.");
+  const pre=S.bpT?new Set(all.filter(b=>b.type===S.bpT).map(b=>b.id)):new Set(all.map(b=>b.id));
+  const types=BP_TYPES.filter(t=>all.some(b=>b.type===t.k));
+  const body=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><button class="btn sm" data-a="bpPrSel" data-k="*">Todas</button><button class="btn sm" data-a="bpPrSel" data-k="">Nenhuma</button>${types.map(t=>`<button class="btn sm ghost" data-a="bpPrSel" data-k="${t.k}">+ ${esc(t.l)}</button>`).join("")}</div>
+    <div class="bpprl">${types.map(t=>`<div class="qlbl"><span>${esc(t.l)}</span></div>${all.filter(b=>b.type===t.k).map(b=>`<label class="bppri"><input type="checkbox" name="bpsel" value="${esc(b.id)}" data-t="${b.type}" ${pre.has(b.id)?"checked":""}>${bpSVG(b,0,{w:84})}<span><b>${esc(b.name||"Sem nome")}</b><small class="muted">${(b.fr||[]).length>1?`${(b.fr||[]).length} passos`:"1 passo"}${b.notes?" · com notas":""}</small></span></label>`).join("")}`).join("")}</div>
+    <div class="qlbl" style="margin-top:12px"><span>Folhas</span></div>
+    <div class="seg" style="margin-bottom:10px"><button data-a="bpPrLay" data-k="1" class="on">Uma por página</button><button data-a="bpPrLay" data-k="2">Seguidas (2 campos por folha)</button></div>
+    <div class="qlbl"><span>Tamanho da folha</span></div>
+    <div class="seg" style="margin-bottom:8px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>
+    <p class="small muted" style="margin:0"><b id="bpPrN"></b> O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>`;
+  modal({title:"Imprimir bolas paradas",sub:"Escolhe as que entram no PDF",body,
+    foot:`<button class="btn" data-a="bpPrGo" data-k="open">Abrir numa aba</button><span class="right"><button class="btn primary" data-a="bpPrGo" data-k="dl">Descarregar</button></span>`,ctx:{bpLay:"1",pick:true}});
+  bpPrCount();
+}
+$("#dlg").addEventListener("change",e=>{ if(e.target && e.target.name==="bpsel") bpPrCount(); });
+function bpPrCount(){ const n=$$("#dlg [name=bpsel]:checked").length, el=$("#bpPrN"); if(el) el.textContent=n?`${plural(n,"bola parada selecionada","bolas paradas selecionadas")}.`:"Nenhuma selecionada."; }
 
 /* ---- ações ---- */
 Object.assign(A,{
@@ -415,7 +436,13 @@ Object.assign(A,{
     const go=()=>{ PRINT_MODE="dl"; bpPrint(id); };
     if(M.dirty){ askConfirm("Guardar as alterações antes de criar o PDF?","Guardar e criar PDF").then(ok=>{ if(!ok||!M||!M.bp) return; put("setpieces",id,bpCollect()); M.dirty=false; go(); }); }
     else go(); },
-  bpPrintAll: () => printAsk("bp","all"),
+  bpPrintAll: () => bpPrintForm(),
+  bpPrSel: el => { const k=el.dataset.k; $$("#dlg [name=bpsel]").forEach(c=>{ if(k==="*") c.checked=true; else if(k==="") c.checked=false; else if(c.dataset.t===k) c.checked=true; }); bpPrCount(); },
+  bpPrLay: el => { if(!M) return; M.bpLay=el.dataset.k; $$("#dlg [data-a=bpPrLay]").forEach(b=>b.classList.toggle("on",b===el)); },
+  bpPrGo: el => { if(!M) return; const ids=$$("#dlg [name=bpsel]:checked").map(c=>c.value), lay=M.bpLay;
+    if(!ids.length) return toast("Escolhe pelo menos uma bola parada.");
+    closeModal(); PRINT_MODE=el.dataset.k; PRINT_WIN=null; if(PRINT_MODE==="open"){ try{ PRINT_WIN=window.open("","_blank"); }catch(e){} }
+    bpPrint(ids.join(","),lay); },
   bpCopy: el => { const s=D.setpieces[el.dataset.id]; if(!s) return toast("Esta bola parada já não existe."); const id=bpCopyDoc(s); toast(`Cópia criada: ${D.setpieces[id].name}`); bpEditor(id); },
   bpCopyEd: () => { if(!M||!M.bp) return; const src=M.bpId;
     const go=()=>{ if(!M||!M.bp) return; bpStop(); const id=bpCopyDoc(D.setpieces[src]||bpCollect()); bpEditor(id); toast("Cópia criada — estás a editar a cópia; o original ficou igual."); };

@@ -513,3 +513,10 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .bptype{border:2px solid var(--line);border-radius:10px;padding:0 4px 6px;background:var(--surface-2);overflow:hidden;color:var(--text);font-size:12.5px}
 .bptype svg{width:calc(100% + 8px);margin:0 -4px 5px;height:auto;display:block}
 .bptype.on{border-color:var(--grena);box-shadow:0 0 0 2px var(--grena)}
+.bpprl{max-height:min(52vh,460px);overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 10px 8px}
+.bppri{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.bppri:last-child{border-bottom:0}
+.bppri input{width:20px;height:20px;flex:none;accent-color:var(--grena)}
+.bppri svg{flex:none;border-radius:4px}
+.bppri span{display:flex;flex-direction:column;min-width:0}
+.bppri small{font-size:12px}
