@@ -17,3 +17,5 @@ Os caminhos apontam para a pasta de trabalho da sessão onde foram gerados — a
 - `record.py` grava a app a ser usada de verdade (Playwright com relógio controlado, 60 fps, "dedo" desenhado na página) → `clips/<nome>/*.jpg`.
   Fontes só para o vídeo: Barlow → Inter, Barlow Condensed → Roboto Condensed (`apt-get install fonts-inter fonts-roboto-unhinted fonts-bebas-neue`).
 - `comp.html` + `render.py` — compositor (iPad/iPhone em 3D, fundo bokeh, transições com desfoque, texto em Bebas Neue) gravado frame a frame e codificado com a música.
+- v3 (música "estilo Apple"): `piano.py` (MIDI do piano, FluidSynth sem reverb) + `synth.py` (pads, plucks, sinos FM, baixo, bateria discreta,
+  reverb de convolução, sidechain, automação por secção, verificação do equilíbrio de frequências) → `musica_apple.wav`. Fecho só com "A app da equipa técnica".

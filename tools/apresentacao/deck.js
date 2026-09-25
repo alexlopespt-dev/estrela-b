@@ -37,16 +37,14 @@ let n = 0;
 
 /* 1 — capa */
 { const s = pres.addSlide(); darkBg(s); n++;
-  pic(s, IMG("crest.png"), 0.8, 0.75, 0.75, 1.0, "l");
-  kicker(s, "CF Estrela da Amadora · Equipa B", 1.75, 1.0, true);
-  T(s, "Departamento técnico", { x: 1.75, y: 1.32, w: 5, h: 0.3, fontSize: 13, color: "E9DADE" });
+  kicker(s, "Plataforma para equipas técnicas de futebol", 0.8, 1.2, true);
   T(s, "A app da\nequipa técnica", { x: 0.8, y: 2.25, w: 6.2, h: 2.2, fontFace: TF, fontSize: 56, bold: true, color: C.white, lineSpacingMultiple: 0.95 });
   T(s, "Nasceu para a nossa equipa. Está pronta para o futebol.", { x: 0.8, y: 4.55, w: 5.6, h: 0.8, fontSize: 20, color: "F3E6E9" });
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.8, y: 6.2, w: 4.6, h: 0.5, fill: { color: C.gold }, line: { color: C.gold }, rectRadius: 0.25 });
   T(s, "Apresentação à Play7 · setembro 2026", { x: 0.8, y: 6.2, w: 4.6, h: 0.5, fontSize: 13, bold: true, color: C.dark, align: "center", valign: "middle" });
   pic(s, IMG("ipad.png"), 6.3, 1.1, 6.9, 5.2);
   pic(s, IMG("iphone.png"), 10.9, 3.2, 2.2, 4.1);
-  s.addNotes("Abertura. Somos a equipa técnica da Equipa B do Estrela da Amadora (III Distrital). Construímos uma aplicação para o nosso dia a dia e hoje queremos mostrar-vos porque achamos que ela pode ir muito mais longe.");
+  s.addNotes("Abertura. Somos uma equipa técnica (trabalhamos na Equipa B do Estrela da Amadora, III Distrital). Construímos uma aplicação para o nosso dia a dia e hoje queremos mostrar-vos porque achamos que ela pode ir muito mais longe.");
 }
 
 /* 2 — como começou */
@@ -258,10 +256,9 @@ let n = 0;
 
 /* 17 — fecho */
 { const s = pres.addSlide(); darkBg(s, 2); n++;
-  pic(s, IMG("crest.png"), 5.92, 0.9, 1.5, 2.0);
   T(s, "Vamos pôr isto em campo?", { x: 1.0, y: 3.25, w: 11.33, h: 1.0, fontFace: TF, fontSize: 44, bold: true, color: C.white, align: "center" });
   T(s, "Obrigado.", { x: 1.0, y: 4.3, w: 11.33, h: 0.6, fontSize: 22, color: C.gold, align: "center", bold: true });
-  T(s, "Departamento técnico · CF Estrela da Amadora B", { x: 1.0, y: 5.6, w: 11.33, h: 0.4, fontSize: 14, color: "EAD6DB", align: "center" });
+  T(s, "A app da equipa técnica", { x: 1.0, y: 5.6, w: 11.33, h: 0.4, fontSize: 16, bold: true, color: "EAD6DB", align: "center" });
   s.addNotes("Fecho. Mostrar o trailer (1 minuto) antes ou depois deste diapositivo e abrir a app ao vivo no iPad, se houver tempo.");
 }
 
