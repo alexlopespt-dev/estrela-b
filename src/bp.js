@@ -7,6 +7,7 @@
 //   {t:"ball",x,y}  {t:"cone",x,y}  {t:"txt",x,y,s,c?}  {t:"zone",x,y,w,h,sh:"r"|"e",c}
 //   {t:"ar",s:"pass"|"run"|"drib",x1,y1,x2,y2,cx,cy,c?}  seta (cx,cy = ponto de controlo da curva)
 const BW=1000, BH=682;
+const BP_CREST="__BPCREST__";   // emblema pequeno (80 px, fundo transparente) no canto do campo
 const BP_TYPES = [
   {k:"lof",l:"Livre ofensivo",t:"Livres Ofensivos"},
   {k:"ldf",l:"Livre defensivo",t:"Livres Defensivos"},
@@ -121,7 +122,7 @@ function bpItemsSVG(items,o={}){
 function bpTitle(b){ return b.tt===false||!b.name ? "" : `<text x="64" y="54" font-family="'Open Sans','Segoe UI',Arial,sans-serif" font-size="23" font-weight="600" fill="#fff" filter="url(#bpTs)">${esc(b.name)}</text>`; }
 function bpSVG(b,fi=0,o={}){
   const fr=(b.fr||[])[fi]||{it:[]};
-  return `<svg ${o.id?`id="${o.id}"`:""} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BW} ${BH}" ${o.w?`width="${o.w}" height="${Math.round(o.w*BH/BW)}"`:""} class="bpsvg" role="img" aria-label="${esc(b.name||"Bola parada")}">${bpDefs()}${bpPitch()}<g${o.id?` id="${o.id}T"`:""}>${bpTitle(b)}</g><g${o.id?` id="${o.id}I"`:""}>${bpItemsSVG(fr.it,{hit:o.hit,sel:o.sel})}</g></svg>`;
+  return `<svg ${o.id?`id="${o.id}"`:""} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BW} ${BH}" ${o.w?`width="${o.w}" height="${Math.round(o.w*BH/BW)}"`:""} class="bpsvg" role="img" aria-label="${esc(b.name||"Bola parada")}">${bpDefs()}${bpPitch()}<image href="${BP_CREST}" x="902" y="5" width="36" height="48.6" preserveAspectRatio="xMidYMid meet"/><g${o.id?` id="${o.id}T"`:""}>${bpTitle(b)}</g><g${o.id?` id="${o.id}I"`:""}>${bpItemsSVG(fr.it,{hit:o.hit,sel:o.sel})}</g></svg>`;
 }
 
 /* ---- modelos por tipo ---- */

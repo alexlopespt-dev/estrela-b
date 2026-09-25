@@ -37,6 +37,8 @@ with sync_playwright() as pw:
     pg.click('nav [data-t="bp"]'); pg.wait_for_timeout(300)
     pg.click('[data-a="bpOpen"][data-id="bp_livlat1"]'); pg.wait_for_timeout(500)
     pg.locator("#bpS").screenshot(path=os.path.join(CAP,"t28_modelo.png"))
+    cr=pg.evaluate("(()=>{const i=document.querySelector('#bpS image');return i?i.getAttribute('href').slice(0,22)+'|'+i.getBoundingClientRect().width:''})()"); print("emblema no campo:", cr)
+    if not cr.startswith("data:image/png;base64,"): errs.append("emblema")
     pg.screenshot(path=os.path.join(CAP,"t28_editor.png"))
     pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(200)
     # os 6 tipos
