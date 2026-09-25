@@ -1,0 +1,169 @@
+<!DOCTYPE html><html lang="pt-PT"><head><meta charset="utf-8"><title>Trailer v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#000;color:#fff;font-family:"Inter",sans-serif}
+#st{position:absolute;inset:0;overflow:hidden;background:#0a0204}
+canvas{position:absolute;inset:0}
+.L{position:absolute;inset:0;opacity:0;will-change:transform,opacity}
+.B{font-family:"Bebas Neue",sans-serif;font-weight:700;letter-spacing:2px;line-height:.9;text-transform:uppercase}
+.gold{color:#f2bd4b}
+.k{font-family:"Inter";font-weight:800;font-size:22px;letter-spacing:10px;color:#f2bd4b;text-transform:uppercase}
+.sub{font-family:"Inter";font-weight:500;font-size:30px;color:#efe1e5;line-height:1.35}
+.pad{position:absolute;width:1060px;height:752px;border-radius:46px;background:linear-gradient(145deg,#2c2c30,#0c0c0e 40%,#1c1c20);box-shadow:0 0 0 2px #4a4a50,0 0 0 4px #121214,0 60px 140px rgba(0,0,0,.75),0 20px 40px rgba(0,0,0,.5);transform-style:preserve-3d}
+.pad .scr{position:absolute;inset:26px;border-radius:18px;overflow:hidden;background:#000}
+.pad img,.phone img{width:100%;height:100%;object-fit:cover;object-position:top left;display:block}
+.glare{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.04) 28%,rgba(255,255,255,0) 45%)}
+.phone{position:absolute;width:430px;height:900px;border-radius:70px;background:linear-gradient(145deg,#2c2c30,#0c0c0e 40%,#1c1c20);box-shadow:0 0 0 2px #4a4a50,0 0 0 4px #121214,0 60px 140px rgba(0,0,0,.75)}
+.phone .scr{position:absolute;inset:18px;border-radius:54px;overflow:hidden;background:#000}
+.phone .isl{position:absolute;left:50%;top:32px;width:120px;height:34px;margin-left:-60px;border-radius:20px;background:#000;z-index:2}
+.card{position:absolute;width:300px;height:190px;border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.28);box-shadow:0 30px 80px rgba(0,0,0,.5);backdrop-filter:blur(8px);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;font:800 30px Inter}
+.card img{width:74px;height:74px}
+.bars{position:absolute;left:0;right:0;height:140px;background:#000;z-index:50}
+#nums .B{text-shadow:0 8px 40px rgba(0,0,0,.8)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:60}
+#vig{position:absolute;inset:0;z-index:55;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 50%,rgba(0,0,0,.6) 100%)}
+.wall{position:absolute;left:50%;top:50%;width:3600px;height:2200px;margin:-1100px 0 0 -1800px;display:grid;grid-template-columns:repeat(5,1fr);gap:40px;transform-style:preserve-3d}
+.wall img{width:100%;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.tri{position:absolute;height:8px;background:linear-gradient(90deg,#d62b2f 0 33.3%,#fff 33.3% 66.6%,#1f7a3d 66.6% 100%)}
+</style></head><body><div id="st">
+<canvas id="bk" width="1920" height="1080"></canvas>
+<!-- intro -->
+<div class="L" id="intro"><img id="crest0" src="../deck/img/crest.png" style="position:absolute;left:50%;top:170px;width:200px;margin-left:-100px">
+  <div id="i1" class="B" style="position:absolute;left:0;right:0;top:470px;text-align:center;font-size:170px"><span id="iw1">Tudo começou</span></div>
+  <div id="i2" class="B gold" style="position:absolute;left:0;right:0;top:630px;text-align:center;font-size:170px">num balneário.</div>
+  <div id="i3" class="k" style="position:absolute;left:0;right:0;top:830px;text-align:center">CF Estrela da Amadora · Equipa B · III Distrital</div></div>
+<!-- problema -->
+<div class="L" id="prob" style="perspective:1400px">
+  <div class="card" id="c0"><img src="../deck/img/ic/xls_w.png">Excel</div><div class="card" id="c1"><img src="../deck/img/ic/wa_w.png">WhatsApp</div><div class="card" id="c2"><img src="../deck/img/ic/ppt_w.png">PowerPoint</div>
+  <div class="card" id="c3"><img src="../deck/img/ic/paper_w.png">Papel</div><div class="card" id="c4"><img src="../deck/img/ic/pdf_w.png">PDFs</div><div class="card" id="c5"><img src="../deck/img/ic/form_w.png">Formulários</div>
+  <div id="pw" class="B" style="position:absolute;left:0;right:0;top:420px;text-align:center;font-size:230px;text-shadow:0 10px 60px rgba(0,0,0,.8)"></div></div>
+<!-- então criámos -->
+<div class="L" id="then"><div id="t1" class="B" style="position:absolute;left:0;right:0;top:380px;text-align:center;font-size:180px">Então criámos</div>
+  <div id="t2" class="B gold" style="position:absolute;left:0;right:0;top:560px;text-align:center;font-size:180px">a nossa.</div></div>
+<!-- dispositivo -->
+<div class="L" id="dev" style="perspective:2600px">
+  <div class="pad" id="pad"><div class="scr"><img id="pimg"><div class="glare" id="pgl"></div></div></div>
+  <div class="phone" id="phone"><div class="isl"></div><div class="scr"><img id="fimg"><div class="glare"></div></div></div>
+  <div id="lab" style="position:absolute;top:300px;width:620px"><div class="k" id="lk"></div><div class="B" id="lt" style="font-size:130px;margin-top:20px"></div><div class="sub" id="ls" style="margin-top:26px"></div></div>
+  <img id="doc1" src="../deck/img/doc_conv.png" style="position:absolute;width:520px;opacity:0"><img id="doc2" src="../deck/img/doc_hor.png" style="position:absolute;width:520px;opacity:0">
+</div>
+<!-- mensagem -->
+<div class="L" id="msg"><div id="m1" class="B" style="position:absolute;left:0;right:0;top:450px;text-align:center;font-size:150px">Nasceu para a nossa equipa.</div></div>
+<!-- parede + números -->
+<div class="L" id="wallL" style="perspective:2000px"><div class="wall" id="wall"></div></div>
+<div class="L" id="nums"><div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(10,2,4,.82) 0%,rgba(10,2,4,.55) 45%,rgba(10,2,4,0) 75%)"></div><div style="position:absolute;left:0;right:0;top:360px;display:flex;justify-content:center;gap:110px;text-align:center">
+  <div><div class="B gold" id="n1" style="font-size:230px">0</div><div class="k" style="color:#fff">Módulos</div></div>
+  <div><div class="B gold" id="n2" style="font-size:230px">0</div><div class="k" style="color:#fff">Exercícios</div></div>
+  <div><div class="B gold" id="n3" style="font-size:230px">0</div><div class="k" style="color:#fff">Princípios</div></div>
+  <div><div class="B gold" id="n4" style="font-size:230px">0</div><div class="k" style="color:#fff">Instalações</div></div></div></div>
+<div class="L" id="ready"><div id="r1" class="B" style="position:absolute;left:0;right:0;top:360px;text-align:center;font-size:200px">Está pronta</div>
+  <div id="r2" class="B gold" style="position:absolute;left:0;right:0;top:560px;text-align:center;font-size:200px">para o futebol.</div></div>
+<!-- fecho -->
+<div class="L" id="end"><img id="crestE" src="../deck/img/crest.png" style="position:absolute;left:50%;top:150px;width:210px;margin-left:-105px">
+  <div id="e1" class="B" style="position:absolute;left:0;right:0;top:500px;text-align:center;font-size:170px">A app da equipa técnica</div>
+  <div class="tri" id="etri" style="left:760px;width:400px;top:690px"></div>
+  <div id="e2" class="k" style="position:absolute;left:0;right:0;top:740px;text-align:center">CF Estrela da Amadora · Equipa B</div></div>
+<div class="bars" id="barT" style="top:0"></div><div class="bars" id="barB" style="bottom:0"></div>
+<div id="vig"></div><div id="flash"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)), lerp=(a,b,k)=>a+(b-a)*k;
+const eio=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2, eo=t=>1-Math.pow(1-t,3), ei=t=>t*t*t, eback=t=>{const c=1.70158;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);};
+const win=(t,a,b,fi=.3,fo=.3)=>t<a||t>b?0:Math.min(1,(t-a)/fi,(b-t)/fo);
+const FPS=60;
+// clips gravados (frames a 60 fps): [cena, pasta, n.º frames, início, fim, frame inicial, velocidade, lado da legenda, legenda]
+const CL=[
+ ["painel",340,20,25.333,0,1.05,null,["","",""]],
+ ["treino",378,25.333,30.667,0,1.2,"L",["Treino","Planear.<br>Registar.","Plano por blocos, momentos do jogo, presenças e esforço."]],
+ ["plan",280,30.667,36,0,0.95,"R",["Planeamento","Os 5 momentos<br>do jogo","O que treinámos em cada microciclo. Carga planeada vs. real."]],
+ ["ex",400,36,41.333,0,1.25,"L",["Metodologia","132 exercícios.<br>Um modelo.","Desenho vetorial, princípios e esquemas da equipa técnica."]],
+ ["conv",320,41.333,46.667,0,1.0,"R",["Dia de jogo","Convocatória<br>em segundos","Números, nomes, horário — pronto para o WhatsApp."]],
+ ["bp",764,46.667,52,110,2.05,"L",["Bolas paradas","Desenha.<br>Anima.","Quadro tático com passos animados, imagem e PDF."]],
+ ["mon",284,52,56,0,1.15,"R",["Performance","Prontidão.<br>Carga. Saúde.","Bem-estar, ACWR, lesões e testes físicos."]],
+ ["phone",344,56,58.667,0,2.0,"L",["Em qualquer lado","No bolso.","iPad, iPhone e computador. Funciona sem rede."]]];
+// fundo: luzes desfocadas (bokeh) determinísticas
+const bk=$("bk"), g=bk.getContext("2d"); const R=(i,k)=>{ const x=Math.sin(i*127.1+k*311.7)*43758.5453; return x-Math.floor(x); };
+function bokeh(t,amt){ const grd=g.createRadialGradient(560,260,0,960,540,1300); grd.addColorStop(0,"#5e1424"); grd.addColorStop(.55,"#270810"); grd.addColorStop(1,"#070102"); g.fillStyle=grd; g.fillRect(0,0,1920,1080);
+  for(let i=0;i<46;i++){ const s=R(i,1), r=30+140*R(i,2), sp=.15+.5*R(i,3); const x=(R(i,4)*2200+t*40*sp*(R(i,5)>.5?1:-1))%2200-140, y=(R(i,6)*1300-t*22*sp)%1300; const yy=y<-150?y+1300:y;
+    const c=R(i,7)>.72?"242,189,75":R(i,7)>.4?"214,70,90":"255,255,255"; const a=(.05+.13*R(i,8))*amt*(0.7+0.3*Math.sin(t*1.3+i));
+    const rg=g.createRadialGradient(x,yy,0,x,yy,r); rg.addColorStop(0,`rgba(${c},${a})`); rg.addColorStop(.7,`rgba(${c},${a*.6})`); rg.addColorStop(1,`rgba(${c},0)`); g.fillStyle=rg; g.beginPath(); g.arc(x,yy,r,0,7); g.fill(); }
+  // raios de luz
+  g.save(); g.globalCompositeOperation="lighter"; const ang=-.5+.06*Math.sin(t*.3);
+  for(let k=0;k<4;k++){ g.save(); g.translate(300,-200); g.rotate(ang+k*.14); const lg=g.createLinearGradient(0,0,0,1600); lg.addColorStop(0,`rgba(255,220,170,${.07*amt})`); lg.addColorStop(1,"rgba(255,220,170,0)"); g.fillStyle=lg; g.fillRect(-40-k*20,0,80+k*30,1600); g.restore(); }
+  g.restore(); }
+// parede de ecrãs
+const SH=["01_painel","04_treino","05b_momentos","06_modelo","07_exercicios","09_jogo","10_convocatoria","12_quadro","13_plantel","14_atleta","15_testes","16_clinico","17_monitorizacao","18_scouting","19_adversarios","20_estatisticas","02_agenda","03_sessoes","05c_carga","11_bolas_paradas"];
+$("wall").innerHTML=SH.map(s=>`<img src="../shots/${s}.png">`).join("");
+let lastSrc={};
+function setImg(id,src){ const el=$(id); if(lastSrc[id]===src) return null; lastSrc[id]=src; el.src=src; return el.decode().catch(()=>{}); }
+function words(el,txt,k){ el.innerHTML=txt; }
+async function seek(t){
+  const waits=[];
+  // barras de cinema na introdução
+  const barH=140*(1-eio(cl((t-19.2)/.8)))+ (t>70.67?110*eo(cl((t-70.67)/1.2)):0); $("barT").style.height=barH+"px"; $("barB").style.height=barH+"px";
+  bokeh(t, t<20?0.8+0.4*cl((t-16)/4):1);
+  // flashes nas pancadas
+  let f=0; [[20,.6],[41.333,.18],[61.333,.5],[70.667,.55],[25.333,.08],[30.667,.08],[36,.08],[46.667,.1],[52,.08],[56,.08]].forEach(([h,a])=>{ const d=t-h; if(d>=0&&d<.35) f=Math.max(f,a*(1-d/.35)); }); $("flash").style.opacity=f;
+  // ---- intro 0–8
+  { const o=win(t,0,8,1.2,.6); $("intro").style.opacity=o; const l=t;
+    $("crest0").style.transform=`scale(${.8+.25*eo(cl(l/3))})`; $("crest0").style.filter=`drop-shadow(0 0 ${70*cl(l/2.5)}px rgba(242,189,75,.55)) brightness(${.4+.6*cl(l/1.5)})`;
+    const k1=eo(cl((l-1.8)/.9)), k2=eo(cl((l-3.1)/.9)); $("i1").style.opacity=k1; $("i1").style.transform=`translateY(${50*(1-k1)}px)`; $("i1").style.letterSpacing=(12-8*k1)+"px"; $("i1").style.filter=`blur(${10*(1-k1)}px)`;
+    $("i2").style.opacity=k2; $("i2").style.transform=`translateY(${50*(1-k2)}px)`; $("i2").style.filter=`blur(${10*(1-k2)}px)`; $("i3").style.opacity=cl((l-4.6)/.8); }
+  // ---- problema 8–16
+  { $("prob").style.opacity=win(t,8,16,.4,.4); const l=t-8;
+    const P=[[-620,-260,-300],[560,-230,-500],[-480,250,-700],[640,270,-200],[80,-340,-900],[-60,330,-400]];
+    P.forEach(([x,y,z],i)=>{ const e=$("c"+i), k=eo(cl((l-.2-i*.35)/.8)), drift=Math.sin(l*.9+i)*18; const pull=ei(cl((l-6.3)/1.2));
+      e.style.left=(960-150)+"px"; e.style.top=(540-95)+"px"; e.style.opacity=k*(1-pull);
+      e.style.transform=`translate3d(${x*(1-pull)}px,${y*(1-pull)+drift}px,${z+300*(1-k)+800*pull}px) rotateY(${(i%2?-1:1)*(18-10*k)+l*2}deg) rotateX(${6*Math.sin(l+i)}deg)`; e.style.filter=`blur(${4*pull*6}px)`; });
+    const W=[[.6,"Folhas."],[1.6,"Grupos."],[2.6,"Papéis."],[3.6,"PDFs."],[4.9,"<span class='gold'>Nada comunica.</span>"]]; let cur=""; let st=0; W.forEach(([a,w])=>{ if(l>=a){ cur=w; st=a; } });
+    const pw=$("pw"); pw.innerHTML=cur; const k=eo(cl((l-st)/.35)); pw.style.opacity=cur?k*(1-cl((l-6.4)/.6)):0; pw.style.transform=`scale(${1.25-.25*k})`; pw.style.fontSize=(l>=4.9?170:230)+"px"; }
+  // ---- então criámos 16–20
+  { $("then").style.opacity=win(t,16,19.95,.3,.05); const l=t-16; const k1=eo(cl((l-.2)/.7)), k2=eo(cl((l-1.3)/.7));
+    $("t1").style.opacity=k1; $("t1").style.transform=`scale(${1.3-.3*k1})`; $("t1").style.filter=`blur(${12*(1-k1)}px)`;
+    $("t2").style.opacity=k2; $("t2").style.transform=`scale(${1.3-.3*k2+.04*cl((l-2)/2)})`; $("t2").style.filter=`blur(${12*(1-k2)}px)`; $("t2").style.letterSpacing=(2+10*cl((l-2)/2))+"px"; }
+  // ---- dispositivos 20–58.67
+  { const on=t>=20&&t<59.4; $("dev").style.opacity=on?cl((59.4-t)/.7):0;
+    const c=CL.find(x=>t>=x[2]&&t<x[3])||(t>=58.667&&t<59.4?CL[7]:null);
+    if(c){ const [name,nf,a,b,f0,sp,side,lab]=c, l=t-a, dur=b-a; const fi=Math.min(nf-1,Math.floor(f0+l*FPS*sp));
+      const isPhone=name==="phone"; const src=`clips/${name}/${String(fi).padStart(5,"0")}.jpg`;
+      const w=setImg(isPhone?"fimg":"pimg",src); if(w) waits.push(w);
+      const pad=$("pad"), ph=$("phone"); pad.style.display=isPhone?"none":"block"; ph.style.display=isPhone?"block":"none";
+      // entrada / saída com desfoque de movimento
+      const kin=name==="painel"?1:eo(cl(l/.45)), kout=ei(cl((l-(dur-.32))/.32)), dir=side==="R"?-1:1;
+      const vx=(1-kin)*1500*dir - kout*1500*dir; const blur=Math.abs(vx)/60;
+      let x,y,ry,rx,sc;
+      if(name==="painel"){ const k=eio(cl(l/2.2)); x=960-530; y=lerp(760,120,k); rx=lerp(58,6,k); ry=lerp(0,-4,k)+2*Math.sin(l*.6); sc=lerp(.78,1.0,k)+.03*cl((l-2.2)/3); }
+      else if(isPhone){ x=1250; y=90; rx=4; ry=lerp(-24,-8,eo(cl(l/2))); sc=1; }
+      else { x=side==="L"?770:90; y=160; ry=(side==="L"?-16:16)+6*l/dur*(side==="L"?1:-1); rx=5; sc=.98+.04*l/dur; }
+      const el=isPhone?ph:pad; el.style.left=x+"px"; el.style.top=y+"px";
+      el.style.transform=`translateX(${vx}px) rotateX(${rx}deg) rotateY(${ry}deg) scale(${sc})`; el.style.filter=blur>0.5?`blur(${Math.min(28,blur)}px)`:"none";
+      $("pgl").style.transform=`translateX(${-200+400*l/dur}px)`;
+      // legenda
+      const lb=$("lab"); lb.style.left=(isPhone?170:side==="L"?110:1230)+"px"; lb.style.textAlign="left";
+      $("lk").textContent=lab[0]; $("lt").innerHTML=lab[1]; $("ls").textContent=lab[2];
+      [["lk",.15],["lt",.3],["ls",.5]].forEach(([id,d])=>{ const k=eo(cl((l-d)/.45)); const e=$(id); e.style.opacity=k*(1-kout); e.style.transform=`translateX(${(1-k)*-70*dir + kout*-300*dir}px)`; e.style.filter=`blur(${(1-k)*8+kout*12}px)`; });
+      if(name==="painel"){ $("lk").textContent=""; $("ls").textContent=""; $("lt").innerHTML=""; }
+      // documentos a sair do iPad na convocatória
+      const dOn=name==="conv"; ["doc1","doc2"].forEach((id,i)=>{ const e=$(id); if(!dOn){ e.style.opacity=0; return; } const k=eback(cl((l-2.9-i*.25)/.7));
+        e.style.opacity=cl((l-2.9-i*.25)/.2)*(1-kout); e.style.left=(330+i*330)+"px"; e.style.top=(170+i*40)+"px"; e.style.transform=`translate(${-300*(1-k)}px,${420*(1-k)}px) rotate(${(i?7:-6)*k}deg) scale(${.6+.4*k})`; });
+    }
+  }
+  // ---- mensagem 58.67–61.33
+  { $("msg").style.opacity=win(t,58.9,61.3,.5,.1); const k=eo(cl((t-59)/.9)); $("m1").style.transform=`translateY(${40*(1-k)}px)`; $("m1").style.filter=`blur(${8*(1-k)}px)`; $("m1").style.letterSpacing=(2+6*cl((t-59)/2.3))+"px"; }
+  // ---- parede 61.33–70.67
+  { const o=win(t,61.333,70.9,.2,.5); $("wallL").style.opacity=o; const l=t-61.333;
+    $("wall").style.transform=`rotateX(28deg) rotateZ(-14deg) translate3d(${-500+l*90}px,${200-l*50}px,${-400+l*35}px)`; $("wall").style.filter=`blur(${t>65.33?4+3*cl((t-65.33)/2):0}px) brightness(${t>65.33?.45:.8})`;
+    $("nums").style.opacity=win(t,61.333,65.4,.2,.3);
+    [["n1",12],["n2",132],["n3",52],["n4",0]].forEach(([id,v],i)=>{ const k=eo(cl((l-.15-i*.35)/1.1)); $(id).textContent=i===3?(l>1.5?"0":"—"):Math.round(v*k); $(id).style.opacity=cl((l-i*.35)/.25); $(id).style.transform=`translateY(${40*(1-k)}px)`; });
+    $("ready").style.opacity=win(t,65.333,70.667,.3,.15); const k1=eo(cl((t-65.5)/.7)), k2=eo(cl((t-66.6)/.7));
+    $("r1").style.opacity=k1; $("r1").style.transform=`scale(${1.2-.2*k1})`; $("r2").style.opacity=k2; $("r2").style.transform=`scale(${1.2-.2*k2+.03*cl((t-67)/3)})`; }
+  // ---- fecho 70.67–76
+  { const l=t-70.667; $("end").style.opacity=win(t,70.667,76.1,.15,1.4); const k=eo(cl(l/1.3));
+    $("crestE").style.transform=`scale(${.75+.25*k})`; $("crestE").style.filter=`drop-shadow(0 0 ${80*k}px rgba(242,189,75,.6))`;
+    const k1=eo(cl((l-.5)/.8)); $("e1").style.opacity=k1; $("e1").style.letterSpacing=(20-18*k1)+"px"; $("e1").style.filter=`blur(${8*(1-k1)}px)`;
+    $("etri").style.transform=`scaleX(${eo(cl((l-1.1)/1))})`; $("e2").style.opacity=cl((l-1.6)/.8); }
+  await Promise.all(waits);
+}
+window.seek=seek;
+</script></body></html>
