@@ -1,6 +1,6 @@
 /* ================= estado de navegação ================= */
 const TABS = [
-  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},
+  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},{k:"bp",l:"Bolas paradas"},
   {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"mon",l:"Monitorização"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
 ];
 const S = { pm:todayISO().slice(0,7), mdl:"", dist:"", tab:"painel", page:null, cal:todayISO().slice(0,7), day:todayISO(), tsub:"sessoes", exCat:"", jComp:"", plGroup:"", tmom:null, scSt:"", stComp:"", stSort:"min", stDir:-1 };
@@ -28,7 +28,7 @@ function render(){
       if(!h){ S.page=null; }
     }
     if(!S.page){
-      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
+      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats,bp:vBP}[S.tab]||vPainel)();
     }
   }catch(err){
     console.error(err);

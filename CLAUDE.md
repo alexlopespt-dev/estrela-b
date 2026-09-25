@@ -10,8 +10,8 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 - Staff (já na app): Miguel Motta (treinador principal), João Maltez e Tiago Isidoro (adjuntos), Alexandre Lopes (analista principal), Tiago Ferreira (analista adjunto), Bruno Anjos (treinador de GR), Mateus Alves (auxiliar), Diogo Gomes (team manager). Fotos ainda por receber.
 
 ## O que é
-Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 10 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios, presenças), Jogos (convocatória, onze, eventos, ficha, estatísticas de jogo, modo pós-jogo), Plantel (atletas, staff, configurações, cópias), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 12 separadores:
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios, presenças), Jogos (convocatória, onze, eventos, ficha, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (atletas, staff, configurações, cópias), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -28,6 +28,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   quick.js     modo pós-jogo, grelha da época, importação da antiga app de ratings
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
+  bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
@@ -74,7 +75,7 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - "Relatório PDF" → `weekPrint(start,end)` (via `printAsk("week","start|end")`): resumo, carga (gráfico), treinos, momentos (circular), jogos, lesões, destaques, presenças (test27).
 
 ## Modelo de dados (coleções em COLS, um documento por registo)
-meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents.
+meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents, setpieces.
 - Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|pos|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
@@ -82,6 +83,13 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
   - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
 - Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha: os dos princípios do bloco; se não tiver, `blockMoms(x)` = o `mom` escolhido no próprio bloco do treino (botões OF OD TO TD BP, ação `planMom`) ou, se nunca escolhido, o `mom` do exercício; ao escolher no treino, um exercício sem momento fica com esse). "O que temos trabalhado" (Treinos → Planeamento) mostra um gráfico circular por microciclo/período/época (`momentPie`, cores `--m-<k>` validadas com o skill dataviz para os dois temas) + legenda com sigla, % e minutos (test24).
+
+## Bolas paradas (bp.js, test28)
+- Separador "Bolas paradas": cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" de todas.
+- Campo desenhado a partir da imagem do modelo "Livres Laterais Ofensivos" (2000x1364 → coordenadas 1000x682, `bpPitch`): relva #0aa105 com faixas #068f03 só dentro do campo, baliza com rede em favo, círculos brancos r13 com contorno preto e nome por baixo (Open Sans 700 com halo claro), GR verde com gradiente, título branco em cima à esquerda (`tt`).
+- Documento `setpieces`: `{name,type,notes,tt,fr:[{it:[...]}]}`; cada item tem `k` fixo (liga o mesmo elemento entre passos para a animação). Tipos de item no topo de `bp.js`. Seta = curva quadrática (`cx,cy`), o ponto amarelo arrasta a curva.
+- Editor em janela de ecrã inteiro (`dialog.bpdlg`, não é apagado pelo `render()`): ferramentas, plantel (toca para pôr no campo ou dar nome ao círculo escolhido), cor/número, duplicar, desfazer/refazer (Ctrl+Z/Y, Delete, Ctrl+D, setas), passos + "Animar", "Repor modelo", Imagem (PNG 2000x1364) e PDF.
+- Migração `bp1` acrescenta o quadro do modelo com os nomes da imagem (id `bp_livlat1`).
 
 ## Atualizações de dados (migr.js)
 - Os dados vivem no browser (offline) ou na base de dados online, por isso mudar o `seed_local.json` não chega a quem já usa a app. Para acrescentar dados, criar uma entrada em `MIGR` com id novo: corre uma vez por dispositivo/base de dados, só acrescenta ou preenche campos vazios e usa ids fixos (nunca duplica).

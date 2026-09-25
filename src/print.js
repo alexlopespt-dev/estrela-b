@@ -35,7 +35,7 @@ ul{margin:4px 0;padding-left:16px}
 function printDoc(fname, title, body){
   const m=meta();
   const html=`<!DOCTYPE html><html lang="pt-PT"><head><meta charset="utf-8"><title>${esc(title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=Open+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>${PCSS}
 body{zoom:${(PRINT_PREF.scale||100)/100}}
 @media print{ body{zoom:${(PRINT_PREF.scale||100)/100}} }</style></head><body><div class="page">

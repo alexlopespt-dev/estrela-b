@@ -575,9 +575,9 @@ function oppRepForm(oid,rid){
 let PRINT_PREF={scale:125};
 try{ const p=JSON.parse(localStorage.getItem(LS+":print")||"null"); if(p&&p.scale) PRINT_PREF=p; }catch(e){}
 function printAsk(kind,id){
-  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); }}[kind];
+  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id)}[kind];
   if(!run) return;
-  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal"};
+  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal",bp:"Bolas paradas"};
   modal({title:titles[kind],sub:"Documento para imprimir ou guardar em PDF",
     body: kind==="plan" ? `<p class="small muted" style="margin:0">Plano em A4 ao alto: cabeçalho da sessão e cada exercício com o desenho em grande. O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>` : `<div class="qlbl"><span>Tamanho da folha</span></div>
       <div class="seg" style="margin-bottom:14px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>

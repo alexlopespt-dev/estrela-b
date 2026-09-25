@@ -19,6 +19,13 @@ const MODELO_2627 = __MODELO__;
 const MJIMG = __MJIMG__;   // esquemas (campos) recortados dos diapositivos: chave -> dataURL; o princípio guarda só as chaves (imgs)
 const prImgs = p => ((p&&p.imgs)||[]).filter(k=>MJIMG[k]);
 const MIGR = [
+  {id:"bp1", run(){   // bola parada do modelo enviado pela equipa (livres laterais ofensivos)
+    if(D.setpieces.bp_livlat1 || setpieces().some(b=>b.name==="Livres Laterais Ofensivos")) return "";
+    const it=bpTemplate("lof"), nm=["","Emanuel","Pigatto","Zava","Bruno","António","Kenzo","Salvador","Francisco","","Matos","Xiao"];
+    it.forEach((x,i)=>{ if(nm[i]) x.n=nm[i]; });
+    put("setpieces","bp_livlat1",{name:"Livres Laterais Ofensivos",type:"lof",notes:"",tt:true,fr:[{it}]});
+    return "Bolas paradas: acrescentado o livre lateral ofensivo do modelo.";
+  }},
   {id:"cal2627", run(){
     const comp=meta().comp||"III Distrital", same=(a,b)=>String(a||"").trim().toLowerCase()===String(b||"").trim().toLowerCase();
     let nG=0, nO=0;

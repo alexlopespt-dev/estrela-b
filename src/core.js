@@ -100,7 +100,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents"];
+const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
 const LS = "estrela-tecnico-v1";
