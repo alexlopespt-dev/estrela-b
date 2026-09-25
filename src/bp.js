@@ -150,6 +150,12 @@ function bpTemplate(type){
     O(868,382),O(870,500),O(800,445),O(730,355)];
   return it.map((x,i)=>({k:"i"+(i+1),...x}));
 }
+// cópia de uma bola parada (ex.: o mesmo canto com outras setas): "Nome (cópia)", "Nome (cópia 2)"…
+function bpCopyDoc(src){
+  const o=clone(src), base=String(o.name||BPT(o.type).t).replace(/ \(cópia(?: \d+)?\)$/,""), names=new Set(setpieces().map(b=>b.name));
+  let nm=base+" (cópia)", i=2; while(names.has(nm)) nm=base+` (cópia ${i++})`;
+  o.name=nm; const id=uid("bp_"); put("setpieces",id,o); return id;
+}
 function bpNewDoc(type,name){ return {name:name||BPT(type).t, type, notes:"", tt:true, fr:[{it:bpTemplate(type)}]}; }
 
 /* ---- separador ---- */
@@ -157,7 +163,8 @@ function vBP(){
   const all=setpieces(), f=S.bpT||"";
   const list=f?all.filter(b=>b.type===f):all;
   const cnt=k=>all.filter(b=>b.type===k).length;
-  const card=b=>`<button class="bpcard" data-a="bpOpen" data-id="${esc(b.id)}">${bpSVG(b,0)}<span class="bpc-b"><b>${esc(b.name||"Sem nome")}</b><small>${esc(BPT(b.type).l)}${(b.fr||[]).length>1?` · ${(b.fr||[]).length} passos`:""}</small>${b.notes?`<small class="muted bpc-n">${esc(b.notes)}</small>`:""}</span></button>`;
+  const card=b=>`<div class="bpcard"><button class="bpc-open" data-a="bpOpen" data-id="${esc(b.id)}">${bpSVG(b,0)}<span class="bpc-b"><b>${esc(b.name||"Sem nome")}</b><small>${esc(BPT(b.type).l)}${(b.fr||[]).length>1?` · ${(b.fr||[]).length} passos`:""}</small>${b.notes?`<small class="muted bpc-n">${esc(b.notes)}</small>`:""}</span></button>
+    <div class="bpc-f"><button class="btn sm" data-a="bpCopy" data-id="${esc(b.id)}" title="Cria uma cópia para alterar só o que queres">⧉ Duplicar</button></div></div>`;
   const groups = f ? [BPT(f)] : BP_TYPES.filter(t=>cnt(t.k));
   return `
   <div class="bar"><h2 style="margin:0;flex:1">Bolas paradas</h2>
@@ -183,7 +190,7 @@ function bpEditor(id){
       ${sel("bptype",BP_TYPES.map(t=>({v:t.k,l:t.l})),b.type,'class="inp" aria-label="Tipo"')}
       <label class="bpchk"><input type="checkbox" name="bptt" ${b.tt!==false?"checked":""}> Título no campo</label>
       <span class="bpact"><button class="btn sm" data-a="bpUndo" title="Desfazer (Ctrl+Z)">↶ Desfazer</button><button class="btn sm" data-a="bpRedo" title="Refazer (Ctrl+Y)">↷ Refazer</button>
-      <button class="btn sm" data-a="bpTpl">Repor modelo</button><button class="btn sm" data-a="bpPng">Imagem</button><button class="btn sm" data-a="bpPrint">PDF</button></span>
+      <button class="btn sm" data-a="bpTpl">Repor modelo</button><button class="btn sm" data-a="bpCopyEd" title="Cria uma cópia desta bola parada e abre-a">⧉ Duplicar</button><button class="btn sm" data-a="bpPng">Imagem</button><button class="btn sm" data-a="bpPrint">PDF</button></span>
     </div>
     <div class="dtools bptools">${BP_TOOLS.map(t=>`<button data-a="bpTool" data-k="${t.k}" title="${t.l}"><span class="dic" style="${t.st||""}">${t.ic}</span>${t.l}</button>`).join("")}</div>
     <div class="bpmain">
@@ -408,5 +415,10 @@ Object.assign(A,{
     const go=()=>{ PRINT_MODE="dl"; bpPrint(id); };
     if(M.dirty){ askConfirm("Guardar as alterações antes de criar o PDF?","Guardar e criar PDF").then(ok=>{ if(!ok||!M||!M.bp) return; put("setpieces",id,bpCollect()); M.dirty=false; go(); }); }
     else go(); },
-  bpPrintAll: () => printAsk("bp","all")
+  bpPrintAll: () => printAsk("bp","all"),
+  bpCopy: el => { const s=D.setpieces[el.dataset.id]; if(!s) return toast("Esta bola parada já não existe."); const id=bpCopyDoc(s); toast(`Cópia criada: ${D.setpieces[id].name}`); bpEditor(id); },
+  bpCopyEd: () => { if(!M||!M.bp) return; const src=M.bpId;
+    const go=()=>{ if(!M||!M.bp) return; bpStop(); const id=bpCopyDoc(D.setpieces[src]||bpCollect()); bpEditor(id); toast("Cópia criada — estás a editar a cópia; o original ficou igual."); };
+    if(M.dirty){ askConfirm("Guardar as alterações no original antes de criar a cópia?","Guardar e duplicar").then(ok=>{ if(!ok||!M||!M.bp) return; put("setpieces",src,bpCollect()); M.dirty=false; go(); }); }
+    else go(); }
 });

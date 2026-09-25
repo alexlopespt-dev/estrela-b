@@ -89,6 +89,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Campo desenhado a partir da imagem do modelo "Livres Laterais Ofensivos" (2000x1364 → coordenadas 1000x682, `bpPitch`): relva #0aa105 com faixas #068f03 só dentro do campo, baliza com rede em favo, círculos brancos r13 com contorno preto e nome por baixo (Open Sans 700 com halo claro), GR verde com gradiente, título branco em cima à esquerda (`tt`). Emblema pequeno no canto superior direito (`BP_CREST`, de `data/emblema_bp.b64`, 80 px com fundo transparente, placeholder `__BPCREST__`).
 - Documento `setpieces`: `{name,type,notes,tt,fr:[{it:[...]}]}`; cada item tem `k` fixo (liga o mesmo elemento entre passos para a animação). Tipos de item no topo de `bp.js`. Seta = curva quadrática (`cx,cy`), o ponto amarelo arrasta a curva.
 - Editor em janela de ecrã inteiro (`dialog.bpdlg`, não é apagado pelo `render()`): ferramentas, plantel (toca para pôr no campo ou dar nome ao círculo escolhido), cor/número, duplicar, desfazer/refazer (Ctrl+Z/Y, Delete, Ctrl+D, setas), passos + "Animar", "Repor modelo", Imagem (PNG 2000x1364) e PDF.
+- Duplicar (`bpCopyDoc`): botão em cada cartão e no editor ("⧉ Duplicar"; se houver alterações por guardar pergunta e guarda o original primeiro); cópia com o nome "X (cópia)", "X (cópia 2)"… e abre logo no editor.
 - Migração `bp1` acrescenta o quadro do modelo com os nomes da imagem (id `bp_livlat1`).
 
 ## Atualizações de dados (migr.js)

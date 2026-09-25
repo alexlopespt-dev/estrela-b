@@ -156,6 +156,26 @@ with sync_playwright() as pw:
     pg.click(f'[data-a="bpOpen"][data-id="{cid}"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="mDel"]'); pg.click('#dlgAsk [data-ask="1"]'); pg.wait_for_timeout(300)
     print("eliminada:", cid not in SP(pg))
     if cid in SP(pg): errs.append("eliminar")
+    # duplicar a partir do cartão: abre a cópia, igual ao original (mesmos passos e setas), nome "(cópia)"
+    n0=len(SP(pg)); orig=SP(pg)[lid]
+    pg.click(f'[data-a="bpCopy"][data-id="{lid}"]'); pg.wait_for_timeout(400)
+    new=[i for i in SP(pg) if i not in (lid,) and SP(pg)[i]["name"].endswith("(cópia)")]
+    print("duplicar (cartão):", len(SP(pg))==n0+1, new and SP(pg)[new[0]]["name"], "| editor aberto:", pg.input_value('#dlg [name=bpname]'))
+    if len(new)!=1 or SP(pg)[new[0]]["fr"]!=orig["fr"] or pg.input_value('#dlg [name=bpname]')!=orig["name"]+" (cópia)": errs.append("duplicar cartão")
+    cp1=new[0]
+    # na cópia mudo uma seta; o original fica igual
+    hc=pg.evaluate("(()=>{const p=[...document.querySelectorAll('#bpSI [data-k]')].find(g=>g.querySelector('path[marker-end]'));return p.dataset.k})()")
+    pg.evaluate(f"document.querySelector('#bpSI [data-k=\"{hc}\"] path[marker-end]').dispatchEvent(new PointerEvent('pointerdown',{{bubbles:true,clientX:0,clientY:0}}))")
+    pg.keyboard.press("Delete"); pg.wait_for_timeout(100)
+    # duplicar dentro do editor com alterações por guardar: pergunta, guarda e abre a segunda cópia
+    pg.click('#dlg [data-a="bpCopyEd"]'); pg.wait_for_timeout(200)
+    if not pg.evaluate("document.querySelector('#dlgAsk').open"): errs.append("duplicar editor sem perguntar")
+    pg.click('#dlgAsk [data-ask="1"]'); pg.wait_for_timeout(400)
+    sp=SP(pg); c2=[i for i,x in sp.items() if x["name"]==orig["name"]+" (cópia 2)"]
+    print("duplicar (editor):", pg.input_value('#dlg [name=bpname]'), "| cópia 1 sem a seta:", len(sp[cp1]["fr"][0]["it"])==len(orig["fr"][0]["it"])-1, "| original igual:", sp[lid]["fr"]==orig["fr"])
+    if len(c2)!=1 or sp[lid]["fr"]!=orig["fr"] or len(sp[cp1]["fr"][0]["it"])!=len(orig["fr"][0]["it"])-1 or sp[c2[0]]["fr"]!=sp[cp1]["fr"]: errs.append("duplicar editor")
+    pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(200)
+    pg.screenshot(path=os.path.join(CAP,"t28_duplicar.png"))
     # cópia (exportar) inclui as bolas paradas
     b.close()
     # iPad (tátil), deitado e ao alto; tema escuro; ecrã baixo

@@ -500,7 +500,9 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .bprp.on{background:var(--grena);color:#fff;border-color:var(--grena)}
 .bprp.on small{color:rgba(255,255,255,.8)}
 .bpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.bpcard{display:flex;flex-direction:column;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;overflow:hidden;padding:0;color:var(--text);box-shadow:var(--shadow);cursor:pointer}
+.bpcard{display:flex;flex-direction:column;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;overflow:hidden;padding:0;color:var(--text);box-shadow:var(--shadow)}
+.bpc-open{display:flex;flex-direction:column;text-align:left;border:0;background:transparent;padding:0;color:inherit;cursor:pointer;flex:1}
+.bpc-f{display:flex;justify-content:flex-end;gap:6px;padding:0 10px 10px}
 .bpcard:hover{border-color:var(--grena)}
 .bpcard svg{width:100%;height:auto;display:block}
 .bpc-b{padding:8px 12px 10px;display:flex;flex-direction:column;gap:2px}
