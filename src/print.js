@@ -1,36 +1,56 @@
 /* ================= impressão / PDF ================= */
 let PRINT_MODE="dl", PRINT_WIN=null;
+// Estilo comum dos documentos (relatórios, fichas, bolas paradas): faixa grená com o emblema, riscas do clube,
+// blocos de dados em "cartões", tabelas com cabeçalho grená e linhas alternadas, rodapé em todas as páginas.
 const PCSS = `
 *{box-sizing:border-box}
-body{margin:0;background:#fff;color:#1b1014;font-family:"Barlow",system-ui,Arial,sans-serif;font-size:12px;line-height:1.35}
-.page{max-width:780px;margin:0 auto;padding:22px}
-header.p{display:flex;gap:14px;align-items:center;border-bottom:3px solid #6b1426;padding-bottom:10px;margin-bottom:14px}
-header.p img{width:52px}
-header.p h1{margin:0;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:26px;line-height:1}
-header.p p{margin:3px 0 0;color:#6b5a5f;font-size:12px}
-header.p .right{margin-left:auto;text-align:right;color:#6b5a5f;font-size:11px}
-h2{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:17px;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #e0d8da;color:#6b1426;text-transform:uppercase;letter-spacing:.03em}
-table{width:100%;border-collapse:collapse;font-size:11.5px}
-th,td{border:1px solid #e0d8da;padding:4px 6px;text-align:left;vertical-align:top}
-th{background:#f6f2f3;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.02em}
+html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#fff;color:#221418;font-family:"Barlow",system-ui,Arial,sans-serif;font-size:12px;line-height:1.4}
+.page{max-width:790px;margin:0 auto;padding:0 22px 40px}
+header.p{display:flex;gap:16px;align-items:center;margin:0 -22px 18px;padding:18px 26px 20px;color:#fff;
+  background:radial-gradient(120% 160% at 0% 0%,#8f2239 0%,#6b1426 45%,#3f0913 100%);border-radius:0 0 16px 16px;position:relative;overflow:hidden}
+header.p::before{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,#d62b2f 0 33.3%,#fff 33.3% 66.6%,#1f7a3d 66.6% 100%)}
+header.p::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;border:26px solid rgba(255,255,255,.05)}
+header.p img{width:58px;height:58px;object-fit:contain;background:#fff;border-radius:50%;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.35);flex:none}
+header.p h1{margin:0;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-weight:800;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.01em}
+header.p p{margin:5px 0 0;color:rgba(255,255,255,.78);font-size:12px;font-weight:500}
+header.p .right{margin-left:auto;text-align:right;white-space:nowrap;flex:none;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.08em;font-weight:600;position:relative;z-index:1}
+header.p .right b{display:block;color:#f2bd4b;font-size:12.5px;letter-spacing:.02em;text-transform:none}
+h2{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:17px;font-weight:700;margin:20px 0 8px;padding:0 0 4px 10px;color:#6b1426;text-transform:uppercase;letter-spacing:.04em;
+  border-left:4px solid #f2bd4b;border-bottom:1px solid #eadfe2;page-break-after:avoid}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px;border:1px solid #e3d7da;border-radius:8px;overflow:hidden}
+th,td{padding:5px 7px;text-align:left;vertical-align:top;border-bottom:1px solid #efe6e8}
+tr:last-child td{border-bottom:0}
+th{background:#6b1426;color:#fff;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:0}
+tbody tr:nth-child(even) td{background:#faf6f7}
+tr{page-break-inside:avoid}
 td.c,th.c{text-align:center}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 14px;margin-bottom:6px}
-.kv div{font-size:11.5px}
-.kv b{display:block;font-size:10px;color:#6b5a5f;text-transform:uppercase;letter-spacing:.03em;font-weight:700}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:8px}
+.kv div{font-size:12.5px;font-weight:600;background:#f8f3f4;border:1px solid #ede3e5;border-radius:9px;padding:7px 10px}
+.kv b{display:block;font-size:9.5px;color:#8a6a72;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:1px}
 .blocks{display:flex;flex-direction:column;gap:10px}
-.blk{border:1px solid #e0d8da;border-radius:6px;padding:8px 10px;page-break-inside:avoid}
-.blk h3{margin:0 0 3px;font-size:13px}
+.blk{border:1px solid #e3d7da;border-left:4px solid #6b1426;border-radius:8px;padding:9px 12px;page-break-inside:avoid;background:#fff}
+.blk h3{margin:0 0 3px;font-size:13px;color:#3c0a14}
 .blk .meta{color:#6b5a5f;font-size:11px;margin-bottom:4px}
 .blk p{margin:3px 0}
 .blk .draw{max-width:62%;margin-top:6px}
 .blk .draw svg,.blk .draw img{width:100%;height:auto;border-radius:5px}
-.note{color:#6b5a5f;font-size:11px}
-.sign{display:flex;gap:30px;margin-top:26px}
-.sign div{flex:1;border-top:1px solid #9d9095;padding-top:4px;font-size:11px;color:#6b5a5f}
+.note{color:#7a666c;font-size:11px}
+p{margin:6px 0}
+.sign{display:flex;gap:40px;margin-top:34px;page-break-inside:avoid}
+.sign div{flex:1;border-top:1.5px solid #6b1426;padding-top:5px;font-size:10.5px;color:#6b5a5f;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 ul{margin:4px 0;padding-left:16px}
-.bar{height:8px;background:#efeaec;border-radius:4px;overflow:hidden;min-width:60px}
-.bar i{display:block;height:100%;background:#6b1426}
-@media print{ .page{max-width:none;padding:0 6mm} @page{size:A4;margin:12mm} body{font-size:11px} }
+.bar{height:8px;background:#efe6e8;border-radius:4px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#6b1426,#a8324a)}
+.match{display:flex;align-items:center;justify-content:center;gap:22px;margin:4px 0 14px;padding:14px;border:1px solid #e3d7da;border-radius:12px;background:linear-gradient(180deg,#fbf8f9,#f3ecee)}
+.match .tm{display:flex;flex-direction:column;align-items:center;gap:5px;width:170px;text-align:center;font-weight:700;font-size:13px}
+.match .tm img{width:54px;height:54px;object-fit:contain}
+.match .tm i{width:54px;height:54px;border-radius:50%;background:#e9dfe2;display:grid;place-items:center;font-style:normal;color:#6b1426;font-weight:800}
+.match .sc{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:40px;font-weight:800;color:#3c0a14;line-height:1;text-align:center}
+.match .sc small{display:block;font-family:"Barlow",Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a6a72;margin-top:4px}
+footer.pf{margin-top:26px;display:flex;justify-content:space-between;gap:10px;font-size:9.5px;color:#9a878c;border-top:1px solid #eadfe2;padding-top:6px;text-transform:uppercase;letter-spacing:.06em}
+@media print{ .page{max-width:none;padding:0 0 12mm} header.p{margin:0 0 16px;border-radius:12px} @page{size:A4;margin:10mm 11mm 12mm} body{font-size:11px}
+  footer.pf{position:fixed;left:0;right:0;bottom:0;margin:0;background:#fff} }
 `;
 function printDoc(fname, title, body){
   const m=meta();
@@ -39,8 +59,8 @@ function printDoc(fname, title, body){
 <style>${PCSS}
 body{zoom:${(PRINT_PREF.scale||100)/100}}
 @media print{ body{zoom:${(PRINT_PREF.scale||100)/100}} }</style></head><body><div class="page">
-<header class="p"><img src="${CREST}" alt=""><div><h1>${esc(title)}</h1><p>${esc([m.team||"Estrela B",m.comp,m.season?"Época "+m.season:""].filter(Boolean).join(" — "))}</p></div><div class="right">Departamento técnico<br>${fmtD(todayISO(),{day:"numeric",month:"long",year:"numeric"})}</div></header>
-${body}</div><script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};<\/script></body></html>`;
+<header class="p"><img src="${CREST}" alt=""><div><h1>${esc(title)}</h1><p>${esc([m.team||"Estrela B",m.comp,m.season?"Época "+m.season:""].filter(Boolean).join(" — "))}</p></div><div class="right">Departamento técnico<b>${fmtD(todayISO(),{day:"numeric",month:"long",year:"numeric"})}</b></div></header>
+${body}<footer class="pf"><span>CF Estrela da Amadora — ${esc(m.team||"Equipa B")}</span><span>${esc(title)}</span></footer></div><script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};<\/script></body></html>`;
   openPrintable(fname, html);
 }
 async function openPrintable(fname, html){
@@ -217,7 +237,11 @@ function gamePrint(id){
   const tp={golo:"Golo",assist:"Assistência",amarelo:"Cartão amarelo",vermelho:"Cartão vermelho",sub:"Substituição"};
   const rows=Object.entries(c.res).map(([pid,x])=>({p:P(pid)||{name:"(removido)",pos:""},x})).sort((a,b)=>(b.x.st-a.x.st)||BYPOS(a.p,b.p));
   const defs=statDefs(), st=g.st||{};
-  const body=`<div class="kv">${pRow("Adversário",g.opp)}${pRow("Data",fmtLong(g.date))}${pRow("Hora",g.time)}${pRow("Competição",g.comp)}${pRow("Jornada",g.phase)}${pRow("Local",g.venue==="F"?"Fora":"Casa")}${pRow("Resultado",scoreTxt(g,c)+(c.result?" ("+{V:"vitória",E:"empate",D:"derrota"}[c.result]+")":""))}</div>
+  const oSrc=oppCrestSrc(oppByName(g.opp)), m=meta();
+  const usT=`<div class="tm"><img src="${CREST}" alt="">${esc(m.team||"Estrela B")}</div>`, thT=`<div class="tm">${oSrc?`<img src="${esc(oSrc)}" alt="">`:`<i>${esc(g.opp?initials(g.opp):"?")}</i>`}${esc(g.opp||"Adversário")}</div>`;
+  const res=c.result?{V:"Vitória",E:"Empate",D:"Derrota"}[c.result]:(g.closed?"":"Por jogar / sem resultado");
+  const match=`<div class="match">${g.venue==="F"?thT:usT}<div class="sc">${esc(!c.result&&!g.closed&&!(g.ev||[]).length?"VS":scoreTxt(g,c))}<small>${esc(res)}</small></div>${g.venue==="F"?usT:thT}</div>`;
+  const body=`${match}<div class="kv">${pRow("Adversário",g.opp)}${pRow("Data",fmtLong(g.date))}${pRow("Hora",g.time)}${pRow("Competição",g.comp)}${pRow("Jornada",g.phase)}${pRow("Local",g.venue==="F"?"Fora":"Casa")}${pRow("Resultado",scoreTxt(g,c)+(c.result?" ("+{V:"vitória",E:"empate",D:"derrota"}[c.result]+")":""))}</div>
     <h2>Ficha individual</h2>
     <table><thead><tr><th>Atleta</th><th class="c">Pos.</th><th class="c">Min</th><th class="c">G</th><th class="c">A</th><th class="c">Cartões</th><th class="c">Nota</th>${defs.map(d=>`<th class="c">${esc(d.code||d.title)}</th>`).join("")}</tr></thead><tbody>
     ${rows.map(({p,x})=>`<tr><td>${esc(p.name)}${x.st?"":" <span class='note'>(sup.)</span>"}</td><td class="c">${esc(p.pos||"")}</td><td class="c">${x.min}</td><td class="c">${x.g||""}</td><td class="c">${x.a||""}</td><td class="c">${(x.y?"A".repeat(x.y):"")+(x.r?" V":"")}</td><td class="c"><b>${parseNum((g.rt||{})[p.id])==null?"—":fmt1(parseNum(g.rt[p.id]))}</b></td>${defs.map(d=>`<td class="c">${(st[p.id]||{})[d.id]||""}</td>`).join("")}</tr>`).join("")}

@@ -520,3 +520,15 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .bppri svg{flex:none;border-radius:4px}
 .bppri span{display:flex;flex-direction:column;min-width:0}
 .bppri small{font-size:12px}
+
+/* ---- convocatória (Jogos → Convocatória) ---- */
+.convtb input.cell{width:64px}
+.convtb input.cell.wide{width:100%;min-width:160px;text-align:left}
+.schedl{display:flex;flex-direction:column;gap:6px}
+.schedr{display:grid;grid-template-columns:150px 1fr auto;gap:8px;align-items:center}
+.schedr .inp{min-height:38px}
+.convdocs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.convdoc{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.convdoc span{display:flex;gap:6px}
+.convprev{width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);background:#fff}
+.convprev svg{width:100%;height:auto;display:block}

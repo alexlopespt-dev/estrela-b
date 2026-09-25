@@ -1,0 +1,111 @@
+import os, json, re, base64
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIST=os.path.join(ROOT,"dist"); CAP=os.path.join(ROOT,"tests","capturas")
+from playwright.sync_api import sync_playwright
+# Jogos → Convocatória: escolher jogo, dados (prova, jornada, local, horas, concentração), convocados, números e nomes completos,
+# observações, horário de jogo (proposta, guardar, editar, linhas), documentos (PDF A4 com SVG, imagem PNG), mensagem,
+# ligação a partir da ficha do jogo; novo aspeto dos relatórios (faixa, rodapé, marcador na ficha de jogo); iPad e tema escuro.
+errs=[]; LSK="estrela-tecnico-v1"
+def DB(pg): return pg.evaluate(f"JSON.parse(localStorage.getItem('{LSK}'))")
+def chk(pg,l):
+    if pg.evaluate("document.querySelector('#main').innerText.includes('Algo correu mal')"): errs.append("RENDER "+l)
+with sync_playwright() as pw:
+    b=pw.chromium.launch(); ctx=b.new_context(viewport={"width":1280,"height":900},accept_downloads=True,permissions=["clipboard-read","clipboard-write"]); pg=ctx.new_page()
+    pg.on("pageerror",lambda e:errs.append("PAGEERR "+str(e)))
+    pg.goto("file://"+DIST+"/app_local.html"); pg.wait_for_timeout(1500)
+    pg.click('nav [data-t="jogos"]'); pg.wait_for_timeout(300)
+    pg.click('[data-a="jsub"][data-k="conv"]'); pg.wait_for_timeout(400); chk(pg,"convocatória")
+    gid=pg.eval_on_selector('[data-c="convG"]',"e=>e.value"); print("jogo por omissão:", gid, D:=DB(pg)["events"][gid]["date"])
+    # o jogo por omissão é o próximo por fechar
+    if DB(pg)["events"][gid].get("closed") : errs.append("jogo por omissão fechado")
+    pg.select_option('[data-c="convG"]',"jg_j1"); pg.wait_for_timeout(300); gid="jg_j1"
+    def f(fl,v): pg.fill(f'#main [data-f="{fl}"]',v); pg.keyboard.press("Tab"); pg.wait_for_timeout(150)
+    f("comp","IIIº Divisão Distrital"); f("place","Parque de Jogos C.E.R. Tenente Valdez"); pg.select_option('#main [data-f="venue"]',"F"); pg.wait_for_timeout(150)
+    f("time","15:00"); f("meetT","11:45"); f("meetP","Estádio José Gomes"); f("cnote","Números sujeitos a alterações!")
+    g=DB(pg)["events"][gid]; print("dados:", g["comp"], "|", g["place"], "|", g["time"], g["meetT"], g["meetP"], g["venue"])
+    if g.get("meetT")!="11:45" or g.get("meetP")!="Estádio José Gomes" or g.get("place")!="Parque de Jogos C.E.R. Tenente Valdez": errs.append("dados do jogo")
+    # proposta de horário (sem guardar: campos desativados), depois guardar
+    sc0=pg.eval_on_selector_all(".schedr input[type=time]","e=>e.map(x=>x.value)"); print("proposta:", sc0[:3], "...", sc0[-1], "| desativados:", pg.eval_on_selector(".schedr input","e=>e.disabled"))
+    if not sc0 or sc0[0]!="11:45" or sc0[-1]!="15:00": errs.append("proposta de horário")
+    pg.click('[data-a="schedFill"]'); pg.wait_for_timeout(300)
+    s=DB(pg)["events"][gid]["sched"]; print("guardado:", len(s), s[2])
+    if len(s)!=11 or s[2]!={"l":"Palestra tática","t":"12:50"}: errs.append("guardar horário")
+    pg.fill('.schedr input[data-c=schedT][data-i="7"]',"14:15"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.click('[data-a="schedAdd"]'); pg.wait_for_timeout(300); pg.keyboard.type("Hino"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.fill('.schedr input[data-c=schedT][data-i="11"]',"14:58"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.click('[data-a="schedDel"][data-i="11"]'); pg.wait_for_timeout(200)
+    s=DB(pg)["events"][gid]["sched"]; print("editado:", s[7], "| linhas:", len(s))
+    if s[7]["t"]!="14:15" or len(s)!=11: errs.append("editar horário")
+    # convocados, números, nome completo, observações
+    call0=len(DB(pg)["events"][gid]["call"])
+    pg.click(f'#main [data-a="call"][data-id="{gid}"][data-p="p2"]'); pg.wait_for_timeout(200)
+    print("convocar mais um:", len(DB(pg)["events"][gid]["call"])-call0)
+    if len(DB(pg)["events"][gid]["call"])!=call0+1: errs.append("convocar")
+    pg.fill('[data-c="cnum"][data-p="p2"]',"23"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.fill('[data-f="full"][data-id="p1"]',"Tiago Castro"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.fill('[data-c="cobs"][data-p="p11"]',"Capitão"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.fill('[data-c="cnum"][data-p="p3"]',"120"); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    d=DB(pg); g=d["events"][gid]; print("n.º:", g.get("cnum"), "| nome completo:", d["players"]["p1"].get("full"), "| obs:", g.get("cobs"), "| aviso:", pg.inner_text("#toast"))
+    if g.get("cnum")!={"p2":23} or d["players"]["p1"].get("full")!="Tiago Castro" or g.get("cobs")!={"p11":"Capitão"}: errs.append("números/nomes/obs")
+    # pré-visualização: nomes completos e números deste jogo (redesenha ao sair do campo)
+    pg.click("h2"); pg.wait_for_timeout(300)
+    prev=pg.eval_on_selector(".convprev svg","e=>e.textContent")
+    print("pré-visualização:", "Tiago Castro" in prev, "23" in prev, "Capitão" in prev, "Parque de Jogos" in prev, "11h45" in prev)
+    if not all(x in prev for x in ["Tiago Castro","23","Capitão","Parque de Jogos","11h45","CONVOCATÓRIA","Miguel Motta"]): errs.append("documento convocatória")
+    hprev=pg.eval_on_selector_all(".convprev svg","e=>e[1].textContent")
+    if not all(x in hprev for x in ["HORÁRIO DE JOGO","Palestra tática","14h15","Estádio José Gomes","15h00"]): errs.append("documento horário")
+    pg.screenshot(path=os.path.join(CAP,"t29_convocatoria.png"),full_page=True)
+    # PDF: os dois documentos em A4 (SVG inteiro, sem margens)
+    with pg.expect_download() as dl: pg.click('[data-a="convDoc"][data-k="both"]')
+    html=open(dl.value.path()).read(); print("PDF:", dl.value.suggested_filename, "| páginas:", html.count('class="pg"'), "| @page sem margem:", "@page{size:A4;margin:0}" in html)
+    if html.count('class="pg"')!=2 or html.count("<svg")!=2: errs.append("pdf dois")
+    out=os.path.join(CAP,"t29_docs.html"); open(out,"w").write(html)
+    p2=ctx.new_page(); p2.goto("file://"+out); p2.wait_for_timeout(800); p2.pdf(path=os.path.join(CAP,"t29_convocatoria_horario.pdf"),format="A4",print_background=True); p2.close(); os.remove(out)
+    with pg.expect_download() as dl: pg.click('[data-a="convDoc"][data-k="conv"][data-f="pdf"]')
+    if open(dl.value.path()).read().count('class="pg"')!=1: errs.append("pdf convocatória")
+    # imagens PNG
+    for k in ("conv","hor"):
+        with pg.expect_download() as dl: pg.click(f'[data-a="convDoc"][data-k="{k}"][data-f="png"]')
+        png=open(dl.value.path(),"rb").read(); print("imagem", k, dl.value.suggested_filename, len(png)//1024, "KB")
+        ok = png[:4]==b"\x89PNG" if k=="conv" else png[:3]==b"\xff\xd8\xff"
+        if not ok or len(png)<60000 or len(png)>2500000: errs.append("imagem "+k)
+        open(os.path.join(CAP,f"t29_{k}."+("png" if k=="conv" else "jpg")),"wb").write(png)
+    # mensagem para o WhatsApp
+    pg.click('[data-a="copyCallG"]'); pg.wait_for_timeout(300)
+    txt=pg.evaluate("navigator.clipboard.readText()"); print("mensagem:", txt.splitlines()[4:6])
+    if "Concentração: 11h45 — Estádio José Gomes" not in txt or "Local: Parque de Jogos" not in txt: errs.append("mensagem")
+    # a partir da ficha do jogo
+    pg.click('[data-a="jsub"][data-k=""]'); pg.wait_for_timeout(200)
+    pg.click(f'[data-p="jogo"][data-id="jg_2627_j2"]'); pg.wait_for_timeout(300)
+    pg.click('[data-a="convOpen"]'); pg.wait_for_timeout(300)
+    print("abre na convocatória desse jogo:", pg.eval_on_selector('[data-c="convG"]',"e=>e.value"))
+    if pg.eval_on_selector('[data-c="convG"]',"e=>e.value")!="jg_2627_j2": errs.append("abrir da ficha")
+    # jogo sem hora: sem horário proposto e aviso ao tentar guardar
+    pg.fill('#main [data-f="time"]',""); pg.keyboard.press("Tab"); pg.wait_for_timeout(200)
+    pg.click('[data-a="schedFill"]'); pg.wait_for_timeout(200)
+    if "hora do jogo" not in pg.inner_text("#toast"): errs.append("sem hora")
+    # nome completo no formulário do atleta
+    pg.click('nav [data-t="plantel"]'); pg.wait_for_timeout(300); pg.click('[data-p="atleta"][data-id="p1"]'); pg.wait_for_timeout(300)
+    # relatórios com o novo aspeto
+    pg.click('[data-a="prAth"]'); pg.wait_for_timeout(200)
+    with pg.expect_download() as dl: pg.click('#dlg [data-a="prGo"][data-k="dl"]')
+    h=open(dl.value.path()).read(); print("relatório: faixa", 'header class="p"' in h, "| rodapé", 'footer class="pf"' in h)
+    if 'footer class="pf"' not in h or "radial-gradient" not in h: errs.append("novo aspeto relatórios")
+    pg.click('nav [data-t="jogos"]'); pg.wait_for_timeout(200); pg.click('[data-a="jsub"][data-k=""]'); pg.wait_for_timeout(200); pg.click('[data-p="jogo"][data-id="jg_j1"]'); pg.wait_for_timeout(300)
+    pg.click('[data-a="prGame"]'); pg.wait_for_timeout(200)
+    with pg.expect_download() as dl: pg.click('#dlg [data-a="prGo"][data-k="dl"]')
+    h=open(dl.value.path()).read(); print("ficha de jogo com marcador:", 'class="match"' in h)
+    if 'class="match"' not in h: errs.append("marcador ficha de jogo")
+    out=os.path.join(CAP,"t29_ficha.html"); open(out,"w").write(h)
+    p2=ctx.new_page(); p2.goto("file://"+out); p2.wait_for_timeout(800); p2.pdf(path=os.path.join(CAP,"t29_ficha_jogo.pdf"),format="A4",print_background=True); p2.close(); os.remove(out)
+    b.close()
+    # iPad ao alto, tema escuro
+    b=pw.chromium.launch(); c=b.new_context(viewport={"width":820,"height":1180},has_touch=True,color_scheme="dark"); q=c.new_page()
+    q.on("pageerror",lambda e:errs.append("PAGEERR "+str(e)))
+    q.goto("file://"+DIST+"/app_local.html"); q.wait_for_timeout(1200)
+    q.click('nav [data-t="jogos"]'); q.click('[data-a="jsub"][data-k="conv"]'); q.wait_for_timeout(400); chk(q,"ipad")
+    ov=q.evaluate("document.documentElement.scrollWidth<=document.documentElement.clientWidth+1"); print("iPad sem scroll lateral:", ov)
+    if not ov: errs.append("ipad scroll")
+    q.screenshot(path=os.path.join(CAP,"t29_ipad.png"))
+    b.close()
+print("ERRORS",errs)

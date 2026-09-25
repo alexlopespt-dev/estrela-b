@@ -11,7 +11,7 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 
 ## O que é
 Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 12 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios, presenças), Jogos (convocatória, onze, eventos, ficha, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (atletas, staff, configurações, cópias), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios, presenças), Jogos (lista + sub-aba Convocatória com documentos; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (atletas, staff, configurações, cópias), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -29,6 +29,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
+  conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
@@ -41,7 +42,9 @@ data/
   modelo_jogo_imagens.json  esquemas (campos) recortados dos diapositivos do PowerPoint (mjNN = n.º do diapositivo -> JPEG 660 px), embutidos como MJIMG (__MJIMG__); o princípio guarda só as chaves em `imgs` (`prImgs(p)`). Recorte: slides → PDF com LibreOffice Impress (`apt-get install libreoffice-impress`, `-env:UserInstallation=file:///tmp/lo`) → pymupdf 130 dpi → caixa verde na metade direita
   exercicios_vetor.json   os mesmos 129 redesenhados em vetor (imgk -> desenho v2), embutidos como EXVEC; gerado por tools/vetorizar/exportar.py
   emblema.b64             emblema do clube (dataURL)
-  emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG 64 px, recortados de uma captura do zerozero), embutidos como OPPIMG
+  emblemas_adversarios.json  emblemas dos 12 adversários da série (nome -> PNG até 96 px com fundo transparente), embutidos como OPPIMG. 11 substituídos pelos enviados pela equipa (`tools/emblemas/recortar.py imagem.png "Nome"` tira o fundo liso e atualiza o JSON); Malveira da Serra ainda é o do zerozero
+  horario_fundo.b64       foto de relva do cartaz "Horário de jogo" da equipa (JPEG 760 px), embutida como HOR_BG (__HORBG__)
+  emblema_bp.b64          emblema pequeno para o quadro das bolas paradas
   copias/                 guarda aqui as cópias exportadas da app (Plantel -> Exportar cópia)
 tests/      testes Playwright (correr_testes.sh corre todos)
 tools/import-exercicios/  scripts usados para importar exercícios de capturas (recorte, OCR, descrições)
@@ -83,6 +86,13 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
   - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
 - Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha: os dos princípios do bloco; se não tiver, `blockMoms(x)` = o `mom` escolhido no próprio bloco do treino (botões OF OD TO TD BP, ação `planMom`) ou, se nunca escolhido, o `mom` do exercício; ao escolher no treino, um exercício sem momento fica com esse). "O que temos trabalhado" (Treinos → Planeamento) mostra um gráfico circular por microciclo/período/época (`momentPie`, cores `--m-<k>` validadas com o skill dataviz para os dois temas) + legenda com sigla, % e minutos (test24).
+
+## Convocatória e documentos (conv.js, test29)
+- Jogos → sub-aba "Convocatória" (`S.jsub="conv"`, jogo em `S.convG`, por omissão o próximo por fechar; botão "Convocatória e horário" na ficha do jogo → `convOpen`).
+- Campos no jogo: `place` (local do jogo), `meetT`/`meetP` (hora/local de concentração; `meet` é o texto antigo, ainda lido em `callText`), `coach` (por omissão o staff com "principal" na função), `cnote` (observações; por omissão "Números sujeitos a alterações!"), `cnum:{pid:n}` (número neste jogo, por omissão `p.n`), `cobs:{pid:texto}`, `sched:[{l,t}]` (horário). No atleta: `full` (nome completo, também no formulário do atleta).
+- Horário: sem `sched` mostra proposta a partir da hora do jogo (`SCHED_DEF`, minutos antes do jogo; concentração = `meetT` se houver); "Guardar este horário" grava e deixa editar/acrescentar/apagar linhas.
+- Documentos em SVG 794x1123 (`convSVG`, `horSVG`): PDF = página A4 inteira sem margens (`convPdf`, os dois juntos ou separados); imagem = canvas 2x (convocatória PNG, horário JPEG por causa da foto). O PNG embute a Barlow do Google Fonts se houver rede (`convFontCSS`), senão usa a fonte do sistema: títulos grandes têm `textLength` fixo para caberem com qualquer fonte; textos longos encolhem (`fitW`). Imagens externas (emblema do Drive/assets) passam a dataURL antes (`inlineImgs`).
+- Relatórios (`printDoc`, print.js): faixa grená com emblema e riscas vermelho/branco/verde, dados em cartões, tabelas com cabeçalho grená, rodapé em todas as páginas; ficha de jogo com marcador e emblemas (`.match`). O plano de treino mantém o modelo próprio (`PLAN_CSS`).
 
 ## Bolas paradas (bp.js, test28)
 - Separador "Bolas paradas": cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" → `bpPrintForm` (escolher quais: caixas por bola parada, Todas/Nenhuma/+ tipo, "Uma por página" ou "Seguidas" = 2 campos por folha com altura fixa de 98 mm reais, tamanho da folha) → `bpPrint("id1,id2",lay)` com índice no início.

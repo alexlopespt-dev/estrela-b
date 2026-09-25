@@ -8,9 +8,12 @@ function vJogos(){
   const comps=competitions(), t=todayISO();
   const all=games().filter(g=>!S.jComp||g.comp===S.jComp);
   const upc=all.filter(g=>g.date>=t && !g.closed), past=all.filter(g=>!(g.date>=t && !g.closed)).reverse();
+  const sub=`<div class="seg" style="margin:0 0 14px"><button data-a="jsub" data-k="" class="${S.jsub!=="conv"?"on":""}">Jogos</button><button data-a="jsub" data-k="conv" class="${S.jsub==="conv"?"on":""}">Convocatória</button></div>`;
+  if(S.jsub==="conv") return `<div class="bar"><h2>Jogos</h2><button class="btn primary" data-a="newEvent" data-type="jogo">+ Novo jogo</button></div>${sub}${vConv()}`;
   const summary=comps.map(c=>{ const tm=stats(c).team; return `<tr><td class="l"><b>${esc(c)}</b></td><td>${tm.j}</td><td>${tm.V}</td><td>${tm.E}</td><td>${tm.D}</td><td>${tm.gf}</td><td>${tm.ga}</td><td><b>${tm.V*3+tm.E}</b></td></tr>`; }).join("");
   return `
   <div class="bar"><h2>Jogos</h2><button class="btn" data-a="sdCfg">Estatísticas de jogo</button><button class="btn primary" data-a="newEvent" data-type="jogo">+ Novo jogo</button></div>
+  ${sub}
   ${comps.length>1?`<div class="chips" style="margin-bottom:12px"><button class="chip ${!S.jComp?"on":""}" data-a="jComp" data-k="">Todas</button>${comps.map(c=>`<button class="chip ${S.jComp===c?"on":""}" data-a="jComp" data-k="${esc(c)}">${esc(c)}</button>`).join("")}</div>`:""}
   ${comps.length?`<section class="card" style="margin-bottom:14px"><div class="card-h"><h3>Competições</h3><span class="sub">Só jogos fechados</span></div><div class="tscroll"><table class="tb"><thead><tr><th class="l">Competição</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GM</th><th>GS</th><th>Pts</th></tr></thead><tbody>${summary}</tbody></table></div></section>`:""}
   <section class="card"><div class="card-h"><h3>Próximos jogos</h3><span class="sub">${upc.length}</span></div><div class="list">${upc.length?upc.map(eventRow).join(""):`<div class="empty"><b>Sem jogos marcados</b>Adiciona o próximo jogo para fazeres a convocatória.</div>`}</div></section>
@@ -20,7 +23,7 @@ function vJogos(){
 function callText(g){
   const m=meta(), c=(g.call||[]).map(P).filter(Boolean).sort(BYPOS);
   const byG={}; c.forEach(p=>{ const k=GSHORT[GROUP(p.pos)]; (byG[k]=byG[k]||[]).push(p.name+(p.n?` (${p.n})`:"")); });
-  const lines=[`${m.team||"Estrela B"} — Convocatória`, [g.comp,g.phase].filter(Boolean).join(" — "), `${g.venue==="F"?"@":"vs"} ${g.opp||"Adversário por definir"} (${g.venue==="F"?"Fora":"Casa"})`, fmtLong(g.date)+(g.time?` — ${g.time}`:""), g.meet?`Concentração: ${g.meet}`:"", ""];
+  const lines=[`${m.team||"Estrela B"} — Convocatória`, [g.comp,g.phase].filter(Boolean).join(" — "), `${g.venue==="F"?"@":"vs"} ${g.opp||"Adversário por definir"} (${g.venue==="F"?"Fora":"Casa"})`, fmtLong(g.date)+(g.time?` — ${g.time}`:""), (g.meetT||g.meetP)?`Concentração: ${[hTxt(g.meetT),g.meetP].filter(Boolean).join(" — ")}`:g.meet?`Concentração: ${g.meet}`:"", g.place?`Local: ${g.place}`:"", ""];
   ["GR","DEF","MED","AV","—"].forEach(k=>{ if(byG[k]) lines.push(`${k}: ${byG[k].join(", ")}`); });
   lines.push("", `${c.length} convocados`);
   return lines.filter((l,i,a)=>!(l===""&&a[i-1]==="")).join("\n").trim();
@@ -60,6 +63,7 @@ function pJogo(id){
     <div><h2>${home?"vs":"@"} ${esc(g.opp||"Adversário por definir")}</h2><p>${esc(fmtLong(g.date))}${g.time?" — "+esc(g.time):""}${g.comp?" — "+esc(g.comp):""}${g.phase?" — "+esc(g.phase):""}</p></div>
     <div class="acts">${g.closed?`<span class="tag ok">Fechado</span><button class="btn" data-a="gOpen" data-id="${esc(id)}">Reabrir</button>`:`<button class="btn gold" data-a="gClose" data-id="${esc(id)}">Fechar jogo</button>`}
       <button class="btn" data-a="oppFromGame" data-id="${esc(id)}">Ficha do adversário</button>
+      <button class="btn" data-a="convOpen" data-id="${esc(id)}">Convocatória e horário</button>
       <button class="btn" data-a="prGame" data-id="${esc(id)}">Ficha em PDF</button>
       <button class="btn ghost" data-a="delEvent" data-id="${esc(id)}">Eliminar</button></div></div>
   <button class="quickbar" data-a="quick" data-id="${esc(id)}">${Object.keys(g.rt||{}).length?"Rever notas — modo pós-jogo":"Lançar notas — modo pós-jogo"}</button>

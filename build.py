@@ -10,7 +10,7 @@ Uso:
 import sys, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src"); DATA = os.path.join(ROOT, "data"); DIST = os.path.join(ROOT, "dist")
-JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","bp.js","migr.js","mon.js","sync.js","boot.js"]
+JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","bp.js","conv.js","migr.js","mon.js","sync.js","boot.js"]
 
 def build(seed, out):
     crest = open(os.path.join(DATA, "emblema.b64")).read()
@@ -23,6 +23,7 @@ def build(seed, out):
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in JS_ORDER)
     h = open(os.path.join(SRC, "shell.html")).read().replace("/*CSS*/", css).replace("/*JS*/", js)
     h = (h.replace('"__CREST__"', json.dumps(crest))
+          .replace("__HORBG__", open(os.path.join(DATA, "horario_fundo.b64")).read().strip())
           .replace("__BPCREST__", open(os.path.join(DATA, "emblema_bp.b64")).read().strip())
           .replace("__EXIMG__", json.dumps(imgs))
           .replace("__EXVEC__", json.dumps(vec, separators=(",", ":")))
