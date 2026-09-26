@@ -4424,7 +4424,7 @@ async function monFetch(manual){
 function monWrongScript(u){
   let s=""; try{ s=(JSON.parse(localStorage.getItem(LS+":sync")||"null")||{}).url||""; }catch(e){}
   return s&&s.trim()===String(u).trim()
-    ? "Este endereço é o da partilha de dados (dados_app.gs), não o da monitorização. Em “Ligação ao Sheets” cola o URL da implementação do projeto da monitorização."
+    ? "A Monitorização e a Partilha estão ligadas ao mesmo endereço, e ele responde como o script da partilha (dados_app.gs). Quase de certeza o dados_app.gs está dentro do projeto da monitorização: tem de passar para um projeto à parte, com URL próprio (ver as instruções no topo do dados_app.gs)."
     : "O endereço responde como o script da partilha (dados_app.gs), não o da monitorização. Confirma em “Ligação ao Sheets” que o URL é o da monitorização; se o dados_app.gs foi colado dentro do projeto da monitorização, os dois doGet chocam — tem de ficar num projeto à parte.";
 }
 // Segundo caminho (JSONP): o Apps Script devolve cb(dados) quando recebe ?cb=; não depende de CORS.
