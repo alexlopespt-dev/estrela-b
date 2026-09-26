@@ -59,6 +59,14 @@ function prepararDadosApp() {
   try { SpreadsheetApp.getUi().alert('Dados partilhados da app', msg, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
 }
 
+/** Mostra no registo de execução os IDs do ficheiro dos dados e da pasta das fotos que este projeto está a usar
+ *  (para os copiar para ID_DADOS / ID_PASTA ao mudar o script para outro projeto). */
+function mostrarIds() {
+  var p = PropertiesService.getScriptProperties();
+  Logger.log('ID_DADOS = ' + (ID_DADOS || p.getProperty('dados_id') || '(ainda não criado)'));
+  Logger.log('ID_PASTA = ' + (ID_PASTA || p.getProperty('dados_pasta') || '(ainda não criada)'));
+}
+
 function dadosSS_() {
   var props = PropertiesService.getScriptProperties(), id = ID_DADOS || props.getProperty('dados_id'), ss = null;
   if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
