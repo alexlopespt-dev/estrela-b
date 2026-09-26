@@ -86,7 +86,7 @@ await save("1_Guiao_Reuniao_Play7.docx", "Guião — reunião Play7", [
 cN = 0;
 await save("2_Acordo_Tiago_Isidoro_90_10.docx", "Acordo de titularidade e repartição (90 % / 10 %)", [
   ...TITLE("Acordo de titularidade e repartição de benefícios", "App da equipa técnica — 90 % / 10 % — minuta"),
-  NOTE(MINUTA + " A Cláusula 7.ª (aquisição gradual) é opcional e recomendada: protege-te se o Tiago deixar de colaborar cedo. Se não a quiseres, apaga-a."),
+  NOTE(MINUTA),
   H1("Partes"),
   P("**Primeiro Contraente (Titular):** " + TITULAR + "."),
   P("**Segundo Contraente (Colaborador):** **Tiago Isidoro**, portador do cartão de cidadão n.º [●], NIF [●], residente em [MORADA]."),
@@ -108,9 +108,9 @@ await save("2_Acordo_Tiago_Isidoro_90_10.docx", "Acordo de titularidade e repart
   ...clause("Confidencialidade e não concorrência", [
     "O Colaborador mantém confidencial toda a informação não pública sobre a Aplicação (funcionalidades, código, dados, parceiros, negociações e planos de negócio), durante a vigência deste acordo e nos 5 (cinco) anos seguintes.",
     "Enquanto tiver direitos ao abrigo deste acordo e nos 12 (doze) meses seguintes, o Colaborador não desenvolverá, nem ajudará terceiros a desenvolver, produto concorrente da Aplicação."]),
-  ...clause("[Opcional] Aquisição gradual", [
-    "A participação de 10 % do Colaborador adquire-se gradualmente: 2,5 % ao fim de 12 (doze) meses a contar da assinatura e, depois disso, 0,625 % por cada trimestre completo de colaboração, até perfazer 10 % ao fim de 4 (quatro) anos.",
-    "Se o Colaborador deixar de colaborar, mantém apenas a parte já adquirida. Em caso de venda da Aplicação ou da sociedade, a participação total considera-se imediatamente adquirida."]),
+  ...clause("Aquisição gradual", [
+    "A participação de 10 % do Colaborador adquire-se gradualmente ao longo de 2 (dois) anos: 5 % ao fim de 12 (doze) meses de colaboração a contar da assinatura e, depois disso, 1,25 % por cada trimestre completo de colaboração, até perfazer 10 % ao fim de 24 (vinte e quatro) meses. Antes de completados os primeiros 12 meses, não se considera adquirida qualquer parte.",
+    "Os benefícios previstos na Cláusula 3.ª são pagos na proporção da parte adquirida à data de cada recebimento. Se o Colaborador deixar de colaborar, mantém apenas a parte já adquirida. Em caso de venda da Aplicação ou da sociedade, a participação total considera-se imediatamente adquirida."]),
   ...clause("Duração e cessação", ["O presente acordo vigora enquanto a Aplicação gerar benefícios ou enquanto o Colaborador detiver participação. Mantêm-se após a cessação as Cláusulas 2.ª e 6.ª, bem como os direitos já adquiridos."]),
   ...clause("Lei e foro", ["O presente acordo rege-se pela lei portuguesa. Para qualquer litígio, as Partes elegem o foro da comarca de [Lisboa], com renúncia a qualquer outro."]),
   ...signatures([["O Titular (90 %)", "[NOME COMPLETO]"], ["O Colaborador (10 %)", "Tiago Isidoro"]]),
