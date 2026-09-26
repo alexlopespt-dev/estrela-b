@@ -9,7 +9,16 @@ function monSnap(d){
     Object.keys(h).sort().slice(0,-21).forEach(k=>delete h[k]); localStorage.setItem(MONH_LS,JSON.stringify(h)); }catch(e){}
 }
 function monPrev(d){ try{ const h=JSON.parse(localStorage.getItem(MONH_LS)||"{}"); const k=Object.keys(h).filter(x=>x<d.hoje).sort().pop(); return k&&dayDiff(k,d.hoje)<=3?{date:k,v:h[k]}:null; }catch(e){ return null; } }
-const preJogoOk = d => !!(d && d.md && (d.md.falta===0 || d.md.falta===1));
+// Dia do microciclo contado a partir de HOJE: primeiro pelo calendário da app (próximo jogo até 7 dias),
+// senão pelo resumo do Sheets acertado pelos dias que passaram desde que foi gerado (um resumo de ontem não diz "MD-2" hoje).
+function monMd(d){
+  const t=todayISO(), g=games().find(x=>x.date>=t);
+  const lab=f=>f===0?"MD":"MD-"+f, fol=d&&d.hoje===t&&d.md?!!d.md.folga:false;
+  if(g){ const f=dayDiff(t,g.date); if(f<=7) return {etiqueta:lab(f),falta:f,folga:fol,jogo:g.date}; }
+  if(d&&d.md&&d.md.falta!=null&&d.hoje){ const f=d.md.falta-dayDiff(d.hoje,t); if(f>=0) return {...d.md,etiqueta:lab(f),falta:f,folga:fol,jogo:addDays(t,f)}; }
+  return d&&d.hoje===t&&d.md?d.md:{etiqueta:"",falta:null,folga:false};
+}
+const preJogoOk = d => { if(!d) return false; const f=monMd(d).falta; return f===0||f===1; };
 const pj1 = x => x==null||!isFinite(x)?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
 const pj2 = x => x==null||!isFinite(x)?"—":(Math.round(x*100)/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pj0 = x => x==null||!isFinite(x)?"—":Math.round(x).toLocaleString("pt-PT");
@@ -70,12 +79,12 @@ function pjTeam(d){   // dois gráficos alinhados pelo dia: carga diária da equ
 /* ---- relatório ---- */
 function preJogoPrint(){
   const d=MON.data; if(!d) return toast("Sem dados da monitorização.");
-  const md=d.md||{}, js=d.jogadores, {map}=monMatch();
+  const md=monMd(d), js=d.jogadores, {map}=monMatch(), velho=d.hoje!==todayISO();
   const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?p.name:j.nome; };
   const disp=js.filter(j=>j.estado==="Disponível"), fora=js.filter(j=>j.estado!=="Disponível");
   const com=disp.filter(j=>j.prontidao!=null), med=com.length?avg(com.map(j=>j.prontidao)):null, ac65=com.filter(j=>j.prontidao>=65).length;
   const risco=js.filter(j=>j.estadoBem==="RISCO"), semResp=disp.filter(j=>j.estadoBem==="sem resposta"||j.prontidao==null);
-  const gameDate=addDays(d.hoje,md.falta||0), g=games().find(x=>x.date===gameDate);
+  const gameDate=md.jogo||addDays(todayISO(),md.falta||0), g=games().find(x=>x.date===gameDate);
   const team=pjTeam(d), bem=team.bem, nb=bem.length, bHoje=bem[nb-1], iPrev=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null) return i; return -1; })(), bOntem=iPrev>=0?bem[iPrev]:null;
   let streak=0; for(let i=iPrev;i>0;i--){ if(bem[i]!=null&&bem[i-1]!=null&&bem[i]<bem[i-1]) streak++; else break; }
   const maxDesde=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null&&bem[i]>=bHoje) return d.dias[i]; return null; })();
@@ -85,7 +94,7 @@ function preJogoPrint(){
   const mono=avg(disp.map(j=>j.monotonia).filter(x=>x!=null));
   const dia=iso=>cap1(fmtD(iso,{weekday:"long",day:"numeric",month:"long"}));
   const quando=md.falta===0?`Jogo hoje, ${dia(gameDate).toLowerCase()}`:`Jogo amanhã, ${dia(gameDate).toLowerCase()}`;
-  const sub=[quando, g&&g.opp?`${g.venue==="F"?"@":"vs"} ${g.opp}`:"", md.etiqueta||"", `dados de ${md.falta===0?"hoje":"hoje"}, ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}${folgaHoje?" (dia de folga)":""}`].filter(Boolean).join("  ·  ");
+  const sub=[quando, g&&g.opp?`${g.venue==="F"?"@":"vs"} ${g.opp}`:"", md.etiqueta||"", `dados ${velho?"de":"de hoje,"} ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}${velho?" (não são de hoje)":""}${folgaHoje&&!velho?" (dia de folga)":""}`].filter(Boolean).join("  ·  ");
   // --- texto do resumo
   const par=[];
   if(bHoje!=null && bOntem!=null){ const up=bHoje>bOntem+0.02, dn=bHoje<bOntem-0.02;
@@ -134,7 +143,7 @@ function preJogoPrint(){
   const css=`<style>.pj-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:4px 0 12px}.pj-k{background:#f8f3f4;border:1px solid #ede3e5;border-radius:10px;padding:9px 6px;text-align:center}
     .pj-k b{display:block;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:26px;font-weight:800;color:#3c0a14;line-height:1}.pj-k span{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6a72}
     .pj-fig{border:1px solid #eadfe2;border-radius:10px;padding:10px 12px 6px;margin:8px 0 6px;page-break-inside:avoid}.pj-cap{font-size:10.5px;color:#7a666c;margin:2px 0 10px}
-    .pj-grps{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.pj-grp.z{padding:6px 12px;color:#7a666c}.pj-grp.z h3{margin:0;color:#7a666c}.pj-grp.z .d,.pj-grp.z .who{display:none}.pj-fin-w{page-break-inside:avoid}.pj-grp{border:1px solid #eadfe2;border-radius:10px;padding:9px 12px;margin:8px 0;page-break-inside:avoid}.pj-grp h3{margin:0 0 3px;font-size:13px}.pj-grp .who{font-weight:700;margin-top:5px}
+    .pj-grps{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.pj-grp.z{padding:6px 12px;color:#7a666c}.pj-grp.z h3{margin:0;color:#7a666c}.pj-grp.z .d,.pj-grp.z .who{display:none}.pj-fin-w{page-break-inside:avoid}.pj-old{background:#fdecea;border:1px solid #f3b8b3;border-radius:8px;padding:8px 12px;color:#8a1c14}.pj-grp{border:1px solid #eadfe2;border-radius:10px;padding:9px 12px;margin:8px 0;page-break-inside:avoid}.pj-grp h3{margin:0 0 3px;font-size:13px}.pj-grp .who{font-weight:700;margin-top:5px}
     .pj-case{border:1px solid #eadfe2;border-radius:10px;padding:8px 12px;margin:7px 0;page-break-inside:avoid}.pj-case-h{display:flex;justify-content:space-between;align-items:center}.pj-case-h b{font-size:13px}
     .pj-case-h span{color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:5px}.pj-case p{margin:4px 0 0}
     .pj-leg{display:flex;gap:16px;font-size:10.5px;color:#6b5a5f;margin:0 0 4px}.pj-leg i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -142,6 +151,7 @@ function preJogoPrint(){
   const body=`${css}
     <p class="note" style="margin-top:-6px">${esc(sub)}</p>
     <div class="pj-kpis">${kp(disp.length,"Disponíveis")}${kp(pj0(med),"Prontidão média")}${kp(`${ac65}/${com.length}`,"Acima de 65")}${kp(risco.length,"Em risco")}${kp(pj2(bHoje),"Bem-estar equipa")}${kp(indisp.length,"Indisponíveis")}</div>
+    ${velho?`<p class="pj-old"><b>Atenção:</b> a monitorização não foi atualizada hoje — estes números são de ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}. Atualiza em Monitorização antes de usar o relatório.</p>`:""}
     <h2>Leitura do dia</h2>${par.map(p=>`<p>${p}</p>`).join("")}
     <div class="pj-fig">${team.svg}<div class="pj-cap">Dias sem barra: folga ou sem registos. O último ponto (dourado) é o dia de hoje.</div></div>
     <h2>Indisponíveis para o jogo</h2>

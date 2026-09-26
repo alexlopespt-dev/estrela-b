@@ -11,7 +11,7 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 
 ## O que é
 Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 12 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios, presenças), Jogos (lista + sub-aba Convocatória com documentos; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (atletas, staff, configurações, cópias), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-aba Convocatória com documentos; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias — e "Presenças", grelha mensal `vPresencas`, `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -101,7 +101,9 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
 
 ## Relatório pré-jogo (prejogo.js, test31)
-- Monitorização → "Relatório pré-jogo" (ação `preJogo`, via `printAsk("prejogo")` → `preJogoPrint()`): só com `MON.data.md.falta` 0 ou 1 (`preJogoOk`); nos outros dias o botão fica apagado (`.btn.off`) e explica com toast.
+- Monitorização → "Relatório pré-jogo" (ação `preJogo`, via `printAsk("prejogo")` → `preJogoPrint()`): só em MD-1 e MD (`preJogoOk`); nos outros dias o botão fica apagado (`.btn.off`) e explica com toast.
+- O dia do microciclo (`monMd(d)`, usado também no cartão do painel e no KPI "Microciclo") conta-se a partir de **hoje**: primeiro pelo próximo jogo do calendário da app (até 7 dias), senão pelo `md` do resumo acertado pelos dias passados desde `d.hoje`. Resumo que não é de hoje → o relatório sai com aviso "não foi atualizada hoje".
+- Erro `pedido desconhecido` na monitorização = o URL responde como o `dados_app.gs` (URL da partilha colado, ou os dois .gs no mesmo projeto → dois `doGet`): mensagem própria (`monWrongScript`).
 - Secções: resumo (KPIs, leitura do dia, carga diária + bem-estar da equipa em dois gráficos alinhados — nunca dois eixos), indisponíveis (monitorização + lesões da app), quem recuperou desde ontem (barras divergentes), prontidão vs condição + grupos a 65, carga 7 dias (vermelho ≥ patamar alto `p80Carga`, amarelo ≥ `limiarCarga`), casos a decidir, guarda-redes, sem dados, leitura final.
 - A prontidão de ontem não vem no resumo do Sheets: `monSnap` guarda por dia `{nome:prontidão}` em `estrela-tecnico-v1:monhist` (21 dias, neste dispositivo) a cada leitura; `monPrev` usa o registo até 3 dias antes. Sem registo, a variação é do bem-estar (últimos dois dias da `serieBem`).
 

@@ -13,8 +13,11 @@ with sync_playwright() as pw:
     for t in ["painel","agenda","treinos","jogos","plantel","testes","clinico","scouting","stats"]:
         pg.click(f'nav [data-t="{t}"]'); pg.wait_for_timeout(250); chk(pg,t)
     pg.click('nav [data-t="treinos"]')
-    for k in ["sessoes","plan","modelo","ex","pres"]:
+    for k in ["sessoes","plan","modelo","ex"]:
         pg.click(f'[data-a="tsub"][data-k="{k}"]'); pg.wait_for_timeout(400); chk(pg,"tsub "+k)
+    pg.click('nav [data-t="plantel"]'); pg.click('[data-a="plsub"][data-k="pres"]'); pg.wait_for_timeout(400); chk(pg,"plantel pres")
+    pg.click('[data-a="plsub"][data-k="at"]'); pg.wait_for_timeout(200); chk(pg,"plantel at")
+    pg.click('nav [data-t="treinos"]')
     pg.click('[data-a="tsub"][data-k="ex"]'); pg.wait_for_timeout(600)
     print("exercícios:", pg.eval_on_selector_all(".ex","e=>e.length"), "| com foto:", pg.eval_on_selector_all(".ex .exthumb img","e=>e.length"), "| com desenho:", pg.eval_on_selector_all(".ex .exthumb svg","e=>e.length"))
     print("categorias:", pg.eval_on_selector_all('[data-a="exCat"]',"e=>e.map(x=>x.innerText)"))

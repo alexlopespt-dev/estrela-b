@@ -101,11 +101,13 @@ function pJogo(id){
 
 /* ================= PLANTEL ================= */
 function vPlantel(){
+  const sub=`<div class="seg" role="tablist">${[["at","Atletas e equipa"],["pres","Presenças"]].map(([k,l])=>`<button data-a="plsub" data-k="${k}" class="${(S.plsub||"at")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.plsub==="pres") return vPresencas(sub);
   const st=stats(), m=meta();
   const list=players().filter(p=>!S.plGroup||GROUP(p.pos)===S.plGroup);
   const arch=allPlayers().filter(p=>p.archived);
   return `
-  <div class="bar"><h2>Plantel</h2><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
   <div class="chips" style="margin-bottom:12px"><button class="chip ${!S.plGroup?"on":""}" data-a="plGroup" data-k="">Todos (${players().length})</button>${["GR","DEF","MED","ATA"].map(k=>`<button class="chip ${S.plGroup===k?"on":""}" data-a="plGroup" data-k="${k}">${GNAME[k]}</button>`).join("")}</div>
   <section class="card"><div class="list">${list.length?list.map(p=>{ const s=st.pl[p.id], av=avail(p.id);
     return playerLine(p,`${av!=="ok"?`<span class="tag ${AV[av].c}">${AV[av].l}</span>`:""}<span class="small muted num" style="text-align:right">${s.j} J — ${s.min}'<br>${s.att==null?"–":s.att+"%"} treinos</span>${badge(s.avg)}`); }).join(""):`<div class="empty"><b>Sem atletas</b></div>`}</div></section>

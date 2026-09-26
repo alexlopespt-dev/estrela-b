@@ -60,7 +60,8 @@ with sync_playwright() as pw:
     # ---- presenças
     pg.click('[data-a="tsub"][data-k="sessoes"]'); pg.locator('[data-p="treino"]').first.click(); pg.click('[data-a="attAll"]'); pg.wait_for_timeout(150)
     pg.click('[data-a="att"][data-p="p2"][data-s="FI"]'); pg.wait_for_timeout(150)
-    pg.click('nav [data-t="treinos"]'); pg.click('[data-a="tsub"][data-k="pres"]'); pg.wait_for_timeout(150); chk(pg,"pres")
+    pg.click('nav [data-t="plantel"]'); pg.click('[data-a="plsub"][data-k="pres"]'); pg.wait_for_timeout(150); chk(pg,"pres")
+    if pg.query_selector('[data-a="tsub"][data-k="pres"]'): errs.append("presenças ainda nos treinos")
     print("pres head:", pg.eval_on_selector_all(".tb thead th","e=>e.map(x=>x.innerText.replace(/\\n/g,' '))"))
     print("row Rocha:", pg.eval_on_selector('.tb tbody tr:has-text("Rocha")',"e=>e.innerText.replace(/\\s+/g,' ')"))
     print("row Alves:", pg.eval_on_selector('.tb tbody tr:has-text("Alves")',"e=>e.innerText.replace(/\\s+/g,' ')"))

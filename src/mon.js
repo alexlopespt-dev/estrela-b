@@ -17,7 +17,7 @@ async function monFetch(manual){
     let d;
     try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
     catch(e){ if(e&&e.name==="AbortError") throw e; d=await monJsonp(u); }   // leitura direta bloqueada pelo browser: tenta por <script>
-    if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
+    if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro==="pedido desconhecido"?monWrongScript(c.url):d.erro);
     if(!Array.isArray(d.jogadores)) throw new Error("A resposta não tem jogadores.");
     MON.data=d; MON.at=new Date().toISOString();
     monSnap(d);
@@ -27,6 +27,13 @@ async function monFetch(manual){
     MON.err = e&&e.name==="AbortError" ? "O Google demorou demasiado a responder." : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Não foi possível ligar ao Google Sheets. Se tens um bloqueador de anúncios (AdBlock, uBlock…), desliga-o para este site; senão confirma a rede e o endereço.");
     if(manual) toast(MON.err);
   }finally{ clearTimeout(tm); MON.loading=false; VER++; schedule(); }
+}
+// "pedido desconhecido" só é dado pelo script da partilha (dados_app.gs): o endereço não chega ao doGet da monitorização.
+function monWrongScript(u){
+  let s=""; try{ s=(JSON.parse(localStorage.getItem(LS+":sync")||"null")||{}).url||""; }catch(e){}
+  return s&&s.trim()===String(u).trim()
+    ? "Este endereço é o da partilha de dados (dados_app.gs), não o da monitorização. Em “Ligação ao Sheets” cola o URL da implementação do projeto da monitorização."
+    : "O endereço responde como o script da partilha (dados_app.gs), não o da monitorização. Confirma em “Ligação ao Sheets” que o URL é o da monitorização; se o dados_app.gs foi colado dentro do projeto da monitorização, os dois doGet chocam — tem de ficar num projeto à parte.";
 }
 // Segundo caminho (JSONP): o Apps Script devolve cb(dados) quando recebe ?cb=; não depende de CORS.
 function monJsonp(u){
@@ -87,7 +94,7 @@ function monCard(){
   const {map}=monMatch();
   const top=js.filter(j=>j.prio>0||(j.prontidao!=null&&j.prontidao<50)).sort((a,b)=>b.prio-a.prio||(a.prontidao??999)-(b.prontidao??999)).slice(0,6);
   const cnt=k=>js.filter(j=>j.estadoBem===k).length;
-  return `<section class="card"><div class="card-h"><h3>Prontidão — ${esc(d.md&&d.md.etiqueta||"")}</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
+  return `<section class="card"><div class="card-h"><h3>Prontidão — ${esc(monMd(d).etiqueta||"")}</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
     <div class="card-b" style="padding-bottom:6px"><div class="mkpis" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
       <div><span>Prontidão média</span>${monScore(med,true)}</div>
       <div><span>Em risco</span><b class="${cnt("RISCO")?"bad":""}">${cnt("RISCO")}</b></div>
@@ -118,7 +125,7 @@ function vMon(){
   const cols=[["nome","Atleta"],["estado","Estado"],["prontidao","Prontidão"],["condicao","Condição"],["confianca","Confiança"],["bem3","Bem-estar 3d"],["z","Z-score"],["critico","Item crítico"],["carga7","Carga 7d"],["acwr","ACWR"],["monotonia","Monotonia"],["estadoBem","Bem-estar"],["estadoCarga","Carga"],["",`Bem-estar ${(d.dias||[]).length}d`],["","Carga diária"],["leitura","Leitura"]];
   const cnt=x=>js.filter(j=>j.estadoBem===x).length, med=com.length?Math.round(avg(com.map(j=>j.prontidao))):null;
   const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?`<button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button>`:`<div class="pin"><span class="ph g-X">${esc(initials(j.nome))}</span><b>${esc(j.nome)}</b></div>`; };
-  const md=d.md||{};
+  const md=monMd(d);
   return head+`
   <div class="kpis" style="margin-bottom:14px">
     <div class="kpi"><span>Microciclo</span><b>${esc(md.etiqueta||"–")}<small> ${md.falta===0?"jogo hoje":md.falta===1?"jogo amanhã":md.falta!=null?"jogo daqui a "+md.falta+" dias":""}${md.folga?" — folga":""}</small></b></div>
@@ -149,7 +156,7 @@ function vMon(){
 function monAth(pid){
   const j=monOf(pid); if(!j) return "";
   const d=MON.data;
-  return `<section class="card"><div class="card-h"><h3>Monitorização</h3><span class="sub">${esc(d.md&&d.md.etiqueta||"")} — ${esc(monAge())}</span></div><div class="card-b">
+  return `<section class="card"><div class="card-h"><h3>Monitorização</h3><span class="sub">${esc(monMd(d).etiqueta||"")} — ${esc(monAge())}</span></div><div class="card-b">
     <div class="mkpis">
       <div><span>Prontidão</span>${monScore(j.prontidao,true)}<small class="muted">${esc(j.prontidao==null?j.prontidaoPorque:j.faixa||"")}</small></div>
       <div><span>Condição</span>${j.condicao==null?`<small class="muted">${esc(j.condicaoPorque||"–")}</small>`:monScore(j.condicao,true)}</div>

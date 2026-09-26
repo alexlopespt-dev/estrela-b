@@ -1227,11 +1227,10 @@ function vAgenda(){
 
 /* ================= TREINOS ================= */
 function vTreinos(){
-  const sub = `<div class="seg" role="tablist">${[["sessoes","Sessões"],["plan","Planeamento"],["modelo","Modelo de jogo"],["ex","Exercícios"],["pres","Presenças"]].map(([k,l])=>`<button data-a="tsub" data-k="${k}" class="${S.tsub===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const sub = `<div class="seg" role="tablist">${[["sessoes","Sessões"],["plan","Planeamento"],["modelo","Modelo de jogo"],["ex","Exercícios"]].map(([k,l])=>`<button data-a="tsub" data-k="${k}" class="${S.tsub===k?"on":""}">${l}</button>`).join("")}</div>`;
   if(S.tsub==="plan") return vPlan(sub);
   if(S.tsub==="ex") return vEx(sub);
   if(S.tsub==="modelo") return vModelo(sub);
-  if(S.tsub==="pres") return vPresencas(sub);
   const t=todayISO(), all=trainings();
   const upc=all.filter(e=>e.date>=t), past=all.filter(e=>e.date<t).reverse();
   const group = arr => { const g={}; arr.forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; };
@@ -1394,7 +1393,7 @@ function vModelo(sub){
 }
 
 /* ================= MAPA DE PRESENÇAS ================= */
-function vPresencas(sub){
+function vPresencas(sub){   // Plantel → Presenças (grelha mensal de treinos e jogos por atleta)
   const [y,m]=S.pm.split("-").map(Number);
   const from=`${y}-${pad(m)}-01`, to=`${y}-${pad(m)}-${pad(new Date(y,m,0).getDate())}`;
   const evs=events().filter(e=>e.date>=from&&e.date<=to).sort(byDT);
@@ -1412,7 +1411,7 @@ function vPresencas(sub){
       else { const x=(calcs[e.id].res||{})[p.id]; if(x){ conv++; if(x.min>0||x.st) jg++; } } });
     return `<tr><td class="l stk"><button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button></td>${evs.map(e=>cell(e,p.id)).join("")}<td class="num"><b>${base?pct(pr,base)+"%":"–"}</b></td><td class="num">${conv?jg+"/"+conv:"–"}</td></tr>`; }).join("");
   return `
-  <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span>
     <button class="btn" data-a="pmNav" data-n="-1" aria-label="Mês anterior">‹</button><b style="font-family:var(--fc);font-size:18px;min-width:140px;text-align:center">${esc(title)}</b><button class="btn" data-a="pmNav" data-n="1" aria-label="Mês seguinte">›</button></div>
   ${evs.length?`<section class="card"><div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Atleta</th>${evs.map(e=>`<th style="${e.type==="jogo"?"background:var(--grena);color:#fff":""}"><button class="lnk" data-a="page" data-p="${e.type==="jogo"?"jogo":"treino"}" data-id="${esc(e.id)}" title="${esc(e.type==="jogo"?"Jogo vs "+(e.opp||""):(e.theme||"Treino"))}">${toD(e.date).getDate()}<br><span class="small">${e.type==="jogo"?"Jogo":["dom","seg","ter","qua","qui","sex","sáb"][toD(e.date).getDay()]}</span></button></th>`).join("")}<th>Treinos</th><th>Jogos</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="card-b small muted" style="border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap">${Object.values(ATT).map(s=>`<span><span class="rt" style="background:${s.c};min-width:26px;height:20px;font-size:12px">${s.s}</span> ${s.l}</span>`).join("")}${["T","S","C"].map(k=>`<span><span class="rt" style="background:${GC[k].c};color:${GC[k].f};min-width:26px;height:20px;font-size:12px">${k}</span> ${GC[k].l}</span>`).join("")}</div></section>
@@ -1796,11 +1795,13 @@ function pJogo(id){
 
 /* ================= PLANTEL ================= */
 function vPlantel(){
+  const sub=`<div class="seg" role="tablist">${[["at","Atletas e equipa"],["pres","Presenças"]].map(([k,l])=>`<button data-a="plsub" data-k="${k}" class="${(S.plsub||"at")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.plsub==="pres") return vPresencas(sub);
   const st=stats(), m=meta();
   const list=players().filter(p=>!S.plGroup||GROUP(p.pos)===S.plGroup);
   const arch=allPlayers().filter(p=>p.archived);
   return `
-  <div class="bar"><h2>Plantel</h2><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
   <div class="chips" style="margin-bottom:12px"><button class="chip ${!S.plGroup?"on":""}" data-a="plGroup" data-k="">Todos (${players().length})</button>${["GR","DEF","MED","ATA"].map(k=>`<button class="chip ${S.plGroup===k?"on":""}" data-a="plGroup" data-k="${k}">${GNAME[k]}</button>`).join("")}</div>
   <section class="card"><div class="list">${list.length?list.map(p=>{ const s=st.pl[p.id], av=avail(p.id);
     return playerLine(p,`${av!=="ok"?`<span class="tag ${AV[av].c}">${AV[av].l}</span>`:""}<span class="small muted num" style="text-align:right">${s.j} J — ${s.min}'<br>${s.att==null?"–":s.att+"%"} treinos</span>${badge(s.avg)}`); }).join(""):`<div class="empty"><b>Sem atletas</b></div>`}</div></section>
@@ -3255,6 +3256,7 @@ const A = {
   weekGen: () => weekGenForm(),
   newEvent: el => newEventForm(el.dataset.type, el.dataset.d),
   tsub: el => { S.tsub=el.dataset.k; render(); },
+  plsub: el => { S.plsub=el.dataset.k; render(); },
   exCat: el => { S.exCat=el.dataset.k; render(); },
   exNew: () => exForm(null),
   exView: el => exView(el.dataset.id),
@@ -4287,7 +4289,7 @@ async function monFetch(manual){
     let d;
     try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
     catch(e){ if(e&&e.name==="AbortError") throw e; d=await monJsonp(u); }   // leitura direta bloqueada pelo browser: tenta por <script>
-    if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
+    if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro==="pedido desconhecido"?monWrongScript(c.url):d.erro);
     if(!Array.isArray(d.jogadores)) throw new Error("A resposta não tem jogadores.");
     MON.data=d; MON.at=new Date().toISOString();
     monSnap(d);
@@ -4297,6 +4299,13 @@ async function monFetch(manual){
     MON.err = e&&e.name==="AbortError" ? "O Google demorou demasiado a responder." : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Não foi possível ligar ao Google Sheets. Se tens um bloqueador de anúncios (AdBlock, uBlock…), desliga-o para este site; senão confirma a rede e o endereço.");
     if(manual) toast(MON.err);
   }finally{ clearTimeout(tm); MON.loading=false; VER++; schedule(); }
+}
+// "pedido desconhecido" só é dado pelo script da partilha (dados_app.gs): o endereço não chega ao doGet da monitorização.
+function monWrongScript(u){
+  let s=""; try{ s=(JSON.parse(localStorage.getItem(LS+":sync")||"null")||{}).url||""; }catch(e){}
+  return s&&s.trim()===String(u).trim()
+    ? "Este endereço é o da partilha de dados (dados_app.gs), não o da monitorização. Em “Ligação ao Sheets” cola o URL da implementação do projeto da monitorização."
+    : "O endereço responde como o script da partilha (dados_app.gs), não o da monitorização. Confirma em “Ligação ao Sheets” que o URL é o da monitorização; se o dados_app.gs foi colado dentro do projeto da monitorização, os dois doGet chocam — tem de ficar num projeto à parte.";
 }
 // Segundo caminho (JSONP): o Apps Script devolve cb(dados) quando recebe ?cb=; não depende de CORS.
 function monJsonp(u){
@@ -4357,7 +4366,7 @@ function monCard(){
   const {map}=monMatch();
   const top=js.filter(j=>j.prio>0||(j.prontidao!=null&&j.prontidao<50)).sort((a,b)=>b.prio-a.prio||(a.prontidao??999)-(b.prontidao??999)).slice(0,6);
   const cnt=k=>js.filter(j=>j.estadoBem===k).length;
-  return `<section class="card"><div class="card-h"><h3>Prontidão — ${esc(d.md&&d.md.etiqueta||"")}</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
+  return `<section class="card"><div class="card-h"><h3>Prontidão — ${esc(monMd(d).etiqueta||"")}</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
     <div class="card-b" style="padding-bottom:6px"><div class="mkpis" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
       <div><span>Prontidão média</span>${monScore(med,true)}</div>
       <div><span>Em risco</span><b class="${cnt("RISCO")?"bad":""}">${cnt("RISCO")}</b></div>
@@ -4388,7 +4397,7 @@ function vMon(){
   const cols=[["nome","Atleta"],["estado","Estado"],["prontidao","Prontidão"],["condicao","Condição"],["confianca","Confiança"],["bem3","Bem-estar 3d"],["z","Z-score"],["critico","Item crítico"],["carga7","Carga 7d"],["acwr","ACWR"],["monotonia","Monotonia"],["estadoBem","Bem-estar"],["estadoCarga","Carga"],["",`Bem-estar ${(d.dias||[]).length}d`],["","Carga diária"],["leitura","Leitura"]];
   const cnt=x=>js.filter(j=>j.estadoBem===x).length, med=com.length?Math.round(avg(com.map(j=>j.prontidao))):null;
   const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?`<button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button>`:`<div class="pin"><span class="ph g-X">${esc(initials(j.nome))}</span><b>${esc(j.nome)}</b></div>`; };
-  const md=d.md||{};
+  const md=monMd(d);
   return head+`
   <div class="kpis" style="margin-bottom:14px">
     <div class="kpi"><span>Microciclo</span><b>${esc(md.etiqueta||"–")}<small> ${md.falta===0?"jogo hoje":md.falta===1?"jogo amanhã":md.falta!=null?"jogo daqui a "+md.falta+" dias":""}${md.folga?" — folga":""}</small></b></div>
@@ -4419,7 +4428,7 @@ function vMon(){
 function monAth(pid){
   const j=monOf(pid); if(!j) return "";
   const d=MON.data;
-  return `<section class="card"><div class="card-h"><h3>Monitorização</h3><span class="sub">${esc(d.md&&d.md.etiqueta||"")} — ${esc(monAge())}</span></div><div class="card-b">
+  return `<section class="card"><div class="card-h"><h3>Monitorização</h3><span class="sub">${esc(monMd(d).etiqueta||"")} — ${esc(monAge())}</span></div><div class="card-b">
     <div class="mkpis">
       <div><span>Prontidão</span>${monScore(j.prontidao,true)}<small class="muted">${esc(j.prontidao==null?j.prontidaoPorque:j.faixa||"")}</small></div>
       <div><span>Condição</span>${j.condicao==null?`<small class="muted">${esc(j.condicaoPorque||"–")}</small>`:monScore(j.condicao,true)}</div>
@@ -4464,7 +4473,16 @@ function monSnap(d){
     Object.keys(h).sort().slice(0,-21).forEach(k=>delete h[k]); localStorage.setItem(MONH_LS,JSON.stringify(h)); }catch(e){}
 }
 function monPrev(d){ try{ const h=JSON.parse(localStorage.getItem(MONH_LS)||"{}"); const k=Object.keys(h).filter(x=>x<d.hoje).sort().pop(); return k&&dayDiff(k,d.hoje)<=3?{date:k,v:h[k]}:null; }catch(e){ return null; } }
-const preJogoOk = d => !!(d && d.md && (d.md.falta===0 || d.md.falta===1));
+// Dia do microciclo contado a partir de HOJE: primeiro pelo calendário da app (próximo jogo até 7 dias),
+// senão pelo resumo do Sheets acertado pelos dias que passaram desde que foi gerado (um resumo de ontem não diz "MD-2" hoje).
+function monMd(d){
+  const t=todayISO(), g=games().find(x=>x.date>=t);
+  const lab=f=>f===0?"MD":"MD-"+f, fol=d&&d.hoje===t&&d.md?!!d.md.folga:false;
+  if(g){ const f=dayDiff(t,g.date); if(f<=7) return {etiqueta:lab(f),falta:f,folga:fol,jogo:g.date}; }
+  if(d&&d.md&&d.md.falta!=null&&d.hoje){ const f=d.md.falta-dayDiff(d.hoje,t); if(f>=0) return {...d.md,etiqueta:lab(f),falta:f,folga:fol,jogo:addDays(t,f)}; }
+  return d&&d.hoje===t&&d.md?d.md:{etiqueta:"",falta:null,folga:false};
+}
+const preJogoOk = d => { if(!d) return false; const f=monMd(d).falta; return f===0||f===1; };
 const pj1 = x => x==null||!isFinite(x)?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
 const pj2 = x => x==null||!isFinite(x)?"—":(Math.round(x*100)/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pj0 = x => x==null||!isFinite(x)?"—":Math.round(x).toLocaleString("pt-PT");
@@ -4525,12 +4543,12 @@ function pjTeam(d){   // dois gráficos alinhados pelo dia: carga diária da equ
 /* ---- relatório ---- */
 function preJogoPrint(){
   const d=MON.data; if(!d) return toast("Sem dados da monitorização.");
-  const md=d.md||{}, js=d.jogadores, {map}=monMatch();
+  const md=monMd(d), js=d.jogadores, {map}=monMatch(), velho=d.hoje!==todayISO();
   const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?p.name:j.nome; };
   const disp=js.filter(j=>j.estado==="Disponível"), fora=js.filter(j=>j.estado!=="Disponível");
   const com=disp.filter(j=>j.prontidao!=null), med=com.length?avg(com.map(j=>j.prontidao)):null, ac65=com.filter(j=>j.prontidao>=65).length;
   const risco=js.filter(j=>j.estadoBem==="RISCO"), semResp=disp.filter(j=>j.estadoBem==="sem resposta"||j.prontidao==null);
-  const gameDate=addDays(d.hoje,md.falta||0), g=games().find(x=>x.date===gameDate);
+  const gameDate=md.jogo||addDays(todayISO(),md.falta||0), g=games().find(x=>x.date===gameDate);
   const team=pjTeam(d), bem=team.bem, nb=bem.length, bHoje=bem[nb-1], iPrev=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null) return i; return -1; })(), bOntem=iPrev>=0?bem[iPrev]:null;
   let streak=0; for(let i=iPrev;i>0;i--){ if(bem[i]!=null&&bem[i-1]!=null&&bem[i]<bem[i-1]) streak++; else break; }
   const maxDesde=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null&&bem[i]>=bHoje) return d.dias[i]; return null; })();
@@ -4540,7 +4558,7 @@ function preJogoPrint(){
   const mono=avg(disp.map(j=>j.monotonia).filter(x=>x!=null));
   const dia=iso=>cap1(fmtD(iso,{weekday:"long",day:"numeric",month:"long"}));
   const quando=md.falta===0?`Jogo hoje, ${dia(gameDate).toLowerCase()}`:`Jogo amanhã, ${dia(gameDate).toLowerCase()}`;
-  const sub=[quando, g&&g.opp?`${g.venue==="F"?"@":"vs"} ${g.opp}`:"", md.etiqueta||"", `dados de ${md.falta===0?"hoje":"hoje"}, ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}${folgaHoje?" (dia de folga)":""}`].filter(Boolean).join("  ·  ");
+  const sub=[quando, g&&g.opp?`${g.venue==="F"?"@":"vs"} ${g.opp}`:"", md.etiqueta||"", `dados ${velho?"de":"de hoje,"} ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}${velho?" (não são de hoje)":""}${folgaHoje&&!velho?" (dia de folga)":""}`].filter(Boolean).join("  ·  ");
   // --- texto do resumo
   const par=[];
   if(bHoje!=null && bOntem!=null){ const up=bHoje>bOntem+0.02, dn=bHoje<bOntem-0.02;
@@ -4589,7 +4607,7 @@ function preJogoPrint(){
   const css=`<style>.pj-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:4px 0 12px}.pj-k{background:#f8f3f4;border:1px solid #ede3e5;border-radius:10px;padding:9px 6px;text-align:center}
     .pj-k b{display:block;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:26px;font-weight:800;color:#3c0a14;line-height:1}.pj-k span{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6a72}
     .pj-fig{border:1px solid #eadfe2;border-radius:10px;padding:10px 12px 6px;margin:8px 0 6px;page-break-inside:avoid}.pj-cap{font-size:10.5px;color:#7a666c;margin:2px 0 10px}
-    .pj-grps{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.pj-grp.z{padding:6px 12px;color:#7a666c}.pj-grp.z h3{margin:0;color:#7a666c}.pj-grp.z .d,.pj-grp.z .who{display:none}.pj-fin-w{page-break-inside:avoid}.pj-grp{border:1px solid #eadfe2;border-radius:10px;padding:9px 12px;margin:8px 0;page-break-inside:avoid}.pj-grp h3{margin:0 0 3px;font-size:13px}.pj-grp .who{font-weight:700;margin-top:5px}
+    .pj-grps{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.pj-grp.z{padding:6px 12px;color:#7a666c}.pj-grp.z h3{margin:0;color:#7a666c}.pj-grp.z .d,.pj-grp.z .who{display:none}.pj-fin-w{page-break-inside:avoid}.pj-old{background:#fdecea;border:1px solid #f3b8b3;border-radius:8px;padding:8px 12px;color:#8a1c14}.pj-grp{border:1px solid #eadfe2;border-radius:10px;padding:9px 12px;margin:8px 0;page-break-inside:avoid}.pj-grp h3{margin:0 0 3px;font-size:13px}.pj-grp .who{font-weight:700;margin-top:5px}
     .pj-case{border:1px solid #eadfe2;border-radius:10px;padding:8px 12px;margin:7px 0;page-break-inside:avoid}.pj-case-h{display:flex;justify-content:space-between;align-items:center}.pj-case-h b{font-size:13px}
     .pj-case-h span{color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:5px}.pj-case p{margin:4px 0 0}
     .pj-leg{display:flex;gap:16px;font-size:10.5px;color:#6b5a5f;margin:0 0 4px}.pj-leg i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -4597,6 +4615,7 @@ function preJogoPrint(){
   const body=`${css}
     <p class="note" style="margin-top:-6px">${esc(sub)}</p>
     <div class="pj-kpis">${kp(disp.length,"Disponíveis")}${kp(pj0(med),"Prontidão média")}${kp(`${ac65}/${com.length}`,"Acima de 65")}${kp(risco.length,"Em risco")}${kp(pj2(bHoje),"Bem-estar equipa")}${kp(indisp.length,"Indisponíveis")}</div>
+    ${velho?`<p class="pj-old"><b>Atenção:</b> a monitorização não foi atualizada hoje — estes números são de ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}. Atualiza em Monitorização antes de usar o relatório.</p>`:""}
     <h2>Leitura do dia</h2>${par.map(p=>`<p>${p}</p>`).join("")}
     <div class="pj-fig">${team.svg}<div class="pj-cap">Dias sem barra: folga ou sem registos. O último ponto (dourado) é o dia de hoje.</div></div>
     <h2>Indisponíveis para o jogo</h2>

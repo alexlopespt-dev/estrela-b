@@ -601,6 +601,7 @@ const A = {
   weekGen: () => weekGenForm(),
   newEvent: el => newEventForm(el.dataset.type, el.dataset.d),
   tsub: el => { S.tsub=el.dataset.k; render(); },
+  plsub: el => { S.plsub=el.dataset.k; render(); },
   exCat: el => { S.exCat=el.dataset.k; render(); },
   exNew: () => exForm(null),
   exView: el => exView(el.dataset.id),

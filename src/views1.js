@@ -171,11 +171,10 @@ function vAgenda(){
 
 /* ================= TREINOS ================= */
 function vTreinos(){
-  const sub = `<div class="seg" role="tablist">${[["sessoes","Sessões"],["plan","Planeamento"],["modelo","Modelo de jogo"],["ex","Exercícios"],["pres","Presenças"]].map(([k,l])=>`<button data-a="tsub" data-k="${k}" class="${S.tsub===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const sub = `<div class="seg" role="tablist">${[["sessoes","Sessões"],["plan","Planeamento"],["modelo","Modelo de jogo"],["ex","Exercícios"]].map(([k,l])=>`<button data-a="tsub" data-k="${k}" class="${S.tsub===k?"on":""}">${l}</button>`).join("")}</div>`;
   if(S.tsub==="plan") return vPlan(sub);
   if(S.tsub==="ex") return vEx(sub);
   if(S.tsub==="modelo") return vModelo(sub);
-  if(S.tsub==="pres") return vPresencas(sub);
   const t=todayISO(), all=trainings();
   const upc=all.filter(e=>e.date>=t), past=all.filter(e=>e.date<t).reverse();
   const group = arr => { const g={}; arr.forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; };
@@ -338,7 +337,7 @@ function vModelo(sub){
 }
 
 /* ================= MAPA DE PRESENÇAS ================= */
-function vPresencas(sub){
+function vPresencas(sub){   // Plantel → Presenças (grelha mensal de treinos e jogos por atleta)
   const [y,m]=S.pm.split("-").map(Number);
   const from=`${y}-${pad(m)}-01`, to=`${y}-${pad(m)}-${pad(new Date(y,m,0).getDate())}`;
   const evs=events().filter(e=>e.date>=from&&e.date<=to).sort(byDT);
@@ -356,7 +355,7 @@ function vPresencas(sub){
       else { const x=(calcs[e.id].res||{})[p.id]; if(x){ conv++; if(x.min>0||x.st) jg++; } } });
     return `<tr><td class="l stk"><button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button></td>${evs.map(e=>cell(e,p.id)).join("")}<td class="num"><b>${base?pct(pr,base)+"%":"–"}</b></td><td class="num">${conv?jg+"/"+conv:"–"}</td></tr>`; }).join("");
   return `
-  <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span>
     <button class="btn" data-a="pmNav" data-n="-1" aria-label="Mês anterior">‹</button><b style="font-family:var(--fc);font-size:18px;min-width:140px;text-align:center">${esc(title)}</b><button class="btn" data-a="pmNav" data-n="1" aria-label="Mês seguinte">›</button></div>
   ${evs.length?`<section class="card"><div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Atleta</th>${evs.map(e=>`<th style="${e.type==="jogo"?"background:var(--grena);color:#fff":""}"><button class="lnk" data-a="page" data-p="${e.type==="jogo"?"jogo":"treino"}" data-id="${esc(e.id)}" title="${esc(e.type==="jogo"?"Jogo vs "+(e.opp||""):(e.theme||"Treino"))}">${toD(e.date).getDate()}<br><span class="small">${e.type==="jogo"?"Jogo":["dom","seg","ter","qua","qui","sex","sáb"][toD(e.date).getDay()]}</span></button></th>`).join("")}<th>Treinos</th><th>Jogos</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="card-b small muted" style="border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap">${Object.values(ATT).map(s=>`<span><span class="rt" style="background:${s.c};min-width:26px;height:20px;font-size:12px">${s.s}</span> ${s.l}</span>`).join("")}${["T","S","C"].map(k=>`<span><span class="rt" style="background:${GC[k].c};color:${GC[k].f};min-width:26px;height:20px;font-size:12px">${k}</span> ${GC[k].l}</span>`).join("")}</div></section>
