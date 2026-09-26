@@ -37,10 +37,9 @@ h2,h3{font-family:var(--fc);margin:0}
 .wrap{max-width:1100px;margin:0 auto;padding:0 14px 64px}
 
 /* header */
-header.top{position:relative;color:#fff;overflow:hidden;
-  background:linear-gradient(180deg,rgba(30,4,10,.6) 0%,rgba(30,4,10,.9) 70%,rgba(30,4,10,.97) 100%),
-  repeating-linear-gradient(90deg,#5c1020 0 38px,#f3eeee 38px 41px,#17582f 41px 79px,#f3eeee 79px 82px)}
-header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--grena),var(--ouro) 50%,var(--verde))}
+/* cabeçalho "D": bordeaux escuro + emblema em marca d'água (--wm, posto pelo boot.js) + separadores em pílula */
+header.top{position:relative;color:#fff;overflow:hidden;background:linear-gradient(120deg,#4a0b1f 0%,#2a0512 55%,#1a030b 100%)}
+header.top::before{content:"";position:absolute;right:-60px;top:-70px;width:420px;height:420px;background:var(--wm,none) center/contain no-repeat;opacity:.09;transform:rotate(-12deg);pointer-events:none}
 .top-in{position:relative;max-width:1100px;margin:0 auto;padding:18px 14px 4px;display:flex;gap:16px;align-items:center}
 /* estado da partilha de dados (cabeçalho) */
 .top-act{margin-left:auto;align-self:flex-start;display:flex;gap:8px;align-items:center}
@@ -54,10 +53,11 @@ header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3p
 .team h1{margin:0;font-family:var(--fc);font-weight:800;font-size:32px;line-height:.95}
 .team p{margin:5px 0 0;color:#e7d6da;font-size:13px;font-weight:500}
 .team p b{color:var(--ouro);font-weight:600}
-nav.tabs{position:relative;max-width:1100px;margin:0 auto;padding:10px 6px 0;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs{position:relative;max-width:1100px;margin:0 auto;padding:12px 6px 14px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
-nav.tabs button{flex:none;background:none;border:0;color:#d4bfc4;font-family:var(--fc);font-weight:700;font-size:16px;padding:9px 12px 12px;border-bottom:3px solid transparent;white-space:nowrap}
-nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--ouro)}
+nav.tabs button{flex:none;background:rgba(255,255,255,.06);border:0;border-radius:99px;color:#e7cfd5;font-family:var(--fc);font-weight:700;font-size:16px;padding:8px 14px;white-space:nowrap;transition:background .15s}
+nav.tabs button:hover{background:rgba(255,255,255,.12)}
+nav.tabs button[aria-selected="true"]{background:var(--ouro);color:#2a0512}
 nav.tabs button .dot{display:inline-block;min-width:17px;height:17px;border-radius:9px;background:var(--r5);color:#fff;font-family:var(--fb);font-size:11px;line-height:17px;text-align:center;margin-left:5px;padding:0 4px;vertical-align:2px}
 
 /* layout blocks */
@@ -578,7 +578,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 @media (min-width:1280px){
   .wrap,.top-in,nav.tabs{max-width:1280px}
   nav.tabs{justify-content:space-between}
-  nav.tabs button{padding:9px 9px 12px;font-size:15.5px}
+  nav.tabs button{padding:8px 11px;font-size:15.5px}
 }
 .btn.off{opacity:.55}
 

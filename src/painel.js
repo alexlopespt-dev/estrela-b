@@ -10,7 +10,7 @@ function countdown(g){
   if(dd===0) return ms>0?`${Math.floor(ms/36e5)}H ${pad(Math.floor(ms%36e5/6e4))}M`:"HOJE";
   if(ms<=0) return "HOJE";
   const d=Math.floor(ms/864e5), hh=Math.floor(ms%864e5/36e5);
-  return `${d}D ${pad(hh)}H`;
+  return d ? `${d}D ${pad(hh)}H` : `${hh}H ${pad(Math.floor(ms%36e5/6e4))}M`;
 }
 function nextMatchCard(){
   const t=todayISO(), g=games().find(x=>x.date>=t&&!x.closed);
