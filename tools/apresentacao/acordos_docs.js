@@ -82,32 +82,38 @@ await save("1_Guiao_Reuniao_Play7.docx", "Guião — reunião Play7", [
   B("Apresentação (PowerPoint), trailer, iPad com a app; minutas: NDA (2) e acordo de integração (3), para enviar depois da reunião."),
 ]);
 
-/* ======================= 2. Acordo com o Tiago ======================= */
+/* ======================= 2. Acordo com o Tiago Isidoro (90/10) ======================= */
 cN = 0;
-await save("2_Acordo_Contribuicao_Tiago_Ferreira.docx", "Acordo de reconhecimento de contribuição e titularidade", [
-  ...TITLE("Acordo de reconhecimento de contribuição e de titularidade", "App da equipa técnica — minuta"),
-  NOTE(MINUTA + " Escolhe **uma** das opções da Cláusula 5.ª (A ou B) e apaga a outra."),
+await save("2_Acordo_Tiago_Isidoro_90_10.docx", "Acordo de titularidade e repartição (90 % / 10 %)", [
+  ...TITLE("Acordo de titularidade e repartição de benefícios", "App da equipa técnica — 90 % / 10 % — minuta"),
+  NOTE(MINUTA + " A Cláusula 7.ª (aquisição gradual) é opcional e recomendada: protege-te se o Tiago deixar de colaborar cedo. Se não a quiseres, apaga-a."),
   H1("Partes"),
   P("**Primeiro Contraente (Titular):** " + TITULAR + "."),
-  P("**Segundo Contraente (Colaborador):** **Tiago Ferreira**, portador do cartão de cidadão n.º [●], NIF [●], residente em [MORADA]."),
-  P("Considerando que o Titular concebeu, desenvolveu e mantém uma aplicação informática de apoio a equipas técnicas de futebol, atualmente designada “App da equipa técnica” (a **“Aplicação”**), e que o Colaborador, enquanto analista adjunto da equipa técnica, partilhou ideias e sugestões de funcionalidades durante o seu desenvolvimento, as Partes celebram o presente acordo, que se rege pelas cláusulas seguintes."),
-  ...clause("Objeto", ["O presente acordo reconhece a contribuição do Colaborador e esclarece que a titularidade da Aplicação pertence exclusivamente ao Titular."]),
-  ...clause("Titularidade", [
-    "A Aplicação — incluindo o código-fonte e objeto, o design, as interfaces, a documentação, as bases de dados e os conteúdos criados pelo Titular, bem como o nome, logótipos e marcas que a identifiquem — é propriedade exclusiva do Titular, a quem pertencem a totalidade (100 %) dos direitos patrimoniais de autor e de propriedade industrial.",
-    "O Colaborador reconhece que a sua contribuição consistiu em ideias e sugestões, não protegidas por direito de autor, e que não é coautor, cotitular nem sócio da Aplicação, salvo o que venha a resultar expressamente da Cláusula 5.ª.",
-    "Na medida em que, por qualquer contribuição sua, o Colaborador tenha adquirido algum direito patrimonial sobre a Aplicação, cede-o desde já ao Titular, a título definitivo, exclusivo e sem limite territorial ou temporal, sendo a contrapartida a prevista na Cláusula 5.ª."]),
-  ...clause("Contribuições futuras", ["Ideias, sugestões ou materiais que o Colaborador venha a fornecer para a Aplicação ficam abrangidos pelo disposto na Cláusula 2.ª, salvo acordo escrito em contrário."]),
-  ...clause("Confidencialidade", [
-    "O Colaborador obriga-se a manter confidencial toda a informação não pública relativa à Aplicação (funcionalidades em desenvolvimento, código, dados, parceiros, negociações e planos de negócio) e a não a utilizar para fins próprios ou de terceiros.",
-    "Esta obrigação mantém-se durante 5 (cinco) anos após a cessação do presente acordo."]),
-  ...clause("Reconhecimento da contribuição (escolher A ou B)", [
-    "**Opção A — Prémio em caso de venda ou receitas.** Se a Aplicação (ou a sociedade que a detenha) for vendida, ou licenciada a terceiros com receita, o Titular pagará ao Colaborador um prémio de [2–3] % do valor líquido recebido pela venda, ou de [●] % das receitas líquidas de licenciamento durante [●] anos. O Colaborador não adquire qualquer participação social nem direito de decisão.",
-    "**Opção B — Participação futura, com aquisição gradual (vesting).** Se o Titular constituir uma sociedade para explorar a Aplicação, o Colaborador terá direito a uma participação de [5–10] % no capital, adquirida gradualmente ao longo de [4] anos, com período mínimo de [12] meses (antes do qual nada é adquirido), e condicionada à sua colaboração efetiva e regular no produto. Se a colaboração terminar, o Colaborador mantém apenas a parte já adquirida, podendo o Titular (ou a sociedade) readquiri-la pelo valor nominal. Os termos serão formalizados num acordo parassocial.",
-    "Em qualquer das opções, o nome do Colaborador poderá ser referido como colaborador na conceção de funcionalidades, se este o desejar."]),
-  ...clause("Não utilização concorrente", ["Durante a vigência do presente acordo e nos 12 (doze) meses seguintes, o Colaborador não utilizará informação confidencial da Aplicação para desenvolver, ou ajudar terceiros a desenvolver, um produto concorrente."]),
-  ...clause("Duração e cessação", ["O presente acordo produz efeitos na data da assinatura. As Cláusulas 2.ª, 4.ª e 5.ª (na parte já adquirida ou vencida) mantêm-se após a sua cessação."]),
+  P("**Segundo Contraente (Colaborador):** **Tiago Isidoro**, portador do cartão de cidadão n.º [●], NIF [●], residente em [MORADA]."),
+  P("Considerando que o Titular concebeu e desenvolveu uma aplicação informática de apoio a equipas técnicas de futebol, atualmente designada “App da equipa técnica” (a **“Aplicação”**), e que o Colaborador contribuiu com ideias e sugestões para o seu desenvolvimento, as Partes acordam o seguinte:"),
+  ...clause("Objeto", ["O presente acordo define a titularidade da Aplicação e a repartição, entre as Partes, dos benefícios económicos que dela resultem, na proporção de **90 % (noventa por cento) para o Titular e 10 % (dez por cento) para o Colaborador**."]),
+  ...clause("Titularidade e gestão", [
+    "A titularidade dos direitos de autor e de propriedade industrial sobre a Aplicação — código, design, interfaces, documentação, bases de dados, nome e marcas — pertence ao Titular, que a pode transmitir para uma sociedade constituída nos termos da Cláusula 4.ª.",
+    "As decisões sobre a Aplicação (desenvolvimento, parcerias, contratos, preços, licenças e negociações com terceiros) são tomadas exclusivamente pelo Titular, que representa a Aplicação perante terceiros.",
+    "Na medida em que, pela sua contribuição, o Colaborador tenha adquirido algum direito sobre a Aplicação, cede-o ao Titular, sendo a contrapartida a participação prevista neste acordo."]),
+  ...clause("Repartição de benefícios (antes de existir sociedade)", [
+    "Enquanto a Aplicação não for detida por uma sociedade, o Colaborador tem direito a 10 % dos benefícios líquidos recebidos pelo Titular com a Aplicação, nomeadamente: preço de venda ou cessão, receitas de licenças e subscrições, e contrapartidas de parcerias.",
+    "Entende-se por benefício líquido o valor recebido deduzido dos custos diretamente associados (desenvolvimento pago a terceiros, alojamento, registos, impostos e despesas legais).",
+    "O Titular informa o Colaborador, por escrito e pelo menos uma vez por ano, dos valores recebidos e pagos, e liquida a parte do Colaborador no prazo de 30 dias após cada recebimento."]),
+  ...clause("Sociedade futura", [
+    "Se o Titular constituir uma sociedade para explorar a Aplicação, o Colaborador terá direito a uma participação de 10 % no capital social, e o Titular a 90 %.",
+    "As Partes celebrarão então um acordo parassocial que reflita este acordo, incluindo: gestão pelo Titular; direito de preferência na venda de participações; direito do Colaborador a vender nas mesmas condições se o Titular vender a sua participação (tag-along); e obrigação de o Colaborador vender se o Titular aceitar a venda de 100 % da sociedade (drag-along).",
+    "Futuros aumentos de capital ou entradas de investidores diluem as participações na proporção, tendo ambas as Partes direito de acompanhar."]),
+  ...clause("Contribuições futuras", ["O Colaborador compromete-se a colaborar de boa-fé com ideias, testes e feedback. O que venha a contribuir para a Aplicação fica abrangido pela Cláusula 2.ª, sem direito a contrapartida adicional para além da prevista neste acordo, salvo acordo escrito."]),
+  ...clause("Confidencialidade e não concorrência", [
+    "O Colaborador mantém confidencial toda a informação não pública sobre a Aplicação (funcionalidades, código, dados, parceiros, negociações e planos de negócio), durante a vigência deste acordo e nos 5 (cinco) anos seguintes.",
+    "Enquanto tiver direitos ao abrigo deste acordo e nos 12 (doze) meses seguintes, o Colaborador não desenvolverá, nem ajudará terceiros a desenvolver, produto concorrente da Aplicação."]),
+  ...clause("[Opcional] Aquisição gradual", [
+    "A participação de 10 % do Colaborador adquire-se gradualmente: 2,5 % ao fim de 12 (doze) meses a contar da assinatura e, depois disso, 0,625 % por cada trimestre completo de colaboração, até perfazer 10 % ao fim de 4 (quatro) anos.",
+    "Se o Colaborador deixar de colaborar, mantém apenas a parte já adquirida. Em caso de venda da Aplicação ou da sociedade, a participação total considera-se imediatamente adquirida."]),
+  ...clause("Duração e cessação", ["O presente acordo vigora enquanto a Aplicação gerar benefícios ou enquanto o Colaborador detiver participação. Mantêm-se após a cessação as Cláusulas 2.ª e 6.ª, bem como os direitos já adquiridos."]),
   ...clause("Lei e foro", ["O presente acordo rege-se pela lei portuguesa. Para qualquer litígio, as Partes elegem o foro da comarca de [Lisboa], com renúncia a qualquer outro."]),
-  ...signatures([["O Titular", "[NOME COMPLETO]"], ["O Colaborador", "Tiago Ferreira"]]),
+  ...signatures([["O Titular (90 %)", "[NOME COMPLETO]"], ["O Colaborador (10 %)", "Tiago Isidoro"]]),
 ]);
 
 /* ======================= 3. NDA mútuo ======================= */
