@@ -573,7 +573,7 @@ function oppRepForm(oid,rid){
 }
 
 /* ================= opções de PDF ================= */
-let PRINT_PREF={scale:125};
+let PRINT_PREF={scale:100};
 try{ const p=JSON.parse(localStorage.getItem(LS+":print")||"null"); if(p&&p.scale) PRINT_PREF=p; }catch(e){}
 function printAsk(kind,id){
   const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id),prejogo:()=>preJogoPrint()}[kind];

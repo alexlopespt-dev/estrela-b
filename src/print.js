@@ -6,28 +6,28 @@ const PCSS = `
 *{box-sizing:border-box}
 html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{margin:0;background:#fff;color:#221418;font-family:"Barlow",system-ui,Arial,sans-serif;font-size:12px;line-height:1.4}
-.page{max-width:790px;margin:0 auto;padding:0 22px 40px}
-header.p{display:flex;gap:16px;align-items:center;margin:0 -22px 18px;padding:18px 26px 20px;color:#fff;
+.page{max-width:790px;margin:0 auto;padding:0 22px 30px}
+header.p{display:flex;gap:14px;align-items:center;margin:0 -22px 12px;padding:12px 22px 14px;color:#fff;
   background:radial-gradient(120% 160% at 0% 0%,#8f2239 0%,#6b1426 45%,#3f0913 100%);border-radius:0 0 16px 16px;position:relative;overflow:hidden}
 header.p::before{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,#d62b2f 0 33.3%,#fff 33.3% 66.6%,#1f7a3d 66.6% 100%)}
 header.p::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;border:26px solid rgba(255,255,255,.05)}
-header.p img{width:58px;height:58px;object-fit:contain;background:#fff;border-radius:50%;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.35);flex:none}
-header.p h1{margin:0;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-weight:800;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.01em}
-header.p p{margin:5px 0 0;color:rgba(255,255,255,.78);font-size:12px;font-weight:500}
+header.p img{width:46px;height:46px;object-fit:contain;background:#fff;border-radius:50%;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.35);flex:none}
+header.p h1{margin:0;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-weight:800;font-size:23px;line-height:1.05;text-transform:uppercase;letter-spacing:.01em}
+header.p p{margin:3px 0 0;color:rgba(255,255,255,.78);font-size:12px;font-weight:500}
 header.p .right{margin-left:auto;text-align:right;white-space:nowrap;flex:none;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.08em;font-weight:600;position:relative;z-index:1}
 header.p .right b{display:block;color:#f2bd4b;font-size:12.5px;letter-spacing:.02em;text-transform:none}
-h2{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:17px;font-weight:700;margin:20px 0 8px;padding:0 0 4px 10px;color:#6b1426;text-transform:uppercase;letter-spacing:.04em;
+h2{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:15px;font-weight:700;margin:14px 0 6px;padding:0 0 3px 9px;color:#6b1426;text-transform:uppercase;letter-spacing:.04em;
   border-left:4px solid #f2bd4b;border-bottom:1px solid #eadfe2;page-break-after:avoid}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px;border:1px solid #e3d7da;border-radius:8px;overflow:hidden}
-th,td{padding:5px 7px;text-align:left;vertical-align:top;border-bottom:1px solid #efe6e8}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;border:1px solid #e3d7da;border-radius:8px;overflow:hidden}
+th,td{padding:3px 6px;text-align:left;vertical-align:top;border-bottom:1px solid #efe6e8}
 tr:last-child td{border-bottom:0}
-th{background:#6b1426;color:#fff;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:0}
+th{background:#6b1426;color:#fff;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:0}
 tbody tr:nth-child(even) td{background:#faf6f7}
 tr{page-break-inside:avoid}
 td.c,th.c{text-align:center}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:8px}
-.kv div{font-size:12.5px;font-weight:600;background:#f8f3f4;border:1px solid #ede3e5;border-radius:9px;padding:7px 10px}
-.kv b{display:block;font-size:9.5px;color:#8a6a72;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:1px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px;margin-bottom:6px}
+.kv div{font-size:11.5px;font-weight:600;background:#f8f3f4;border:1px solid #ede3e5;border-radius:7px;padding:4px 8px;line-height:1.3}
+.kv b{display:block;font-size:8.5px;color:#8a6a72;text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:1px}
 .blocks{display:flex;flex-direction:column;gap:10px}
 .blk{border:1px solid #e3d7da;border-left:4px solid #6b1426;border-radius:8px;padding:9px 12px;page-break-inside:avoid;background:#fff}
 .blk h3{margin:0 0 3px;font-size:13px;color:#3c0a14}
@@ -37,21 +37,32 @@ td.c,th.c{text-align:center}
 .blk .draw svg,.blk .draw img{width:100%;height:auto;border-radius:5px}
 .note{color:#7a666c;font-size:11px}
 p{margin:6px 0}
-.sign{display:flex;gap:40px;margin-top:34px;page-break-inside:avoid}
+.sign{display:flex;gap:40px;margin-top:16px;page-break-inside:avoid}
 .sign div{flex:1;border-top:1.5px solid #6b1426;padding-top:5px;font-size:10.5px;color:#6b5a5f;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 ul{margin:4px 0;padding-left:16px}
 .bar{height:8px;background:#efe6e8;border-radius:4px;overflow:hidden;min-width:60px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#6b1426,#a8324a)}
-.match{display:flex;align-items:center;justify-content:center;gap:22px;margin:4px 0 14px;padding:14px;border:1px solid #e3d7da;border-radius:12px;background:linear-gradient(180deg,#fbf8f9,#f3ecee)}
+.match{display:flex;align-items:center;justify-content:center;gap:22px;margin:2px 0 8px;padding:8px;border:1px solid #e3d7da;border-radius:12px;background:linear-gradient(180deg,#fbf8f9,#f3ecee)}
 .match .tm{display:flex;flex-direction:column;align-items:center;gap:5px;width:170px;text-align:center;font-weight:700;font-size:13px}
-.match .tm img{width:54px;height:54px;object-fit:contain}
-.match .tm i{width:54px;height:54px;border-radius:50%;background:#e9dfe2;display:grid;place-items:center;font-style:normal;color:#6b1426;font-weight:800}
-.match .sc{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:40px;font-weight:800;color:#3c0a14;line-height:1;text-align:center}
+.match .tm img{width:44px;height:44px;object-fit:contain}
+.match .tm i{width:44px;height:44px;border-radius:50%;background:#e9dfe2;display:grid;place-items:center;font-style:normal;color:#6b1426;font-weight:800}
+.match .sc{font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:34px;font-weight:800;color:#3c0a14;line-height:1;text-align:center}
 .match .sc small{display:block;font-family:"Barlow",Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a6a72;margin-top:4px}
-footer.pf{margin-top:26px;display:flex;justify-content:space-between;gap:10px;font-size:9.5px;color:#9a878c;border-top:1px solid #eadfe2;padding-top:6px;text-transform:uppercase;letter-spacing:.06em}
-@media print{ .page{max-width:none;padding:0 0 12mm} header.p{margin:0 0 16px;border-radius:12px} @page{size:A4;margin:10mm 11mm 12mm} body{font-size:11px}
+table.mleg td{padding:2px 5px}
+.p2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}.p2>div{min-width:0}
+.p2>div>h2:first-child{margin-top:12px}
+footer.pf{margin-top:20px;display:flex;justify-content:space-between;gap:10px;font-size:9.5px;color:#9a878c;border-top:1px solid #eadfe2;padding-top:6px;text-transform:uppercase;letter-spacing:.06em}
+@media print{ .page{max-width:none;padding:0 0 10mm} header.p{margin:0 0 10px;border-radius:12px} @page{size:A4;margin:10mm 11mm 12mm} body{font-size:11px}
   footer.pf{position:fixed;left:0;right:0;bottom:0;margin:0;background:#fff} }
 `;
+// Duas secções lado a lado (se só houver uma, ocupa a largura toda).
+const p2 = (a,b) => a&&b ? `<div class="p2"><div>${a}</div><div>${b}</div></div>` : (a||"")+(b||"");
+// Tabela com muitas linhas: partida em duas tabelas lado a lado (metade das linhas em cada).
+function pSplit(head, rows, min=12){
+  if(rows.length<=min) return `<table><thead>${head}</thead><tbody>${rows.join("")}</tbody></table>`;
+  const h=Math.ceil(rows.length/2), t=r=>`<table><thead>${head}</thead><tbody>${r.join("")}</tbody></table>`;
+  return `<div class="p2"><div>${t(rows.slice(0,h))}</div><div>${t(rows.slice(h))}</div></div>`;
+}
 function printDoc(fname, title, body){
   const m=meta();
   const html=`<!DOCTYPE html><html lang="pt-PT"><head><meta charset="utf-8"><title>${esc(title)}</title>
@@ -182,14 +193,19 @@ function trainingPrint(id){
   const pres=rows.filter(x=>x.s==="P"||x.s==="AT").length;
   const loads=rows.map(x=>x.load).filter(x=>x!=null), notas=rows.map(x=>x.r).filter(x=>x!=null);
   const mi=cycleAt("micro",tr.date);
-  const body=`<div class="kv">${pRow("Data",fmtLong(tr.date))}${pRow("Hora",tr.time)}${pRow("Duração",dur+" min")}${pRow("Local",tr.place)}${pRow("Tema",tr.theme)}${pRow("Microciclo",mi&&mi.name)}${pRow("Presentes",pres+" de "+players().length)}${pRow("Carga média",loads.length?Math.round(avg(loads))+" UA":"—")}${pRow("Nota média",notas.length?fmt1(avg(notas)):"—")}</div>
+  const tc=[{h:"Pos.",f:x=>esc(x.p.pos||""),on:1},{h:"Presença",f:x=>x.s?esc(ATT[x.s].l):"—",on:1},
+    {h:"RPE",f:x=>x.rpe??"—",on:rows.some(x=>x.rpe!=null)},{h:"Carga",f:x=>x.load==null?"—":Math.round(x.load),on:rows.some(x=>x.load!=null)},
+    {h:"Nota",f:x=>`<b>${x.r==null?"—":fmt1(x.r)}</b>`,on:rows.some(x=>x.r!=null)}].filter(c=>c.on);
+  const obs=rows.some(x=>x.t);
+  const head=`<tr><th>Atleta</th>${tc.map(c=>`<th class="c">${c.h}</th>`).join("")}${obs?"<th>Observações</th>":""}</tr>`;
+  const trows=rows.map(x=>`<tr><td>${esc(x.p.name)}</td>${tc.map(c=>`<td class="c">${c.f(x)}</td>`).join("")}${obs?`<td>${esc(x.t)}</td>`:""}</tr>`);
+  const stf=staff().length?`<h2>Equipa técnica</h2><table><thead><tr><th>Nome</th><th class="c">Presença</th></tr></thead><tbody>${staff().map(p=>{ const a=(tr.satt||{})[p.id]; return `<tr><td>${esc(p.name)}${p.role?` <span class="note">${esc(p.role)}</span>`:""}</td><td class="c">${a&&a.s?esc(ATT[a.s].l):"—"}</td></tr>`; }).join("")}</tbody></table>`:"";
+  const plan=(tr.plan||[]).length?`<h2>Plano realizado</h2><table><thead><tr><th class="c">#</th><th>Bloco</th><th class="c">Min</th><th>Princípios</th></tr></thead><tbody>${(tr.plan||[]).map((x,i)=>{ const ex=x.ex?D.exercises[x.ex]:null; const prs=blockPrinciples(x).map(k=>D.principles[k]).filter(Boolean).map(p=>p.name).join(", ");
+      return `<tr><td class="c">${i+1}</td><td>${esc(x.name||(ex&&ex.name)||"")}</td><td class="c">${esc(x.min??"")}</td><td>${esc(prs)}</td></tr>`; }).join("")}</tbody></table>`:"";
+  const body=`<div class="kv">${pRow("Data",cap1(fmtD(tr.date,{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"})))}${pRow("Hora",tr.time)}${pRow("Duração",dur+" min")}${pRow("Local",tr.place)}${pRow("Tema",tr.theme)}${pRow("Microciclo",mi&&mi.name)}${pRow("Presentes",pres+" de "+players().length)}${pRow("Carga média",loads.length?Math.round(avg(loads))+" UA":"—")}${pRow("Nota média",notas.length?fmt1(avg(notas)):"—")}</div>
     <h2>Presenças e avaliação individual</h2>
-    <table><thead><tr><th>Atleta</th><th class="c">Pos.</th><th class="c">Presença</th><th class="c">RPE</th><th class="c">Carga</th><th class="c">Nota</th><th>Observações</th></tr></thead><tbody>
-    ${rows.map(x=>`<tr><td>${esc(x.p.name)}</td><td class="c">${esc(x.p.pos||"")}</td><td class="c">${x.s?esc(ATT[x.s].l):"—"}</td><td class="c">${x.rpe??"—"}</td><td class="c">${x.load==null?"—":Math.round(x.load)}</td><td class="c"><b>${x.r==null?"—":fmt1(x.r)}</b></td><td>${esc(x.t)}</td></tr>`).join("")}
-    </tbody></table>
-    ${staff().length?`<h2>Equipa técnica</h2><table><thead><tr><th>Nome</th><th>Função</th><th class="c">Presença</th></tr></thead><tbody>${staff().map(p=>{ const a=(tr.satt||{})[p.id]; return `<tr><td>${esc(p.name)}</td><td>${esc(p.role||"")}</td><td class="c">${a&&a.s?esc(ATT[a.s].l):"—"}</td></tr>`; }).join("")}</tbody></table>`:""}
-    ${(tr.plan||[]).length?`<h2>Plano realizado</h2><table><thead><tr><th class="c">#</th><th>Bloco</th><th class="c">Min</th><th>Princípios</th></tr></thead><tbody>${(tr.plan||[]).map((x,i)=>{ const ex=x.ex?D.exercises[x.ex]:null; const prs=blockPrinciples(x).map(k=>D.principles[k]).filter(Boolean).map(p=>p.name).join(", ");
-      return `<tr><td class="c">${i+1}</td><td>${esc(x.name||(ex&&ex.name)||"")}</td><td class="c">${esc(x.min??"")}</td><td>${esc(prs)}</td></tr>`; }).join("")}</tbody></table>`:""}
+    ${obs?`<table><thead>${head}</thead><tbody>${trows.join("")}</tbody></table>`:pSplit(head,trows)}
+    ${p2(plan,stf)}
     <h2>Notas do treinador</h2><p>${tr.notes?esc(tr.notes).replace(/\n/g,"<br>"):"&nbsp;"}</p>
     <div class="sign"><div>Treinador</div><div>Data</div></div>`;
   printDoc(`relatorio-treino-${tr.date}`,"Relatório de treino",body);
@@ -218,10 +234,9 @@ function athletePrint(pid){
     ${tevs.length?`<h2>Avaliações de treino</h2><table><thead><tr><th class="c">Data</th><th>Sessão</th><th class="c">Nota</th><th>Observações</th></tr></thead><tbody>
       ${tevs.slice(0,25).map(t=>`<tr><td class="c">${fmtD(t.date)}</td><td>${esc(t.theme||"Treino")}</td><td class="c"><b>${parseNum(t.pev[pid].r)==null?"—":fmt1(parseNum(t.pev[pid].r))}</b></td><td>${esc(t.pev[pid].t||"")}</td></tr>`).join("")}
       </tbody></table>${tevs.length>25?`<p class="note">Mostradas as 25 mais recentes de ${tevs.length}.</p>`:""}`:""}
-    ${s.games.length?`<h2>Jogos</h2><table><thead><tr><th class="c">Data</th><th>Adversário</th><th class="c">Min</th><th class="c">G</th><th class="c">A</th><th class="c">Nota</th></tr></thead><tbody>
-      ${s.games.slice().reverse().map(g=>`<tr><td class="c">${fmtD(g.date)}</td><td>${esc(g.opp||"")}</td><td class="c">${g.min}</td><td class="c">${g.g||""}</td><td class="c">${g.a||""}</td><td class="c">${g.rt==null?"—":fmt1(g.rt)}</td></tr>`).join("")}</tbody></table>`:""}
-    ${ms.length?`<h2>Testes físicos</h2><table><thead><tr><th>Teste</th>${ms.map(m=>`<th class="c">${esc(m.label||fmtD(m.date))}</th>`).join("")}</tr></thead><tbody>
-      ${TESTS.map(t=>`<tr><td>${t.l} (${t.u})</td>${ms.map(m=>{ const v=parseNum(((m.res||{})[pid]||{})[t.k]); return `<td class="c">${v==null?"—":v}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`:""}
+    ${p2(s.games.length?`<h2>Jogos</h2><table><thead><tr><th class="c">Data</th><th>Adversário</th><th class="c">Min</th><th class="c">G</th><th class="c">A</th><th class="c">Nota</th></tr></thead><tbody>
+      ${s.games.slice().reverse().map(g=>`<tr><td class="c">${fmtD(g.date)}</td><td>${esc(g.opp||"")}</td><td class="c">${g.min}</td><td class="c">${g.g||""}</td><td class="c">${g.a||""}</td><td class="c">${g.rt==null?"—":fmt1(g.rt)}</td></tr>`).join("")}</tbody></table>`:"",ms.length?`<h2>Testes físicos</h2><table><thead><tr><th>Teste</th>${ms.map(m=>`<th class="c">${esc(m.label||fmtD(m.date))}</th>`).join("")}</tr></thead><tbody>
+      ${TESTS.map(t=>`<tr><td>${t.l} (${t.u})</td>${ms.map(m=>{ const v=parseNum(((m.res||{})[pid]||{})[t.k]); return `<td class="c">${v==null?"—":v}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`:"")}
     ${inj.length?`<h2>Historial clínico</h2><table><thead><tr><th class="c">Data</th><th>Lesão</th><th class="c">Estado</th><th class="c">Dias</th></tr></thead><tbody>
       ${inj.map(i=>{ const end=i.status==="alta"&&validISO(i.ret)?i.ret:todayISO(); return `<tr><td class="c">${fmtD(i.date)}</td><td>${esc([i.zone,i.type,i.diag].filter(Boolean).join(" — "))}</td><td class="c">${esc(INJ_ST[i.status]?INJ_ST[i.status].l:"")}</td><td class="c">${validISO(i.date)?Math.max(0,dayDiff(i.date,end)):""}</td></tr>`; }).join("")}</tbody></table>`:""}
     ${p.notes?`<h2>Notas</h2><p>${esc(p.notes).replace(/\n/g,"<br>")}</p>`:""}
@@ -241,12 +256,26 @@ function gamePrint(id){
   const usT=`<div class="tm"><img src="${CREST}" alt="">${esc(m.team||"Estrela B")}</div>`, thT=`<div class="tm">${oSrc?`<img src="${esc(oSrc)}" alt="">`:`<i>${esc(g.opp?initials(g.opp):"?")}</i>`}${esc(g.opp||"Adversário")}</div>`;
   const res=c.result?{V:"Vitória",E:"Empate",D:"Derrota"}[c.result]:(g.closed?"":"Por jogar / sem resultado");
   const match=`<div class="match">${g.venue==="F"?thT:usT}<div class="sc">${esc(!c.result&&!g.closed&&!(g.ev||[]).length?"VS":scoreTxt(g,c))}<small>${esc(res)}</small></div>${g.venue==="F"?usT:thT}</div>`;
-  const body=`${match}<div class="kv">${pRow("Adversário",g.opp)}${pRow("Data",fmtLong(g.date))}${pRow("Hora",g.time)}${pRow("Competição",g.comp)}${pRow("Jornada",g.phase)}${pRow("Local",g.venue==="F"?"Fora":"Casa")}${pRow("Resultado",scoreTxt(g,c)+(c.result?" ("+{V:"vitória",E:"empate",D:"derrota"}[c.result]+")":""))}</div>
-    <h2>Ficha individual</h2>
-    <table><thead><tr><th>Atleta</th><th class="c">Pos.</th><th class="c">Min</th><th class="c">G</th><th class="c">A</th><th class="c">Cartões</th><th class="c">Nota</th>${defs.map(d=>`<th class="c">${esc(d.code||d.title)}</th>`).join("")}</tr></thead><tbody>
-    ${rows.map(({p,x})=>`<tr><td>${esc(p.name)}${x.st?"":" <span class='note'>(sup.)</span>"}</td><td class="c">${esc(p.pos||"")}</td><td class="c">${x.min}</td><td class="c">${x.g||""}</td><td class="c">${x.a||""}</td><td class="c">${(x.y?"A".repeat(x.y):"")+(x.r?" V":"")}</td><td class="c"><b>${parseNum((g.rt||{})[p.id])==null?"—":fmt1(parseNum(g.rt[p.id]))}</b></td>${defs.map(d=>`<td class="c">${(st[p.id]||{})[d.id]||""}</td>`).join("")}</tr>`).join("")}
-    </tbody></table>
-    ${evs.length?`<h2>Eventos</h2><table><thead><tr><th class="c">Min</th><th>Evento</th><th>Jogador</th></tr></thead><tbody>${evs.map(e=>`<tr><td class="c">${parseNum(e.min)!=null?esc(parseNum(e.min))+"'":"—"}</td><td>${tp[e.t]||e.t}</td><td>${esc(name(e))}</td></tr>`).join("")}</tbody></table>`:""}
+  // só as colunas com dados (sem colunas de estatísticas vazias)
+  const nota=p=>parseNum((g.rt||{})[p.id]);
+  const cols=[
+    {h:"Pos.",f:({p})=>esc(p.pos||""),on:1},
+    {h:"Min",f:({x})=>x.min,on:1},
+    {h:"G",f:({x})=>x.g||"",on:rows.some(r=>r.x.g)},
+    {h:"A",f:({x})=>x.a||"",on:rows.some(r=>r.x.a)},
+    {h:"Cart.",f:({x})=>(x.y?"A".repeat(x.y):"")+(x.r?" V":""),on:rows.some(r=>r.x.y||r.x.r)},
+    {h:"Nota",f:({p})=>`<b>${nota(p)==null?"—":fmt1(nota(p))}</b>`,on:rows.some(r=>nota(r.p)!=null)},
+    ...defs.map(d=>({h:esc(d.code||d.title),f:({p})=>(st[p.id]||{})[d.id]||"",on:rows.some(r=>(st[r.p.id]||{})[d.id])}))].filter(c=>c.on);
+  const ficha=`<table><thead><tr><th>Atleta</th>${cols.map(c=>`<th class="c">${c.h}</th>`).join("")}</tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.p.name)}${r.x.st?"":" <span class='note'>(sup.)</span>"}</td>${cols.map(c=>`<td class="c">${c.f(r)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  // eventos: golos, assistências e cartões resumidos por jogador; substituições em tabela
+  const byT=t=>{ const n={}; evs.filter(e=>e.t===t).forEach(e=>{ const k=name(e); n[k]=(n[k]||0)+1; }); return Object.entries(n).map(([k,v])=>esc(k)+(v>1?` (${v})`:"")).join(", "); };
+  const resumo=[["golo","Golos"],["assist","Assistências"],["amarelo","Amarelos"],["vermelho","Vermelhos"]].map(([t,l])=>{ const v=byT(t); return v?`<p><b>${l}:</b> ${v}</p>`:""; }).join("");
+  const subs=evs.filter(e=>e.t==="sub");
+  const eventos=resumo||subs.length?p2(resumo?`<h2>Resumo</h2>${resumo}`:"", subs.length?`<h2>Substituições</h2><table><thead><tr><th class="c">Min</th><th>Entra</th><th>Sai</th></tr></thead><tbody>${subs.map(e=>`<tr><td class="c">${parseNum(e.min)!=null?esc(parseNum(e.min))+"'":"—"}</td><td>${esc(pname(e.in))}</td><td>${esc(pname(e.out))}</td></tr>`).join("")}</tbody></table>`:""):"";
+  const body=`${match}<div class="kv">${pRow("Data",cap1(fmtD(g.date,{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"})))}${pRow("Hora",g.time)}${pRow("Competição",g.comp)}${pRow("Jornada",g.phase)}${pRow("Local",g.venue==="F"?"Fora":"Casa")}</div>
+    <h2>Ficha individual</h2>${ficha}
+    ${eventos}
     ${g.notes?`<h2>Relatório</h2><p>${esc(g.notes).replace(/\n/g,"<br>")}</p>`:""}
     <div class="sign"><div>Treinador</div><div>Data</div></div>`;
   printDoc(`ficha-jogo-${g.date}`,"Ficha de jogo",body);
@@ -258,8 +287,8 @@ function oppPrint(id){
   const sec=(t,v)=>v?`<h2>${t}</h2><p>${esc(v).replace(/\n/g,"<br>")}</p>`:"";
   const keys=o.keys||[], reps=(o.reports||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const body=`<div class="kv">${pRow("Adversário",o.name)}${pRow("Competição",o.comp)}${pRow("Sistema tático",o.formation)}${pRow("Estilo",o.style)}${pRow("Treinador",o.coach)}${pRow("Campo",o.venue)}</div>
-    ${sec("Onze provável",o.form1)}${sec("Pontos fortes",o.strong)}${sec("Pontos fracos",o.weak)}
-    ${sec("Com bola",o.oo)}${sec("Sem bola",o.od)}${sec("Transições",o.trans)}${sec("Bolas paradas",o.bp)}${sec("Guarda-redes",o.gk)}
+    ${sec("Onze provável",o.form1)}${p2(sec("Pontos fortes",o.strong),sec("Pontos fracos",o.weak))}
+    ${p2(sec("Com bola",o.oo),sec("Sem bola",o.od))}${p2(sec("Transições",o.trans),sec("Bolas paradas",o.bp))}${sec("Guarda-redes",o.gk)}
     ${keys.length?`<h2>Jogadores a vigiar</h2><table><thead><tr><th class="c">N.º</th><th>Nome</th><th class="c">Pos.</th><th class="c">Pé</th><th>Notas</th></tr></thead><tbody>${keys.map(k=>`<tr><td class="c">${esc(k.n||"")}</td><td>${esc(k.name)}</td><td class="c">${esc(k.pos||"")}</td><td class="c">${esc(k.foot||"")}</td><td>${esc(k.note||"")}</td></tr>`).join("")}</tbody></table>`:""}
     ${sec("Plano para o jogo",o.plan)}${sec("Notas",o.notes)}
     ${reps.length?`<h2>Observações</h2>${reps.map(r=>`<p><b>${fmtD(r.date,{day:"numeric",month:"long",year:"numeric"})}${r.game?" — "+esc(r.game):""}</b>${r.by?` <span class="note">(${esc(r.by)})</span>`:""}<br>${esc(r.txt||"").replace(/\n/g,"<br>")}</p>`).join("")}`:""}`;
