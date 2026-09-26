@@ -238,20 +238,23 @@ let n = 0;
   s.addNotes("Começámos pela Equipa B. O passo seguinte é o clube todo, com contas e permissões. Depois uma app para o atleta. E a seguir, outras equipas técnicas.");
 }
 
-/* 16 — proposta Play7 */
+/* 16 — proposta Play7: integração */
 { const s = pres.addSlide(); s.background = { color: C.white }; n++;
-  kicker(s, "Proposta", 0.8, 0.6); title(s, "O que queremos construir com a Play7", 0.8, 0.9, 11);
-  const c = [["flask", "Piloto", ["Testar a app com equipas parceiras", "Recolher feedback de treinadores", "Medir o tempo poupado"]],
-    ["layers", "Construir juntos", ["Contas, cargos e permissões", "App do atleta", "Base de dados própria e segura"]],
-    ["globe", "Levar ao mercado", ["Modelo de subscrição por equipa", "Distribuição e parcerias", "Marca e lançamento"]]];
-  c.forEach(([k, h, items], i) => { const x = 0.8 + i * 4.0, y = 2.3;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 3.7, h: 3.9, fill: { color: i === 1 ? C.grena : C.soft }, line: { color: i === 1 ? C.grena : C.line }, rectRadius: 0.14 });
-    iconDot(s, k, x + 0.35, y + 0.35, 0.78, i === 1 ? C.gold : C.grena, i === 1 ? "r" : "g");
-    T(s, h, { x: x + 0.35, y: y + 1.35, w: 3.0, h: 0.45, fontFace: TF, fontSize: 20, bold: true, color: i === 1 ? C.white : C.ink });
-    T(s, items.map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < items.length - 1 } })), { x: x + 0.35, y: y + 1.95, w: 3.05, h: 1.7, fontSize: 13.5, color: i === 1 ? "F3E6E9" : C.ink, paraSpaceAfter: 6 }); });
-  T(s, "Proposta para discutir na reunião — os termos definimos em conjunto.", { x: 0.8, y: 6.5, w: 11, h: 0.35, fontSize: 12.5, italic: true, color: C.mute });
+  kicker(s, "Proposta", 0.8, 0.6); title(s, "Play7Scout + a nossa app: os dados do vídeo no dia a dia do treinador", 0.8, 0.9, 11.8, false, 28);
+  const box = (x, head, sub, items, dark) => {
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 2.2, w: 4.6, h: 3.0, fill: { color: dark ? C.grena : C.soft }, line: { color: dark ? C.grena : C.line }, rectRadius: 0.14 });
+    T(s, head, { x: x + 0.35, y: 2.45, w: 4.0, h: 0.45, fontFace: TF, fontSize: 21, bold: true, color: dark ? C.white : C.ink });
+    T(s, sub, { x: x + 0.35, y: 2.92, w: 4.0, h: 0.35, fontSize: 12.5, italic: true, color: dark ? "F3E6E9" : C.mute });
+    T(s, items.map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < items.length - 1 } })), { x: x + 0.35, y: 3.4, w: 4.0, h: 1.7, fontSize: 13.5, color: dark ? C.white : C.ink, paraSpaceAfter: 5 }); };
+  box(0.8, "Play7Scout", "vê o jogo", ["Vídeo → eventos automáticos", "Estatísticas por jogador", "Clipes organizados"], false);
+  box(7.93, "A app da equipa técnica", "organiza o trabalho", ["Ficha de jogo e do atleta", "Treino, carga e planeamento", "Convocatória e documentos"], true);
+  s.addShape(pres.shapes.RIGHT_ARROW, { x: 5.62, y: 3.25, w: 2.1, h: 0.9, fill: { color: C.gold }, line: { color: C.gold } });
+  T(s, "API · dados do clube", { x: 5.45, y: 4.3, w: 2.45, h: 0.35, fontSize: 12, bold: true, color: C.grena, align: "center" });
+  T(s, "automático, com autorização do clube", { x: 5.45, y: 4.62, w: 2.45, h: 0.5, fontSize: 10.5, color: C.mute, align: "center" });
+  const chips = [["users", "Cada empresa com o seu produto e os seus clientes"], ["shield", "Integração só por dados — sem acesso ao código"], ["flask", "Piloto de 3 meses com 2–3 clubes"]];
+  chips.forEach(([k, t], i) => { const x = 0.8 + i * 4.0; iconDot(s, k, x, 5.75, 0.55); T(s, t, { x: x + 0.72, y: 5.78, w: 3.1, h: 0.6, fontSize: 13, bold: true }); });
   pageNo(s, n);
-  s.addNotes("A nossa proposta tem três partes: um piloto com equipas parceiras, desenvolvimento conjunto do que falta para escalar (contas, app do atleta, base de dados própria) e levar ao mercado. Os termos definimos juntos.");
+  s.addNotes("A proposta: uma integração. O Play7Scout analisa o vídeo; os eventos, estatísticas e clipes entram automaticamente na nossa app, com autorização do clube. Cada empresa mantém o seu produto e os seus clientes; a integração faz-se só por dados. Primeiro passo: NDA e piloto de 3 meses com 2-3 clubes.");
 }
 
 /* 17 — fecho */
