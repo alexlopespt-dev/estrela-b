@@ -22,18 +22,19 @@
   --fb:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --fc:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   box-sizing:border-box; color-scheme:light;
+  --card-hi:rgba(143,34,57,.035); --mp-bar:#dcb0ba;
   --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){ color-scheme:dark;
+  :root:not([data-theme="light"]){ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
     --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
     --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
     --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
   }
 }
-:root[data-theme="dark"]{ color-scheme:dark;
+:root[data-theme="dark"]{ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
   --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
   --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
   --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
@@ -77,7 +78,7 @@ nav.tabs button .dot{display:inline-block;min-width:17px;height:17px;border-radi
 .bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 10px}
 .bar h2{font-size:24px;font-weight:800;margin-right:auto}
 .bar .sp{flex:1}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.card{background:linear-gradient(180deg,var(--card-hi),transparent 55%),var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
 .card + .card{margin-top:14px}
 .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .card-h h3{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
@@ -159,7 +160,7 @@ button.li:hover{background:var(--surface-2)}
 
 /* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi{background:linear-gradient(180deg,var(--card-hi),transparent 60%),var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi span{display:block;font-size:12px;color:var(--muted);font-weight:600}
 .kpi b{display:block;font-family:var(--fc);font-size:28px;font-weight:800;line-height:1.05;margin-top:2px}
 .kpi b small{font-size:15px;color:var(--muted);font-weight:600}
@@ -599,6 +600,57 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .alert.warn i{background:var(--ouro)}
 .edby{margin:14px 2px 4px;text-align:right}
 
+/* ===== painel (painel.js): próximo jogo, prontidão resumida, semana, notificações ===== */
+.bar .hello{font-weight:600;margin-left:4px}
+.dash2{display:grid;gap:14px;margin-top:14px;align-items:stretch;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"nm mp mp" "nm att att"}
+.dash2 .card{margin-top:0}
+.d2-nm{grid-area:nm;display:flex;min-width:0}.d2-nm>.card{flex:1}
+.d2-mp{grid-area:mp;display:grid;grid-template-columns:1fr 1fr;gap:14px;min-width:0}
+.d2-att{grid-area:att;min-width:0}
+.dash2:not(:has(.d2-att)){grid-template-areas:"nm mp mp" "nm mp mp"}
+.d2-mp:has(>.card:only-child){grid-template-columns:1fr}
+.nx{color:#fff;border:0;padding:20px 22px;background:radial-gradient(120% 90% at 100% 0%,rgba(242,189,75,.18),transparent 55%),radial-gradient(140% 120% at 0% 100%,#3d0914,transparent 60%),linear-gradient(160deg,#8f2239,#4a0d19)!important;box-shadow:0 18px 40px -22px rgba(61,9,20,.7)}
+.nx-k{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0c9d2}
+.nx-vs{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 16px}
+.nx-t{text-align:center;width:108px;flex:none}.nx-t b{display:block;font-family:var(--fc);font-size:18px;margin-top:8px;line-height:1.05}
+.nx-c{width:78px;height:78px;border-radius:50%;margin:0 auto;display:grid;place-items:center;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.nx-c img{width:54px;height:54px;object-fit:contain}.nx-c i{font-style:normal;font-family:var(--fc);font-weight:800;font-size:24px;color:var(--ouro)}
+.nx-clk{text-align:center;flex:1;min-width:0}.nx-clk b{display:block;font-family:var(--fc);font-weight:800;font-size:38px;line-height:1;white-space:nowrap;letter-spacing:.01em}
+.nx-clk small{display:block;color:#f0d8de;font-size:12.5px;margin-top:6px}
+.nx-chips{display:flex;flex-wrap:wrap;gap:7px}.nx-chip{padding:6px 11px;border-radius:99px;background:rgba(255,255,255,.12);font-size:12.5px;font-weight:600;color:#fbeef1}
+.nx-chip.gold{background:rgba(242,189,75,.22);color:#ffd67a}
+.nx-pr{display:grid;grid-template-columns:auto 30px 1fr;gap:5px 10px;align-items:center;margin-top:8px;font-size:13px}
+.nx-pr b{text-align:right;font-family:var(--fc);font-size:16px}.nx-pr b.lo{color:#ffd67a}
+.nx-pr i{height:6px;border-radius:9px;background:rgba(255,255,255,.14);overflow:hidden}.nx-pr em{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#d05a73,#f2bd4b)}
+.nx-act{display:flex;gap:8px;margin-top:18px}.nx-act .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);color:#fff}
+.nx-empty .empty{padding:24px 0 6px}
+.mp .card-b{padding:14px 16px}
+.mp-ring{display:flex;align-items:center;gap:16px}.mp-l{font-size:14px;line-height:1.75}.mp-l b{font-family:var(--fc);font-size:17px}.mp-l b.g{color:#c98a00}.mp-l b.r{color:var(--r5)}
+.mp-big{font-family:var(--fc);font-weight:800;font-size:40px;line-height:1}.mp-big small{font-size:16px;color:var(--muted);font-weight:700}
+.mp-bars{display:block;width:100%;height:44px;margin:8px 0 6px}
+.mp-att .li .tag{flex:none}
+.wk-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:14px 16px 16px}
+.wk-d{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:11px 12px;border-radius:16px;border:1px solid var(--line);background:var(--surface-2);min-height:112px;min-width:0}
+.wk-d:hover{border-color:var(--muted)}
+.wk-h{display:flex;justify-content:space-between;width:100%;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted)}.wk-h b{color:var(--text)}
+.wk-t{font-size:15px;margin-top:6px}.wk-t.off{color:var(--muted);font-weight:600}
+.wk-d small{font-size:12px;color:var(--muted);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.wk-d .tag{margin-top:auto}
+.wk-d.today{border-color:var(--ouro);background:rgba(242,189,75,.1);box-shadow:inset 0 0 0 1px var(--ouro)}
+.wk-d.game{border:0;background:linear-gradient(160deg,#8f2239,#4a0d19);color:#fff}.wk-d.game .wk-h,.wk-d.game .wk-h b,.wk-d.game small{color:#f7dde3}
+.dash3{display:grid;gap:14px;margin-top:14px;align-items:start;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}
+.dash3 .card{margin-top:0}
+.ldr3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}
+.notibt{position:relative}.notibt .nb{position:absolute;top:-4px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--r5);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px #2a0710}
+.noti{position:absolute;z-index:60;width:380px;max-width:calc(100vw - 16px);max-height:70vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);animation:notiIn .16s ease-out}
+.noti-h{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}.noti-h b{font-family:var(--fc);font-size:17px}
+.noti .alert:first-child{border-top:0}
+@keyframes notiIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (max-width:1180px){ .nx-clk b{font-size:30px} .nx-t{width:92px} .nx-c{width:62px;height:62px} .nx-c img{width:42px;height:42px} .nx-t b{font-size:16px} .dash2{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"nm mp" "att att"} .dash2:not(:has(.d2-att)){grid-template-areas:"nm mp"} .d2-mp{grid-template-columns:1fr} .ldr3{grid-template-columns:1fr} .dash3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
+@media (max-width:760px){ .dash2,.dash2:not(:has(.d2-att)){grid-template-columns:minmax(0,1fr);grid-template-areas:"nm" "mp" "att"} .d2-mp{grid-template-columns:1fr 1fr} .dash3{grid-template-columns:minmax(0,1fr)}
+  .wk-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory} .wk-d{flex:0 0 132px;scroll-snap-align:start} .nx-t{width:92px} .nx-c{width:62px;height:62px} .nx-c img{width:42px;height:42px} .nx-clk b{font-size:30px} .bar .hello{display:none} }
+@media (max-width:420px){ .d2-mp{grid-template-columns:1fr} }
+
 </style>
 </head>
 <body>
@@ -614,7 +666,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   <div class="top-in">
     <img class="crest-img" id="crest" alt="Emblema do Estrela da Amadora" src="" style="cursor:pointer">
     <div class="team"><h1 id="tTeam">Estrela B</h1><p id="tSub">Departamento técnico</p></div>
-    <div class="top-act"><button class="syncst" id="syncSt" data-a="syncCfg" hidden></button><button class="themebt" id="themeBt" data-a="theme" aria-label="Tema"></button></div>
+    <div class="top-act"><button class="syncst" id="syncSt" data-a="syncCfg" hidden></button><button class="themebt notibt" id="notiBt" data-a="noti" aria-label="Notificações" aria-haspopup="true"></button><button class="themebt" id="themeBt" data-a="theme" aria-label="Tema"></button></div>
   </div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secções"></nav>
 </header>
@@ -1080,7 +1132,7 @@ function render(){
   $("#tTeam").textContent = m.team || "Estrela B";
   $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
-  $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="painel"?nAl : t.k==="clinico"?nInj : 0;
+  $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
     return `<button role="tab" data-a="tab" data-t="${t.k}" aria-selected="${S.tab===t.k && !S.page ? "true" : S.tab===t.k ? "true":"false"}">${t.l}${n?`<span class="dot">${n}</span>`:""}</button>`; }).join("");
   const main=$("#main");
   if(MODE==="loading"){ main.innerHTML=`<div class="empty" style="margin-top:20px"><b>A carregar…</b></div>`; return; }
@@ -1100,6 +1152,7 @@ function render(){
     h=`<div class="empty" style="margin-top:20px"><b>Algo correu mal a mostrar esta página.</b>Volta ao painel e tenta de novo.<br><br><button class="btn" data-a="tab" data-t="painel">Ir para o painel</button></div>`;
   }
   main.innerHTML=h;
+  notiRender();
   const st=$("#tabs [aria-selected=true]"), tb=$("#tabs"); if(st&&tb) tb.scrollLeft=Math.max(0,st.offsetLeft-tb.clientWidth/2+st.clientWidth/2);
 }
 
@@ -1148,8 +1201,6 @@ function playerLine(p,right=""){
 /* ================= PAINEL ================= */
 function vPainel(){
   const t=todayISO(), st=stats(), tm=st.team;
-  const up=events().filter(e=>e.date>=t).sort(byDT).slice(0,6);
-  const al=alerts();
   const a30=attendanceSince(addDays(t,-29));
   const out=players().filter(p=>avail(p.id)!=="ok");
   const pl=players().map(p=>({p,s:st.pl[p.id]}));
@@ -1157,9 +1208,10 @@ function vPainel(){
   const topG=pl.filter(x=>x.s.g>0).sort((a,b)=>b.s.g-a.s.g||b.s.a-a.s.a).slice(0,3);
   const topM=pl.filter(x=>x.s.min>0).sort((a,b)=>b.s.min-a.s.min).slice(0,3);
   const lead=(title,arr,val)=>`<div class="ldr"><div class="ldr-h">${title}</div>${arr.length?arr.map((x,i)=>`<button class="ldr-r" data-a="page" data-p="atleta" data-id="${esc(x.p.id)}"><i>${i+1}</i>${avatar(x.p)}<span class="nm">${esc(x.p.name)}</span>${val(x)}</button>`).join(""):`<div class="small muted">Sem dados ainda.</div>`}</div>`;
-  const form=tm.form.slice(-5);
+  const form=tm.form.slice(-5), mp=monPanel();
+  const hour=new Date().getHours(), me=firstName(meGet().nome);
   return `
-  <div class="bar"><h2>Painel</h2>
+  <div class="bar"><h2>Painel</h2>${me?`<span class="small muted hello">${hour<13?"Bom dia":hour<20?"Boa tarde":"Boa noite"}, ${esc(me)}</span>`:""}<span class="sp"></span>
     <button class="btn" data-a="newEvent" data-type="treino">+ Treino</button>
     <button class="btn" data-a="newEvent" data-type="jogo">+ Jogo</button>
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
@@ -1173,23 +1225,22 @@ function vPainel(){
     <div class="kpi"><span>Assiduidade (30 dias)</span><b>${a30.pct==null?"–":a30.pct+"%"}<small> ${a30.sessions} treinos</small></b></div>
     <div class="kpi"><span>Indisponíveis</span><b>${out.length}<small> de ${players().length}</small></b></div>
   </div>
-  <div style="margin-top:14px">${monCard()}</div>
-  <div class="dash" style="margin-top:14px">
-    <section class="card dash-a"><div class="card-h"><h3>Próximos</h3><button class="btn sm" data-a="tab" data-t="agenda">Ver agenda</button></div>
-      <div class="list">${up.length?up.map(eventRow).join(""):`<div class="empty"><b>Sem treinos nem jogos marcados</b>Usa “Gerar semana-tipo” para criar a semana de uma vez.</div>`}</div></section>
-    <div class="dash-b">
-      <section class="card"><div class="card-h"><h3>Alertas</h3><span class="sub">${al.length}</span></div>
-        <div>${al.length?al.map(alertHTML).join(""):`<div class="empty"><b>Tudo em dia</b>Não há treinos nem jogos por fechar.</div>`}</div></section>
-      <section class="card"><div class="card-h"><h3>Disponibilidade</h3><button class="btn sm" data-a="tab" data-t="clinico">Clínico</button></div>
-        <div class="list">${out.length?out.map(p=>{ const i=activeInjury(p.id)||{}, av=avail(p.id);
-          return `<button class="li avl" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small>${esc([p.pos,p.n?"n.º "+p.n:"",i.zone||i.type||""].filter(Boolean).join(" · "))}${validISO(i.exp)?` · regresso ${fmtD(i.exp)}`:""}</small></span><span class="tag ${AV[av].c}">${AV[av].l}</span></button>`; }).join(""):`<div class="empty"><b>Plantel todo disponível</b></div>`}</div></section>
-    </div>
-    <section class="card dash-c"><div class="card-h"><h3>Forma e destaques</h3><span class="sub">${form.length?"Últimos "+form.length+" jogos":""}</span></div>
+  <div class="dash2">
+    <div class="d2-nm">${nextMatchCard()}</div>
+    <div class="d2-mp">${mp.top}</div>
+    ${mp.att?`<div class="d2-att">${mp.att}</div>`:""}
+  </div>
+  <div style="margin-top:14px">${weekStrip()}</div>
+  <div class="dash3">
+    <section class="card"><div class="card-h"><h3>Disponibilidade</h3><button class="btn sm" data-a="tab" data-t="clinico">Clínico</button></div>
+      <div class="list">${out.length?out.map(p=>{ const i=activeInjury(p.id)||{}, av=avail(p.id);
+        return `<button class="li avl" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small>${esc([p.pos,p.n?"n.º "+p.n:"",i.zone||i.type||""].filter(Boolean).join(" · "))}${validISO(i.exp)?` · regresso ${fmtD(i.exp)}`:""}</small></span><span class="tag ${AV[av].c}">${AV[av].l}</span></button>`; }).join(""):`<div class="empty"><b>Plantel todo disponível</b></div>`}</div></section>
+    <section class="card"><div class="card-h"><h3>Forma e destaques</h3><span class="sub">${form.length?"Últimos "+form.length+" jogos":""}</span></div>
       <div class="card-b">
         <div class="chips" style="margin-bottom:6px">${form.length?form.map(f=>`<button class="lnk" data-a="page" data-p="jogo" data-id="${esc(f.id)}" title="${esc((f.opp||"")+" "+f.txt)}"><span class="res ${f.res}">${f.res}</span></button>`).join(""):`<span class="small muted">A forma aparece quando fechares o primeiro jogo.</span>`}</div>
-        ${lead("Melhor nota média",topR,x=>badge(x.s.avg))}
+        <div class="ldr3">${lead("Melhor nota média",topR,x=>badge(x.s.avg))}
         ${lead("Golos",topG,x=>`<b class="num">${x.s.g}</b>`)}
-        ${lead("Minutos",topM,x=>`<b class="num">${x.s.min}'</b>`)}
+        ${lead("Minutos",topM,x=>`<b class="num">${x.s.min}'</b>`)}</div>
       </div></section>
   </div>`;
 }
@@ -4791,6 +4842,134 @@ Object.assign(A,{
   preJogo: () => { if(!preJogoOk(MON.data)) return toast("O relatório pré-jogo fica disponível no dia anterior ao jogo e no dia do jogo."); printAsk("prejogo",""); }
 });
 monSnap(MON.data);   // dados já em cache no arranque
+
+/* ================= painel: próximo jogo, prontidão resumida, semana, notificações ================= */
+// Desenho inspirado no conceito "Noite de jogo", nas cores da app: cartão grande do próximo jogo, prontidão e carga
+// em resumo (o detalhe fica no separador Monitorização), "Precisa de atenção hoje" com frases curtas,
+// a semana na horizontal e os alertas da app num sino no canto superior direito (como mensagens).
+
+/* ---- próximo jogo ---- */
+function countdown(g){
+  const [h,m]=String(g.time||"15:00").split(":").map(Number), k=toD(g.date); k.setHours(h||0,m||0,0,0);
+  const ms=k-Date.now(), dd=dayDiff(todayISO(),g.date);
+  if(dd===0) return ms>0?`${Math.floor(ms/36e5)}H ${pad(Math.floor(ms%36e5/6e4))}M`:"HOJE";
+  if(ms<=0) return "HOJE";
+  const d=Math.floor(ms/864e5), hh=Math.floor(ms%864e5/36e5);
+  return `${d}D ${pad(hh)}H`;
+}
+function nextMatchCard(){
+  const t=todayISO(), g=games().find(x=>x.date>=t&&!x.closed);
+  if(!g) return `<section class="card nx nx-empty"><div class="nx-k">Próximo jogo</div><div class="empty" style="color:#fff"><b>Sem jogos marcados</b><button class="btn sm" data-a="newEvent" data-type="jogo" style="margin-top:8px">+ Jogo</button></div></section>`;
+  const m=meta(), dd=dayDiff(t,g.date), oSrc=oppCrestSrc(oppByName(g.opp));
+  const call=(g.call||[]).length, out=players().filter(p=>avail(p.id)!=="ok").length;
+  const chips=[`<span class="nx-chip gold">${dd===0?"MD":"MD-"+dd}</span>`,
+    call?`<span class="nx-chip">${call} convocados</span>`:`<span class="nx-chip">Convocatória por fazer</span>`,
+    out?`<span class="nx-chip">${out} indisponíve${out>1?"is":"l"}</span>`:"",
+    g.meetT?`<span class="nx-chip">Concentração ${esc(g.meetT)}</span>`:""].join("");
+  // prontidão do onze (ou dos convocados) quando há monitorização
+  let pr="";
+  const ids=(g.xi||[]).length?g.xi:(g.call||[]);
+  if(MON.data){ const {map}=monMatch(), byPid={}; Object.entries(map).forEach(([n,pid])=>{ const j=MON.data.jogadores.find(x=>x.nome===n); if(j) byPid[pid]=j; });
+    const src=ids.length?ids:Object.keys(byPid).filter(pid=>avail(pid)==="ok"&&byPid[pid].estado==="Disponível").sort((a,b)=>byPid[b].prontidao-byPid[a].prontidao);
+    const rows=src.map(pid=>({p:P(pid),j:byPid[pid]})).filter(x=>x.p&&x.j&&x.j.prontidao!=null).slice(0,ids.length?11:10);
+    if(rows.length) pr=`<div class="nx-k" style="margin-top:18px">${(g.xi||[]).length?"Prontidão do onze":ids.length?"Prontidão dos convocados":"Mais prontos para o jogo"}</div><div class="nx-pr">${rows.map(({p,j})=>`<span>${esc(p.name)}</span><b class="${j.prontidao<65?"lo":""}">${Math.round(j.prontidao)}</b><i><em style="width:${Math.max(4,Math.min(100,j.prontidao))}%"></em></i>`).join("")}</div>`; }
+  const us=`<div class="nx-t"><span class="nx-c"><img src="${CREST}" alt=""></span><b>${esc(m.team||"Estrela B")}</b></div>`;
+  const th=`<div class="nx-t"><span class="nx-c">${oSrc?`<img src="${esc(oSrc)}" alt="">`:`<i>${esc(g.opp?initials(g.opp):"?")}</i>`}</span><b>${esc(g.opp||"Adversário")}</b></div>`;
+  return `<section class="card nx"><div class="nx-k">Próximo jogo${g.phase?" · "+esc(g.phase):""}</div>
+    <div class="nx-vs">${g.venue==="F"?th+`<div class="nx-clk"><b>${countdown(g)}</b><small>${esc(cap1(fmtD(g.date,{weekday:"long",day:"numeric",month:"short"})))} · ${esc(g.time||"")} · ${g.venue==="F"?"Fora":"Casa"}</small></div>`+us
+      :us+`<div class="nx-clk"><b>${countdown(g)}</b><small>${esc(cap1(fmtD(g.date,{weekday:"long",day:"numeric",month:"short"})))} · ${esc(g.time||"")} · ${g.venue==="F"?"Fora":"Casa"}</small></div>`+th}</div>
+    <div class="nx-chips">${chips}</div>${pr}
+    <div class="nx-act"><button class="btn sm" data-a="page" data-p="jogo" data-id="${esc(g.id)}">Ficha do jogo</button><button class="btn sm" data-a="convOpen" data-id="${esc(g.id)}">Convocatória</button></div></section>`;
+}
+
+/* ---- prontidão e carga (resumo) + precisa de atenção hoje ---- */
+function monRing(v){
+  const r=34, c=2*Math.PI*r, k=v==null?0:Math.max(0,Math.min(100,v))/100;
+  return `<svg class="ring" viewBox="0 0 84 84" width="84" height="84"><defs><linearGradient id="rg" x1="0" x2="1"><stop offset="0" stop-color="#8f2239"/><stop offset="1" stop-color="#f2bd4b"/></linearGradient></defs>
+    <circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="42" cy="42" r="${r}" fill="none" stroke="url(#rg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(c*k).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/>
+    <text x="42" y="51" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="27" fill="var(--text)">${v==null?"–":Math.round(v)}</text></svg>`;
+}
+// frase curta e etiqueta para cada jogador que precisa de atenção
+function monAttn(j){
+  const n1=x=>String(Math.round(x*10)/10).replace(".",","), n2=x=>String(Math.round(x*100)/100).replace(".",",");
+  if(j.estado&&j.estado!=="Disponível") return {t:`${j.estado}${j.estadoNota?" · "+j.estadoNota:""}`,l:"Clínico",c:"ok"};
+  if(j.estadoBem==="sem resposta"||j.prontidao==null) return {t:j.nResp?`Sem respostas recentes`:"Ainda sem respostas",l:"Perguntar",c:"warn"};
+  const crit=j.critico?` · ${String(j.critico).replace(/\s*\(([\d.]+)\)/,(m,v)=>" "+n1(+v)).toLowerCase()}`:"";
+  if(j.prontidao<50||j.estadoBem==="RISCO") return {t:`Prontidão ${Math.round(j.prontidao)}${crit}`,l:"Decidir",c:"bad"};
+  if(j.estadoCarga==="PICO DE CARGA") return {t:`Pico de carga${j.acwr!=null?` (ACWR ${n2(j.acwr)})`:""}`,l:"Gerir minutos",c:"warn"};
+  if(j.estadoCarga==="A subir") return {t:`Carga a subir depressa${j.acwr!=null?` (ACWR ${n2(j.acwr)})`:""}`,l:"Gerir minutos",c:"warn"};
+  if(j.estadoBem==="Atenção") return {t:`Bem-estar abaixo do habitual${crit}`,l:"Vigiar",c:"warn"};
+  return {t:`Prontidão ${Math.round(j.prontidao)}${crit}`,l:"Vigiar",c:"warn"};
+}
+function monPanel(){
+  const c=monCfg();
+  if(!c.url) return {top:`<section class="card mp"><div class="card-h"><h3>Prontidão</h3><button class="btn sm" data-a="monCfg">Ligar ao Sheets</button></div><div class="card-b small muted">Liga o painel de monitorização para veres aqui a prontidão, a carga e quem precisa de atenção.</div></section>`,att:""};
+  const d=MON.data;
+  if(!d) return {top:`<section class="card mp"><div class="card-h"><h3>Prontidão</h3><button class="btn sm" data-a="monRefresh">${MON.loading?"A carregar…":"Atualizar"}</button></div><div class="card-b small muted">${MON.loading?"A ler o Google Sheets…":esc(MON.err||"Ainda sem dados.")}</div></section>`,att:""};
+  const js=d.jogadores, disp=js.filter(j=>j.estado==="Disponível"||!j.estado), com=disp.filter(j=>j.prontidao!=null);
+  const med=com.length?avg(com.map(j=>j.prontidao)):null, ac=com.filter(j=>j.prontidao>=65).length;
+  const vig=com.filter(j=>j.prontidao<65&&j.prontidao>=50).length+js.filter(j=>j.estadoBem==="Atenção").length, risco=js.filter(j=>j.estadoBem==="RISCO"||(j.prontidao!=null&&j.prontidao<50)).length;
+  const c7=disp.map(j=>j.carga7).filter(x=>x!=null), cr=disp.map(j=>j.cronica).filter(x=>x!=null&&x>0);
+  const m7=c7.length?avg(c7):null, mcr=cr.length?avg(cr):null, dif=m7!=null&&mcr?Math.round((m7/mcr-1)*100):null;
+  const nd=(d.dias||[]).length, daily=(d.dias||[]).map((_,i)=>{ const v=disp.map(j=>(j.serieCarga||[])[i]).filter(x=>x!=null); return v.length?avg(v):0; }), mx=Math.max(1,...daily);
+  const bars=`<svg class="mp-bars" viewBox="0 0 ${nd*14} 44" preserveAspectRatio="none">${daily.map((v,i)=>`<rect x="${i*14+2}" y="${44-v/mx*42}" width="10" height="${v/mx*42}" rx="2.5" fill="${i===nd-1?"#f2bd4b":"var(--mp-bar)"}"/>`).join("")}</svg>`;
+  const {map}=monMatch();
+  const need=js.filter(j=>j.prio>0||(j.prontidao!=null&&j.prontidao<50)||(j.estado&&j.estado!=="Disponível")||j.estadoBem==="sem resposta")
+    .sort((a,b)=>(b.prio||0)-(a.prio||0)||(a.prontidao??999)-(b.prontidao??999)).slice(0,5);
+  const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?p.name:j.nome; };
+  const top=`<section class="card mp"><div class="card-h"><h3>Prontidão média</h3><span class="sub">${esc(monMd(d).etiqueta||"")}</span></div>
+      <div class="card-b mp-ring">${monRing(med)}<div class="mp-l"><div><b>${ac}</b> acima de 65</div><div><b class="g">${vig}</b> a vigiar</div><div><b class="r">${risco}</b> em risco</div></div></div></section>
+    <section class="card mp"><div class="card-h"><h3>Carga da semana</h3><span class="sub">média por jogador</span></div>
+      <div class="card-b"><div class="mp-big">${m7==null?"–":Math.round(m7).toLocaleString("pt-PT")}<small> UA</small></div>${bars}
+      <div class="small muted">${dif==null?"Últimos 7 dias (PSE × minutos).":`${dif>=0?"+":""}${dif}% face à média das 4 semanas`}</div></div></section>`;
+  const att=`<section class="card mp-att"><div class="card-h"><h3>Precisa de atenção hoje</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
+    <div class="list">${need.length?need.map(j=>{ const a=monAttn(j), pid=map[j.nome], p=pid?P(pid):null;
+      return `<button class="li" ${p?`data-a="page" data-p="atleta" data-id="${esc(p.id)}"`:`data-a="tab" data-t="mon"`}>${p?avatar(p):`<span class="ph g-X">${esc(initials(j.nome))}</span>`}<span class="main"><b>${esc(nm(j))}</b><small>${esc(a.t)}</small></span><span class="tag ${a.c}">${a.l}</span></button>`; }).join("")
+      :`<div class="empty"><b>Ninguém a precisar de atenção</b>${esc(monAge())}</div>`}</div></section>`;
+  return {top,att};
+}
+
+/* ---- esta semana (horizontal) ---- */
+function weekStrip(){
+  const t=todayISO(), mon=addDays(mondayOf(t),7*(S.wkOff||0)), days=[...Array(7)].map((_,i)=>addDays(mon,i));
+  const mi=cycleAt("micro",mon), byDay={}; events().forEach(e=>{ if(e.date>=days[0]&&e.date<=days[6]) (byDay[e.date]=byDay[e.date]||[]).push(e); });
+  const dn=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+  const cell=(d,i)=>{ const evs=(byDay[d]||[]).sort(byDT), g=evs.find(e=>e.type==="jogo"), e=g||evs[0];
+    let body;
+    if(!e) body=`<b class="wk-t off">Folga</b><small>${i===5||i===6?"":"&nbsp;"}</small>`;
+    else if(g) body=`<b class="wk-t">Jogo</b><small>${esc((g.venue==="F"?"@ ":"vs ")+(g.opp||""))}${g.time?" · "+esc(g.time):""}</small>${g.closed?`<span class="tag ok">Fechado</span>`:""}`;
+    else { const tt=TRT(e.ttype), dur=e.dur?e.dur+"'":"";
+      body=`<b class="wk-t">Treino</b><small>${esc([e.theme||(tt&&tt.l)||"",dur].filter(Boolean).join(" · ")||e.time||"")}</small>${e.int?`<span class="tag ${e.int==="Baixa"?"ok":e.int==="Média"?"warn":"bad"}">${esc(e.int)}</span>`:""}${evs.length>1?`<small>+${evs.length-1}</small>`:""}`; }
+    return `<button class="wk-d ${g?"game":""} ${d===t?"today":""}" ${e?`data-a="page" data-p="${e.type==="jogo"?"jogo":"treino"}" data-id="${esc(e.id)}"`:`data-a="calDay" data-d="${d}"`}><span class="wk-h">${dn[i].toUpperCase()}<b>${toD(d).getDate()}</b></span>${body}</button>`; };
+  return `<section class="card wk"><div class="card-h"><h3>${S.wkOff?`Semana de ${fmtD(days[0],{day:"numeric",month:"short"})}`:"Esta semana"}${mi?` <span class="sub">· ${esc(mi.name||"")}</span>`:""}</h3>
+    <span style="display:flex;gap:6px"><button class="btn sm" data-a="wkNav" data-n="-1" aria-label="Semana anterior">‹</button>${S.wkOff?`<button class="btn sm" data-a="wkNav" data-n="0">Hoje</button>`:""}<button class="btn sm" data-a="wkNav" data-n="1" aria-label="Semana seguinte">›</button><button class="btn sm" data-a="tab" data-t="agenda">Agenda</button></span></div>
+    <div class="wk-row">${days.map(cell).join("")}</div></section>`;
+}
+
+/* ---- notificações (alertas da app) no cabeçalho ---- */
+const BELL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+let NOTI_OPEN=false;
+function notiRender(){
+  const al=alerts(), n=al.filter(a=>a.cls!=="info").length, b=document.getElementById("notiBt");
+  if(b){ const html=BELL+(n?`<span class="nb">${n}</span>`:""); if(b.innerHTML!==html) b.innerHTML=html;   /* não recriar o ícone a cada render: o clique perdia o alvo */ b.title=n?`${n} alerta${n>1?"s":""}`:"Sem alertas"; b.setAttribute("aria-expanded",NOTI_OPEN?"true":"false"); }
+  let p=document.getElementById("notiPanel");
+  if(!NOTI_OPEN){ if(p) p.remove(); return; }
+  if(!p){ p=document.createElement("div"); p.id="notiPanel"; p.className="noti"; document.body.appendChild(p); }
+  p.innerHTML=`<div class="noti-h"><b>Notificações</b><span class="sub">${al.length}</span></div><div class="noti-l">${al.length?al.map(alertHTML).join(""):`<div class="empty"><b>Tudo em dia</b>Não há treinos nem jogos por fechar.</div>`}</div>`;
+  const r=b?b.getBoundingClientRect():{bottom:60,right:window.innerWidth-12};
+  p.style.top=(r.bottom+window.scrollY+8)+"px"; p.style.right=Math.max(8,window.innerWidth-r.right-4)+"px";
+}
+// fecha ao tocar fora ou num alerta; usa o percurso do clique (fixado no início) porque o render pode substituir o elemento tocado
+document.addEventListener("click",e=>{ if(!NOTI_OPEN) return;
+  const path=e.composedPath(), has=f=>path.some(n=>n&&n.nodeType===1&&f(n));
+  if(has(n=>n.id==="notiBt")) return;
+  if(has(n=>n.id==="notiPanel")&&!has(n=>n.classList.contains("alert"))) return;
+  NOTI_OPEN=false; notiRender(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&NOTI_OPEN){ NOTI_OPEN=false; notiRender(); } });
+Object.assign(A,{
+  noti: () => { NOTI_OPEN=!NOTI_OPEN; notiRender(); },
+  wkNav: el => { const n=+el.dataset.n; S.wkOff=n===0?0:(S.wkOff||0)+n; render(); }
+});
 
 /* ================= dados partilhados (versão Netlify): Google Sheets via Apps Script ================= */
 // Cada dispositivo continua a guardar tudo no browser (funciona sem rede) e, se estiver ligado, envia as suas

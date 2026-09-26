@@ -46,7 +46,8 @@ with sync_playwright() as pw:
     print("mapa guardado:", pg.evaluate("JSON.parse(localStorage.getItem('estrela-tecnico-v1')).meta.cfg.mon.map"))
     # painel
     pg.click('nav [data-t="painel"]'); pg.wait_for_timeout(300); chk(pg,"painel2")
-    print("painel:", pg.inner_text('.card:has-text("Prontidão —")')[:220].replace("\n"," | "))
+    t=pg.inner_text('.d2-mp')+" | "+pg.inner_text('.mp-att'); print("painel:", t[:220].replace("\n"," | "))
+    if "Prontidão média" not in t or "Precisa de atenção hoje" not in t: errs.append("cartões da monitorização no painel")
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t16_painel.png"), full_page=True)
     # ficha do atleta
     pg.click('nav [data-t="plantel"]'); pg.click('[data-p="atleta"][data-id="p1"]'); pg.wait_for_timeout(300); chk(pg,"atleta")

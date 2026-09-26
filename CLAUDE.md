@@ -34,6 +34,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
+  painel.js    painel: cartão do próximo jogo, prontidão/carga resumidas, "Precisa de atenção hoje", semana na horizontal, alertas no sino do cabeçalho
   prejogo.js   relatório pré-jogo da monitorização (PDF só em MD-1 e MD, gráficos SVG, textos automáticos)
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
@@ -97,7 +98,9 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Relatórios (`printDoc`, print.js): faixa grená com emblema e riscas vermelho/branco/verde, dados em cartões, tabelas com cabeçalho grená, rodapé em todas as páginas; ficha de jogo com marcador e emblemas (`.match`). Compactos (pedido da equipa: "muito extensos para baixo"): secções pequenas lado a lado com `p2(a,b)`, listas longas partidas em duas tabelas com `pSplit(head,rows,min)`, colunas sem dados escondidas (ficha de jogo, relatório de treino), eventos do jogo resumidos (golos/assistências/cartões numa linha + tabela de substituições). Tamanho por omissão 100% (`PRINT_PREF`). Com os dados de teste: semanal 1 página, ficha de jogo 1, treino/atleta/adversário 1, pré-jogo 2 (gráficos a meia página, W=380). O plano de treino mantém o modelo próprio (`PLAN_CSS`).
 
 ## Painel e arranque (test30)
-- Painel no computador em 3 colunas (`.dash`: Próximos | Alertas + Disponibilidade | Forma e destaques; 2 colunas até 1180 px, 1 até 760 px). Destaques em listas `.ldr` (posição, foto, nome, valor).
+- Painel (painel.js, test33; inspirado no conceito "Noite de jogo" mas nas cores da app): KPIs → `.dash2` (cartão grená do próximo jogo `nextMatchCard` com emblemas, contagem `countdown`, etiquetas MD-x/convocatória/indisponíveis/concentração e prontidão do onze → convocados → "mais prontos" | `monPanel().top` = anel da prontidão média + carga da semana (média por jogador, barras 14 dias) | `monPanel().att` = "Precisa de atenção hoje", até 5, frase curta `monAttn` + etiqueta Decidir/Gerir minutos/Perguntar/Vigiar/Clínico; detalhe no separador Monitorização) → `weekStrip` (Esta semana, 7 dias, ‹ › `S.wkOff`) → `.dash3` Disponibilidade | Forma e destaques (fim). 3 colunas ≥1180, 2 até 1180, 1 até 760 (test30 mede `.dash2`).
+- Alertas da app (`alerts()`) já não estão no painel: sino `#notiBt` no cabeçalho (contador sem os "info"), lista `#notiPanel` fora do `#main` (sobrevive ao render; fecha com Esc, clique fora ou ao abrir um alerta — usa `e.composedPath()` porque o render troca os elementos). O separador Painel deixou de ter o contador.
+- Cartões ("quadrados" do conceito): `.card`/`.kpi` com cantos 18-20 px e brilho suave no topo (`--card-hi`, definido nos dois temas escuros).
 - A partir de 1280 px a página tem 1280 px de largura e os separadores cabem todos (`nav.tabs` com espaço distribuído).
 - Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
 

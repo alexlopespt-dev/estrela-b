@@ -16,7 +16,7 @@ with sync_playwright() as pw:
         gone=pg.evaluate("!document.getElementById('splash')")
         if not gone: errs.append(f"arranque não saiu {w}")
         pg.click('nav [data-t="painel"]'); pg.wait_for_timeout(300)
-        cols=pg.evaluate("getComputedStyle(document.querySelector('.dash')).gridTemplateColumns.split(' ').length")
+        cols=pg.evaluate("getComputedStyle(document.querySelector('.dash2')).gridTemplateColumns.split(' ').length")
         ov=pg.evaluate("document.documentElement.scrollWidth<=document.documentElement.clientWidth+1")
         nav=pg.evaluate("(()=>{const n=document.querySelector('nav.tabs');return n.scrollWidth<=n.clientWidth+1})()")
         print(w, "colunas:", cols, "| sem scroll lateral:", ov, "| separadores todos visíveis:", nav)

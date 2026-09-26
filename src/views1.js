@@ -17,7 +17,7 @@ function render(){
   $("#tTeam").textContent = m.team || "Estrela B";
   $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
-  $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="painel"?nAl : t.k==="clinico"?nInj : 0;
+  $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
     return `<button role="tab" data-a="tab" data-t="${t.k}" aria-selected="${S.tab===t.k && !S.page ? "true" : S.tab===t.k ? "true":"false"}">${t.l}${n?`<span class="dot">${n}</span>`:""}</button>`; }).join("");
   const main=$("#main");
   if(MODE==="loading"){ main.innerHTML=`<div class="empty" style="margin-top:20px"><b>A carregar…</b></div>`; return; }
@@ -37,6 +37,7 @@ function render(){
     h=`<div class="empty" style="margin-top:20px"><b>Algo correu mal a mostrar esta página.</b>Volta ao painel e tenta de novo.<br><br><button class="btn" data-a="tab" data-t="painel">Ir para o painel</button></div>`;
   }
   main.innerHTML=h;
+  notiRender();
   const st=$("#tabs [aria-selected=true]"), tb=$("#tabs"); if(st&&tb) tb.scrollLeft=Math.max(0,st.offsetLeft-tb.clientWidth/2+st.clientWidth/2);
 }
 
@@ -85,8 +86,6 @@ function playerLine(p,right=""){
 /* ================= PAINEL ================= */
 function vPainel(){
   const t=todayISO(), st=stats(), tm=st.team;
-  const up=events().filter(e=>e.date>=t).sort(byDT).slice(0,6);
-  const al=alerts();
   const a30=attendanceSince(addDays(t,-29));
   const out=players().filter(p=>avail(p.id)!=="ok");
   const pl=players().map(p=>({p,s:st.pl[p.id]}));
@@ -94,9 +93,10 @@ function vPainel(){
   const topG=pl.filter(x=>x.s.g>0).sort((a,b)=>b.s.g-a.s.g||b.s.a-a.s.a).slice(0,3);
   const topM=pl.filter(x=>x.s.min>0).sort((a,b)=>b.s.min-a.s.min).slice(0,3);
   const lead=(title,arr,val)=>`<div class="ldr"><div class="ldr-h">${title}</div>${arr.length?arr.map((x,i)=>`<button class="ldr-r" data-a="page" data-p="atleta" data-id="${esc(x.p.id)}"><i>${i+1}</i>${avatar(x.p)}<span class="nm">${esc(x.p.name)}</span>${val(x)}</button>`).join(""):`<div class="small muted">Sem dados ainda.</div>`}</div>`;
-  const form=tm.form.slice(-5);
+  const form=tm.form.slice(-5), mp=monPanel();
+  const hour=new Date().getHours(), me=firstName(meGet().nome);
   return `
-  <div class="bar"><h2>Painel</h2>
+  <div class="bar"><h2>Painel</h2>${me?`<span class="small muted hello">${hour<13?"Bom dia":hour<20?"Boa tarde":"Boa noite"}, ${esc(me)}</span>`:""}<span class="sp"></span>
     <button class="btn" data-a="newEvent" data-type="treino">+ Treino</button>
     <button class="btn" data-a="newEvent" data-type="jogo">+ Jogo</button>
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
@@ -110,23 +110,22 @@ function vPainel(){
     <div class="kpi"><span>Assiduidade (30 dias)</span><b>${a30.pct==null?"–":a30.pct+"%"}<small> ${a30.sessions} treinos</small></b></div>
     <div class="kpi"><span>Indisponíveis</span><b>${out.length}<small> de ${players().length}</small></b></div>
   </div>
-  <div style="margin-top:14px">${monCard()}</div>
-  <div class="dash" style="margin-top:14px">
-    <section class="card dash-a"><div class="card-h"><h3>Próximos</h3><button class="btn sm" data-a="tab" data-t="agenda">Ver agenda</button></div>
-      <div class="list">${up.length?up.map(eventRow).join(""):`<div class="empty"><b>Sem treinos nem jogos marcados</b>Usa “Gerar semana-tipo” para criar a semana de uma vez.</div>`}</div></section>
-    <div class="dash-b">
-      <section class="card"><div class="card-h"><h3>Alertas</h3><span class="sub">${al.length}</span></div>
-        <div>${al.length?al.map(alertHTML).join(""):`<div class="empty"><b>Tudo em dia</b>Não há treinos nem jogos por fechar.</div>`}</div></section>
-      <section class="card"><div class="card-h"><h3>Disponibilidade</h3><button class="btn sm" data-a="tab" data-t="clinico">Clínico</button></div>
-        <div class="list">${out.length?out.map(p=>{ const i=activeInjury(p.id)||{}, av=avail(p.id);
-          return `<button class="li avl" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small>${esc([p.pos,p.n?"n.º "+p.n:"",i.zone||i.type||""].filter(Boolean).join(" · "))}${validISO(i.exp)?` · regresso ${fmtD(i.exp)}`:""}</small></span><span class="tag ${AV[av].c}">${AV[av].l}</span></button>`; }).join(""):`<div class="empty"><b>Plantel todo disponível</b></div>`}</div></section>
-    </div>
-    <section class="card dash-c"><div class="card-h"><h3>Forma e destaques</h3><span class="sub">${form.length?"Últimos "+form.length+" jogos":""}</span></div>
+  <div class="dash2">
+    <div class="d2-nm">${nextMatchCard()}</div>
+    <div class="d2-mp">${mp.top}</div>
+    ${mp.att?`<div class="d2-att">${mp.att}</div>`:""}
+  </div>
+  <div style="margin-top:14px">${weekStrip()}</div>
+  <div class="dash3">
+    <section class="card"><div class="card-h"><h3>Disponibilidade</h3><button class="btn sm" data-a="tab" data-t="clinico">Clínico</button></div>
+      <div class="list">${out.length?out.map(p=>{ const i=activeInjury(p.id)||{}, av=avail(p.id);
+        return `<button class="li avl" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<span class="main"><b>${esc(p.name)}</b><small>${esc([p.pos,p.n?"n.º "+p.n:"",i.zone||i.type||""].filter(Boolean).join(" · "))}${validISO(i.exp)?` · regresso ${fmtD(i.exp)}`:""}</small></span><span class="tag ${AV[av].c}">${AV[av].l}</span></button>`; }).join(""):`<div class="empty"><b>Plantel todo disponível</b></div>`}</div></section>
+    <section class="card"><div class="card-h"><h3>Forma e destaques</h3><span class="sub">${form.length?"Últimos "+form.length+" jogos":""}</span></div>
       <div class="card-b">
         <div class="chips" style="margin-bottom:6px">${form.length?form.map(f=>`<button class="lnk" data-a="page" data-p="jogo" data-id="${esc(f.id)}" title="${esc((f.opp||"")+" "+f.txt)}"><span class="res ${f.res}">${f.res}</span></button>`).join(""):`<span class="small muted">A forma aparece quando fechares o primeiro jogo.</span>`}</div>
-        ${lead("Melhor nota média",topR,x=>badge(x.s.avg))}
+        <div class="ldr3">${lead("Melhor nota média",topR,x=>badge(x.s.avg))}
         ${lead("Golos",topG,x=>`<b class="num">${x.s.g}</b>`)}
-        ${lead("Minutos",topM,x=>`<b class="num">${x.s.min}'</b>`)}
+        ${lead("Minutos",topM,x=>`<b class="num">${x.s.min}'</b>`)}</div>
       </div></section>
   </div>`;
 }
