@@ -45,6 +45,10 @@ with sync_playwright() as pw:
     ontem={j["nome"]:(j["prontidao"]-6 if i%2==0 else j["prontidao"]+3) for i,j in enumerate(d["jogadores"]) if j.get("prontidao") is not None}
     pg.evaluate("h=>localStorage.setItem('estrela-tecnico-v1:monhist',JSON.stringify(h))", {"2026-10-02":ontem,"2026-09-01":{"x":1}})
     refresh(pg); print("MD-1:", kpi(pg))
+    # carregar outra vez sem cálculo novo no Sheets: diz que não há dados novos e mostra a hora do cálculo
+    refresh(pg); t=pg.inner_text("#toast"); print("segunda leitura:", t)
+    if "Sem dados novos" not in t: errs.append("toast sem dados novos")
+    if "Calculado no Sheets" not in pg.inner_text(".bar"): errs.append("texto da hora do cálculo")
     h=pg.evaluate("JSON.parse(localStorage.getItem('estrela-tecnico-v1:monhist'))"); print("registos:", sorted(h.keys()))
     if "2026-10-03" not in h or len(h["2026-10-03"])<10: errs.append("registo de hoje")
     if "MD-1" not in kpi(pg) or "amanhã" not in kpi(pg): errs.append("kpi MD-1")
