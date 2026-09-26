@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Estrela Técnico">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Estrela B — Departamento técnico</title>
+<title>CF Estrela da Amadora — Equipa B — Departamento técnico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Open+Sans:wght@600;700;800&display=swap" rel="stylesheet">
@@ -350,7 +350,7 @@ dialog.ask{width:min(400px,calc(100vw - 32px))}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .note{font-size:12px;color:var(--muted);margin:10px 0 0}
 textarea.share{width:100%;min-height:150px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:10px;font-size:13px;color:var(--text);font-family:var(--fb)}
-@media (max-width:520px){ .team h1{font-size:25px} .crest-img{width:46px} .bar h2{font-size:21px} .phead h2{font-size:22px} .ahead h2{font-size:24px} .ahead .ph{width:66px;height:66px} }
+@media (max-width:520px){ .team h1{font-size:21px;line-height:1.02;text-wrap:balance} .crest-img{width:46px} .bar h2{font-size:21px} .phead h2{font-size:22px} .ahead h2{font-size:24px} .ahead .ph{width:66px;height:66px} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{ header.top, nav.tabs, .no-print{display:none!important} body{background:#fff} }
 
@@ -609,7 +609,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .d2-att{grid-area:att;min-width:0}
 .dash2:not(:has(.d2-att)){grid-template-areas:"nm mp mp" "nm mp mp"}
 .d2-mp:has(>.card:only-child){grid-template-columns:1fr}
-.nx{color:#fff;border:0;padding:20px 22px;background:radial-gradient(120% 90% at 100% 0%,rgba(242,189,75,.18),transparent 55%),radial-gradient(140% 120% at 0% 100%,#3d0914,transparent 60%),linear-gradient(160deg,#8f2239,#4a0d19)!important;box-shadow:0 18px 40px -22px rgba(61,9,20,.7)}
+.nx{color:#fff;border:0;padding:20px 22px;background:radial-gradient(120% 90% at 100% 0%,rgba(242,189,75,.18),transparent 55%),radial-gradient(140% 120% at 0% 100%,#2a0414,transparent 60%),linear-gradient(160deg,#6a1030,#34061a)!important;box-shadow:0 18px 40px -22px rgba(52,6,26,.75)}
 .nx-k{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0c9d2}
 .nx-vs{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 16px}
 .nx-t{text-align:center;width:108px;flex:none}.nx-t b{display:block;font-family:var(--fc);font-size:18px;margin-top:8px;line-height:1.05}
@@ -637,7 +637,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .wk-d small{font-size:12px;color:var(--muted);line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .wk-d .tag{margin-top:auto}
 .wk-d.today{border-color:var(--ouro);background:rgba(242,189,75,.1);box-shadow:inset 0 0 0 1px var(--ouro)}
-.wk-d.game{border:0;background:linear-gradient(160deg,#8f2239,#4a0d19);color:#fff}.wk-d.game .wk-h,.wk-d.game .wk-h b,.wk-d.game small{color:#f7dde3}
+.wk-d.game{border:0;background:linear-gradient(160deg,#6a1030,#34061a);color:#fff}.wk-d.game .wk-h,.wk-d.game .wk-h b,.wk-d.game small{color:#f7dde3}
 .dash3{display:grid;gap:14px;margin-top:14px;align-items:start;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}
 .dash3 .card{margin-top:0}
 .ldr3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}
@@ -665,7 +665,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 <header class="top">
   <div class="top-in">
     <img class="crest-img" id="crest" alt="Emblema do Estrela da Amadora" src="" style="cursor:pointer">
-    <div class="team"><h1 id="tTeam">Estrela B</h1><p id="tSub">Departamento técnico</p></div>
+    <div class="team"><h1 id="tTeam">CF Estrela da Amadora — Equipa B</h1><p id="tSub">Departamento técnico</p></div>
     <div class="top-act"><button class="syncst" id="syncSt" data-a="syncCfg" hidden></button><button class="themebt notibt" id="notiBt" data-a="noti" aria-label="Notificações" aria-haspopup="true"></button><button class="themebt" id="themeBt" data-a="theme" aria-label="Tema"></button></div>
   </div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secções"></nav>
@@ -1129,7 +1129,8 @@ function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 /* ================= render principal ================= */
 function render(){
   const m=meta();
-  $("#tTeam").textContent = m.team || "Estrela B";
+  $("#tTeam").textContent = m.full || m.team || "Estrela B";   // nome completo no cabeçalho (meta/team.full)
+  document.title = (m.full || m.team || "Estrela B") + " — Departamento técnico";
   $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
   $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
@@ -1870,7 +1871,8 @@ function vPlantel(){
   ${vWho()}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3></div><div class="card-b">
     <div class="form">
-      <label class="fld">Equipa<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
+      <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
+      <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: CF Estrela da Amadora — Equipa B"></label>
       <label class="fld">Época<input value="${esc(m.season||"")}" data-c="meta" data-f="season"></label>
       <label class="fld">Competição principal<input value="${esc(m.comp||"")}" data-c="meta" data-f="comp"></label>
     </div>
@@ -4420,6 +4422,12 @@ const MIGR = [
     let n=0;
     Object.entries(SEED.exercises).forEach(([id,x])=>{ if(!D.exercises[id]){ put("exercises",id,clone(x)); n++; } });
     return n ? `${n} exercícios da biblioteca acrescentados` : "";
+  }}
+  ,{id:"nome1", run(){
+    // nome completo no cabeçalho (pedido da equipa): "CF Estrela da Amadora — Equipa B" em vez de "Estrela B"
+    const t=D.meta.team||{}; if(t.full) return "";
+    if(!t.team||/^estrela b$/i.test(String(t.team).trim())) put("meta","team",{...clone(t),full:"CF Estrela da Amadora — Equipa B"});
+    return "";
   }}
 ];
 function runMigrations(){

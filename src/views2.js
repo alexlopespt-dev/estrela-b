@@ -118,7 +118,8 @@ function vPlantel(){
   ${vWho()}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3></div><div class="card-b">
     <div class="form">
-      <label class="fld">Equipa<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
+      <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
+      <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: CF Estrela da Amadora — Equipa B"></label>
       <label class="fld">Época<input value="${esc(m.season||"")}" data-c="meta" data-f="season"></label>
       <label class="fld">Competição principal<input value="${esc(m.comp||"")}" data-c="meta" data-f="comp"></label>
     </div>

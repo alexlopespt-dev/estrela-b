@@ -89,6 +89,12 @@ const MIGR = [
     Object.entries(SEED.exercises).forEach(([id,x])=>{ if(!D.exercises[id]){ put("exercises",id,clone(x)); n++; } });
     return n ? `${n} exercícios da biblioteca acrescentados` : "";
   }}
+  ,{id:"nome1", run(){
+    // nome completo no cabeçalho (pedido da equipa): "CF Estrela da Amadora — Equipa B" em vez de "Estrela B"
+    const t=D.meta.team||{}; if(t.full) return "";
+    if(!t.team||/^estrela b$/i.test(String(t.team).trim())) put("meta","team",{...clone(t),full:"CF Estrela da Amadora — Equipa B"});
+    return "";
+  }}
 ];
 function runMigrations(){
   if(MODE!=="local" && MODE!=="db") return;

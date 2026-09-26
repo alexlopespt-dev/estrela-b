@@ -14,7 +14,8 @@ function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 /* ================= render principal ================= */
 function render(){
   const m=meta();
-  $("#tTeam").textContent = m.team || "Estrela B";
+  $("#tTeam").textContent = m.full || m.team || "Estrela B";   // nome completo no cabeçalho (meta/team.full)
+  document.title = (m.full || m.team || "Estrela B") + " — Departamento técnico";
   $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
   $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
