@@ -177,7 +177,8 @@ async function syncConnect(url,key){
 // staff repetido (mesmo nome, ids diferentes — p. ex. criado à mão num dispositivo e vindo dos dados iniciais noutro):
 // fica um só (o que tem foto; depois o mais completo; depois o id menor), com os campos vazios preenchidos pelo outro,
 // e as presenças do staff nos treinos passam para o que fica. Devolve quantos foram juntos.
-function dedupeStaff(){
+function dedupeStaff(){ NOSTAMP++; try{ return dedupeStaffRun(); } finally{ NOSTAMP--; } }   // automático: não muda o "quem alterou"
+function dedupeStaffRun(){
   const groups={};
   Object.entries(D.staff).forEach(([id,s])=>{ const k=nameKey(s&&s.name); if(k) (groups[k]=groups[k]||[]).push(id); });
   const score=id=>{ const s=D.staff[id]; return (s.photo||s.photoData?100:0)+Object.values(s).filter(v=>v!=null&&v!=="").length; };

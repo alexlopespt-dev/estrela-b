@@ -159,7 +159,7 @@ function bpCopyDoc(src){
 function bpNewDoc(type,name){ return {name:name||BPT(type).t, type, notes:"", tt:true, fr:[{it:bpTemplate(type)}]}; }
 
 /* ---- separador ---- */
-function vBP(){
+function vBP(sub){   // Jogos → sub-aba "Bolas paradas"
   const all=setpieces(), f=S.bpT||"";
   const list=f?all.filter(b=>b.type===f):all;
   const cnt=k=>all.filter(b=>b.type===k).length;
@@ -167,8 +167,8 @@ function vBP(){
     <div class="bpc-f"><button class="btn sm" data-a="bpCopy" data-id="${esc(b.id)}" title="Cria uma cópia para alterar só o que queres">⧉ Duplicar</button></div></div>`;
   const groups = f ? [BPT(f)] : BP_TYPES.filter(t=>cnt(t.k));
   return `
-  <div class="bar"><h2 style="margin:0;flex:1">Bolas paradas</h2>
-    ${all.length?`<button class="btn" data-a="bpPrintAll">Imprimir / PDF</button>`:""}<button class="btn primary" data-a="bpNew">+ Nova bola parada</button></div>
+  <div class="bar"><h2 style="margin:0;flex:1">Jogos</h2>
+    ${all.length?`<button class="btn" data-a="bpPrintAll">Imprimir / PDF</button>`:""}<button class="btn primary" data-a="bpNew">+ Nova bola parada</button></div>${sub||""}
   <div class="seg" style="margin:4px 0 14px"><button data-a="bpFilter" data-k="" class="${!f?"on":""}">Todas (${all.length})</button>${BP_TYPES.map(t=>`<button data-a="bpFilter" data-k="${t.k}" class="${f===t.k?"on":""}">${t.l}${cnt(t.k)?` (${cnt(t.k)})`:""}</button>`).join("")}</div>
   ${!list.length ? `<div class="empty"><b>${f?"Ainda não há "+esc(BPT(f).l.toLowerCase())+".":"Ainda não há bolas paradas."}</b>Cria uma a partir do modelo: livres ofensivos e defensivos, cantos curtos e longos, penáltis e lançamentos.<br><br><button class="btn primary" data-a="bpNew" data-k="${esc(f)}">+ Nova bola parada</button></div>`
     : groups.map(t=>`<section style="margin-bottom:18px"><div class="asec"><span>${esc(t.l)}</span><button class="btn sm" data-a="bpNew" data-k="${t.k}">+ ${esc(t.l)}</button></div><div class="bpgrid">${list.filter(b=>b.type===t.k).map(card).join("")}</div></section>`).join("")}`;

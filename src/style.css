@@ -580,3 +580,7 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   nav.tabs button{padding:9px 9px 12px;font-size:15.5px}
 }
 .btn.off{opacity:.55}
+
+/* quem alterou (who.js) */
+.alert.warn i{background:var(--ouro)}
+.edby{margin:14px 2px 4px;text-align:right}

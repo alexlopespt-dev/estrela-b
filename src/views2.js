@@ -8,7 +8,8 @@ function vJogos(){
   const comps=competitions(), t=todayISO();
   const all=games().filter(g=>!S.jComp||g.comp===S.jComp);
   const upc=all.filter(g=>g.date>=t && !g.closed), past=all.filter(g=>!(g.date>=t && !g.closed)).reverse();
-  const sub=`<div class="seg" style="margin:0 0 14px"><button data-a="jsub" data-k="" class="${S.jsub!=="conv"?"on":""}">Jogos</button><button data-a="jsub" data-k="conv" class="${S.jsub==="conv"?"on":""}">Convocatória</button></div>`;
+  const sub=`<div class="seg" style="margin:0 0 14px">${[["","Jogos"],["conv","Convocatória"],["bp","Bolas paradas"]].map(([k,l])=>`<button data-a="jsub" data-k="${k}" class="${(S.jsub||"")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.jsub==="bp") return vBP(sub);
   if(S.jsub==="conv") return `<div class="bar"><h2>Jogos</h2><button class="btn primary" data-a="newEvent" data-type="jogo">+ Novo jogo</button></div>${sub}${vConv()}`;
   const summary=comps.map(c=>{ const tm=stats(c).team; return `<tr><td class="l"><b>${esc(c)}</b></td><td>${tm.j}</td><td>${tm.V}</td><td>${tm.E}</td><td>${tm.D}</td><td>${tm.gf}</td><td>${tm.ga}</td><td><b>${tm.V*3+tm.E}</b></td></tr>`; }).join("");
   return `
@@ -114,6 +115,7 @@ function vPlantel(){
   ${arch.length?`<details class="card" style="margin-top:14px"><summary class="card-h" style="cursor:pointer"><h3>Atletas que saíram</h3><span class="sub">${arch.length}</span></summary><div class="list">${arch.map(p=>playerLine(p,`<span class="tag">Saiu</span>`)).join("")}</div></details>`:""}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa técnica</h3><button class="btn sm primary" data-a="stfNew">+ Elemento</button></div>
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
+  ${vWho()}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>

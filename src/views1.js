@@ -1,12 +1,13 @@
 /* ================= estado de navegação ================= */
 const TABS = [
-  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},{k:"bp",l:"Bolas paradas"},
+  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},
   {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"mon",l:"Monitorização"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
 ];
 const S = { pm:todayISO().slice(0,7), mdl:"", dist:"", tab:"painel", page:null, cal:todayISO().slice(0,7), day:todayISO(), tsub:"sessoes", exCat:"", jComp:"", plGroup:"", tmom:null, scSt:"", stComp:"", stSort:"min", stDir:-1 };
-try{ const s=JSON.parse(localStorage.getItem(LS+":ui")||"null"); if(s&&TABS.some(t=>t.k===s.tab)) S.tab=s.tab; }catch(e){}
+try{ const s=JSON.parse(localStorage.getItem(LS+":ui")||"null"); if(s&&s.tab==="bp"){ S.tab="jogos"; S.jsub="bp"; } else if(s&&TABS.some(t=>t.k===s.tab)) S.tab=s.tab; }catch(e){}
 function saveUI(){ try{ localStorage.setItem(LS+":ui",JSON.stringify({tab:S.tab})); }catch(e){} }
-function go(tab){ S.tab=tab; S.page=null; saveUI(); render(); window.scrollTo({top:0}); }
+function go(tab){ if(tab==="bp"){ tab="jogos"; S.jsub="bp"; }   // as bolas paradas passaram para Jogos
+  S.tab=tab; S.page=null; saveUI(); render(); window.scrollTo({top:0}); }
 function openPage(name,id){ S.page={name,id}; render(); window.scrollTo({top:0}); }
 function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 
@@ -25,10 +26,11 @@ function render(){
     if(S.page){
       const f={treino:pTreino,jogo:pJogo,atleta:pAtleta,alvo:pAlvo,adversario:pOpp}[S.page.name];
       h = f ? f(S.page.id) : "";
+      if(h){ const c={treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents"}[S.page.name]; h+=edLine(D[c]&&D[c][S.page.id]); }
       if(!h){ S.page=null; }
     }
     if(!S.page){
-      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats,bp:vBP}[S.tab]||vPainel)();
+      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
     console.error(err);
@@ -100,6 +102,7 @@ function vPainel(){
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
     <button class="btn primary" data-a="injNew">Registar lesão</button>
   </div>
+  ${meBanner()?`<div style="margin:0 0 12px">${meBanner()}</div>`:""}
   <div class="kpis">
     <div class="kpi"><span>Jogos fechados</span><b>${tm.j}</b></div>
     <div class="kpi"><span>Vitórias-empates-derrotas</span><b>${tm.V}-${tm.E}-${tm.D}</b></div>

@@ -125,9 +125,12 @@ async function flush(key){
   }
   inflight[key]=false;
 }
+let NOSTAMP=0;   // >0 durante alterações automáticas (atualizações de dados, limpeza de repetidos): não mudam o "quem alterou"
 function put(col,id,obj){
   const prev=D[col][id];   // versão anterior: a partilha envia só o que mudou (ver syncQ)
-  obj=clone(obj); D[col][id]=obj; VER++; schedule();
+  obj=clone(obj);
+  if(col!=="meta"){ if(NOSTAMP){ if(prev&&prev._by){ obj._by=prev._by; obj._at=prev._at; } } else stamp(obj); }   // quem alterou (who.js)
+  D[col][id]=obj; VER++; schedule();
   if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj,prev); }
 }
 function del(col,id){

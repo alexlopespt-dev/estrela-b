@@ -93,7 +93,9 @@ const MIGR = [
 function runMigrations(){
   if(MODE!=="local" && MODE!=="db") return;
   const done=clone(D.meta.mig||{}); let msg=[];
-  MIGR.forEach(m=>{ if(done[m.id]) return; try{ const r=m.run(); if(r) msg.push(r); done[m.id]=todayISO(); }catch(e){ console.error(e); } });
+  NOSTAMP++;
+  try{ MIGR.forEach(m=>{ if(done[m.id]) return; try{ const r=m.run(); if(r) msg.push(r); done[m.id]=todayISO(); }catch(e){ console.error(e); } }); }
+  finally{ NOSTAMP--; }
   if(Object.keys(done).length!==Object.keys(D.meta.mig||{}).length){ put("meta","mig",done); if(msg.length) toast(msg.join(" ")); }
 }
 

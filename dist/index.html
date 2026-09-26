@@ -595,6 +595,10 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 }
 .btn.off{opacity:.55}
 
+/* quem alterou (who.js) */
+.alert.warn i{background:var(--ouro)}
+.edby{margin:14px 2px 4px;text-align:right}
+
 </style>
 </head>
 <body>
@@ -747,9 +751,12 @@ async function flush(key){
   }
   inflight[key]=false;
 }
+let NOSTAMP=0;   // >0 durante alterações automáticas (atualizações de dados, limpeza de repetidos): não mudam o "quem alterou"
 function put(col,id,obj){
   const prev=D[col][id];   // versão anterior: a partilha envia só o que mudou (ver syncQ)
-  obj=clone(obj); D[col][id]=obj; VER++; schedule();
+  obj=clone(obj);
+  if(col!=="meta"){ if(NOSTAMP){ if(prev&&prev._by){ obj._by=prev._by; obj._at=prev._at; } } else stamp(obj); }   // quem alterou (who.js)
+  D[col][id]=obj; VER++; schedule();
   if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj,prev); }
 }
 function del(col,id){
@@ -1056,13 +1063,14 @@ function exVecSrc(k){ if(EXV_MODE==="o"||!EXVEC[k]) return null;
 
 /* ================= estado de navegação ================= */
 const TABS = [
-  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},{k:"bp",l:"Bolas paradas"},
+  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},
   {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"mon",l:"Monitorização"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
 ];
 const S = { pm:todayISO().slice(0,7), mdl:"", dist:"", tab:"painel", page:null, cal:todayISO().slice(0,7), day:todayISO(), tsub:"sessoes", exCat:"", jComp:"", plGroup:"", tmom:null, scSt:"", stComp:"", stSort:"min", stDir:-1 };
-try{ const s=JSON.parse(localStorage.getItem(LS+":ui")||"null"); if(s&&TABS.some(t=>t.k===s.tab)) S.tab=s.tab; }catch(e){}
+try{ const s=JSON.parse(localStorage.getItem(LS+":ui")||"null"); if(s&&s.tab==="bp"){ S.tab="jogos"; S.jsub="bp"; } else if(s&&TABS.some(t=>t.k===s.tab)) S.tab=s.tab; }catch(e){}
 function saveUI(){ try{ localStorage.setItem(LS+":ui",JSON.stringify({tab:S.tab})); }catch(e){} }
-function go(tab){ S.tab=tab; S.page=null; saveUI(); render(); window.scrollTo({top:0}); }
+function go(tab){ if(tab==="bp"){ tab="jogos"; S.jsub="bp"; }   // as bolas paradas passaram para Jogos
+  S.tab=tab; S.page=null; saveUI(); render(); window.scrollTo({top:0}); }
 function openPage(name,id){ S.page={name,id}; render(); window.scrollTo({top:0}); }
 function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 
@@ -1081,10 +1089,11 @@ function render(){
     if(S.page){
       const f={treino:pTreino,jogo:pJogo,atleta:pAtleta,alvo:pAlvo,adversario:pOpp}[S.page.name];
       h = f ? f(S.page.id) : "";
+      if(h){ const c={treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents"}[S.page.name]; h+=edLine(D[c]&&D[c][S.page.id]); }
       if(!h){ S.page=null; }
     }
     if(!S.page){
-      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats,bp:vBP}[S.tab]||vPainel)();
+      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
     console.error(err);
@@ -1156,6 +1165,7 @@ function vPainel(){
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
     <button class="btn primary" data-a="injNew">Registar lesão</button>
   </div>
+  ${meBanner()?`<div style="margin:0 0 12px">${meBanner()}</div>`:""}
   <div class="kpis">
     <div class="kpi"><span>Jogos fechados</span><b>${tm.j}</b></div>
     <div class="kpi"><span>Vitórias-empates-derrotas</span><b>${tm.V}-${tm.E}-${tm.D}</b></div>
@@ -1699,7 +1709,8 @@ function vJogos(){
   const comps=competitions(), t=todayISO();
   const all=games().filter(g=>!S.jComp||g.comp===S.jComp);
   const upc=all.filter(g=>g.date>=t && !g.closed), past=all.filter(g=>!(g.date>=t && !g.closed)).reverse();
-  const sub=`<div class="seg" style="margin:0 0 14px"><button data-a="jsub" data-k="" class="${S.jsub!=="conv"?"on":""}">Jogos</button><button data-a="jsub" data-k="conv" class="${S.jsub==="conv"?"on":""}">Convocatória</button></div>`;
+  const sub=`<div class="seg" style="margin:0 0 14px">${[["","Jogos"],["conv","Convocatória"],["bp","Bolas paradas"]].map(([k,l])=>`<button data-a="jsub" data-k="${k}" class="${(S.jsub||"")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.jsub==="bp") return vBP(sub);
   if(S.jsub==="conv") return `<div class="bar"><h2>Jogos</h2><button class="btn primary" data-a="newEvent" data-type="jogo">+ Novo jogo</button></div>${sub}${vConv()}`;
   const summary=comps.map(c=>{ const tm=stats(c).team; return `<tr><td class="l"><b>${esc(c)}</b></td><td>${tm.j}</td><td>${tm.V}</td><td>${tm.E}</td><td>${tm.D}</td><td>${tm.gf}</td><td>${tm.ga}</td><td><b>${tm.V*3+tm.E}</b></td></tr>`; }).join("");
   return `
@@ -1805,6 +1816,7 @@ function vPlantel(){
   ${arch.length?`<details class="card" style="margin-top:14px"><summary class="card-h" style="cursor:pointer"><h3>Atletas que saíram</h3><span class="sub">${arch.length}</span></summary><div class="list">${arch.map(p=>playerLine(p,`<span class="tag">Saiu</span>`)).join("")}</div></details>`:""}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa técnica</h3><button class="btn sm primary" data-a="stfNew">+ Elemento</button></div>
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
+  ${vWho()}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
@@ -3502,6 +3514,86 @@ document.addEventListener("input", e=>{
 });
 $("#crest").addEventListener("click", ()=>go("painel"));
 
+/* ================= quem alterou (dispositivo + pessoa) ================= */
+// O browser não tem acesso ao nome do computador ("MacBook Pro de Alexandre"): cada dispositivo identifica-se uma vez
+// (pessoa + nome do dispositivo, guardado só neste browser) e cada put() feito aqui grava _by (esse nome) e _at (hora).
+// O que chega de outros dispositivos (partilha/base de dados) já vem com o carimbo de quem o fez.
+// Alterações automáticas (atualizações de dados, limpeza de repetidos) não mudam o carimbo (NOSTAMP).
+const ME_LS = LS+":eu";
+function meGet(){ try{ return JSON.parse(localStorage.getItem(ME_LS)||"null")||{}; }catch(e){ return {}; } }
+function devGuess(){
+  const ua=navigator.userAgent||"", tp=navigator.maxTouchPoints||0;
+  if(/iPad/.test(ua)||(/Macintosh/.test(ua)&&tp>1)) return "iPad";
+  if(/iPhone/.test(ua)) return "iPhone";
+  if(/Android/.test(ua)) return /Mobile/.test(ua)?"Telemóvel Android":"Tablet Android";
+  if(/Macintosh|Mac OS/.test(ua)) return "Mac";
+  if(/Windows/.test(ua)) return "PC Windows";
+  return "Computador";
+}
+const firstName = n => String(n||"").trim().split(/\s+/)[0]||"";
+// "MacBook Pro de Alexandre"; sem pessoa: só o dispositivo; nunca identificado: "Mac (sem nome)"
+function meLabel(){ const m=meGet(), d=(m.disp||"").trim(), n=firstName(m.nome);
+  return d&&n ? `${d} de ${n}` : d || (n ? `${devGuess()} de ${n}` : `${devGuess()} (sem nome)`); }
+function stamp(obj){ obj._by=meLabel(); obj._at=new Date().toISOString(); }
+
+function ago(iso){
+  const t=new Date(iso); if(isNaN(t)) return "";
+  const s=(Date.now()-t)/1000, hm=t.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}), day=isoOf(t);
+  if(s<60) return "agora mesmo";
+  if(s<3600) return `há ${Math.round(s/60)} min`;
+  if(day===todayISO()) return `hoje, ${hm}`;
+  if(day===addDays(todayISO(),-1)) return `ontem, ${hm}`;
+  return `${t.toLocaleDateString("pt-PT",{day:"2-digit",month:"2-digit"})}, ${hm}`;
+}
+const edLine = doc => doc&&doc._by ? `<p class="small muted edby">Última alteração: <b>${esc(doc._by)}</b>${doc._at?` · ${esc(ago(doc._at))}`:""}</p>` : "";
+
+/* ---- identificar este dispositivo ---- */
+function meForm(){
+  const m=meGet(), names=staff().map(s=>s.name);
+  modal({title:"Quem está a usar este dispositivo?",sub:"Fica guardado só neste browser. As alterações feitas aqui passam a mostrar este nome.",
+    body:`<div class="form">
+      <label class="fld">A tua pessoa<input name="nome" list="meNames" value="${esc(m.nome||"")}" placeholder="ex.: Alexandre Lopes" autocomplete="off"><datalist id="meNames">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>
+      <label class="fld">Nome do dispositivo<input name="disp" value="${esc(m.disp||"")}" placeholder="ex.: MacBook Pro, iPad da equipa (${esc(devGuess())})"></label>
+    </div><p class="small muted" style="margin:10px 0 0">Vai aparecer como: <b id="mePrev">${esc(meLabel())}</b></p>`,
+    foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Cancelar</button><button class="btn primary" data-a="mSave">Guardar</button></span>`,
+    ctx:{save:()=>{
+      const f=$("#dlg"), nome=f.querySelector("[name=nome]").value.trim(), disp=f.querySelector("[name=disp]").value.trim();
+      if(!nome&&!disp) return toast("Escreve pelo menos o teu nome ou o nome do dispositivo.");
+      try{ localStorage.setItem(ME_LS,JSON.stringify({nome,disp})); }catch(e){}
+      closeModal(); VER++; render(); toast(`As alterações deste dispositivo vão aparecer como “${meLabel()}”.`);
+    }}});
+  const upd=()=>{ const f=$("#dlg"); if(!f) return; const n=firstName(f.querySelector("[name=nome]").value), d=f.querySelector("[name=disp]").value.trim(); const p=$("#mePrev"); if(p) p.textContent=d&&n?`${d} de ${n}`:d||(n?`${devGuess()} de ${n}`:`${devGuess()} (sem nome)`); };
+  $("#dlg").querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));
+}
+const meBanner = () => meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
+
+/* ---- últimas alterações (todas as coleções, pelo carimbo) ---- */
+const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
+function whoItems(){
+  const out=[];
+  Object.keys(WHO_COL).forEach(c=>Object.entries(D[c]||{}).forEach(([id,x])=>{ if(!x||!x._at) return;
+    let what, pg=null;
+    if(c==="events"){ what=x.type==="jogo"?`Jogo ${x.venue==="F"?"@ ":"vs "}${x.opp||""}`:`Treino${x.theme?" — "+x.theme:""}`; what+=x.date?` (${fmtD(x.date,{day:"2-digit",month:"2-digit"})})`:""; pg=x.type==="jogo"?"jogo":"treino"; }
+    else { const nm=x.name||x.label||(c==="injuries"||c==="evals"?pname(x.pid):"")||(x.date?fmtD(x.date):""); what=`${WHO_COL[c]}${nm?": "+nm:""}`;
+      pg={players:"atleta",opponents:"adversario",scout:"alvo"}[c]||null; if(c==="injuries"||c==="evals"){ if(D.players[x.pid]){ pg="atleta"; id=x.pid; } } }
+    out.push({at:x._at,by:x._by||"",what,pg,id});
+  }));
+  return out.sort((a,b)=>a.at<b.at?1:-1);
+}
+function vWho(){
+  const all=whoItems(), f=S.whoBy||"", by=[...new Set(all.map(x=>x.by))].filter(Boolean), list=(f?all.filter(x=>x.by===f):all).slice(0,40);
+  return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Últimas alterações</h3><button class="btn sm" data-a="meCfg">Este dispositivo</button></div>
+    <p class="small muted" style="margin:8px 14px 0">As alterações feitas aqui aparecem como <b>${esc(meLabel())}</b>.</p>
+    ${by.length>1?`<div class="chips" style="padding:10px 14px 0"><button class="chip ${!f?"on":""}" data-a="whoBy" data-k="">Todos</button>${by.map(b=>`<button class="chip ${f===b?"on":""}" data-a="whoBy" data-k="${esc(b)}">${esc(b)}</button>`).join("")}</div>`:""}
+    <div class="list">${list.length?list.map(x=>{ const inner=`<span class="main"><b>${esc(x.what)}</b><small>${esc(x.by||"—")} · ${esc(ago(x.at))}</small></span>`;
+      return x.pg&&x.id?`<button class="li" data-a="page" data-p="${x.pg}" data-id="${esc(x.id)}">${inner}</button>`:`<div class="li">${inner}</div>`; }).join("")
+      :`<div class="empty"><b>Ainda sem alterações registadas</b>A partir de agora, cada alteração fica com o nome do dispositivo que a fez.</div>`}</div></section>`;
+}
+Object.assign(A,{
+  meCfg: () => meForm(),
+  whoBy: el => { S.whoBy=el.dataset.k; render(); }
+});
+
 /* ================= bolas paradas: quadro tático ================= */
 // Campo igual ao modelo da equipa ("Livres Laterais Ofensivos"): meio-campo ofensivo com a baliza em cima, relva com faixas,
 // círculos brancos com o nome por baixo. Coordenadas em 1000x682 (metade da imagem original, 2000x1364).
@@ -3663,7 +3755,7 @@ function bpCopyDoc(src){
 function bpNewDoc(type,name){ return {name:name||BPT(type).t, type, notes:"", tt:true, fr:[{it:bpTemplate(type)}]}; }
 
 /* ---- separador ---- */
-function vBP(){
+function vBP(sub){   // Jogos → sub-aba "Bolas paradas"
   const all=setpieces(), f=S.bpT||"";
   const list=f?all.filter(b=>b.type===f):all;
   const cnt=k=>all.filter(b=>b.type===k).length;
@@ -3671,8 +3763,8 @@ function vBP(){
     <div class="bpc-f"><button class="btn sm" data-a="bpCopy" data-id="${esc(b.id)}" title="Cria uma cópia para alterar só o que queres">⧉ Duplicar</button></div></div>`;
   const groups = f ? [BPT(f)] : BP_TYPES.filter(t=>cnt(t.k));
   return `
-  <div class="bar"><h2 style="margin:0;flex:1">Bolas paradas</h2>
-    ${all.length?`<button class="btn" data-a="bpPrintAll">Imprimir / PDF</button>`:""}<button class="btn primary" data-a="bpNew">+ Nova bola parada</button></div>
+  <div class="bar"><h2 style="margin:0;flex:1">Jogos</h2>
+    ${all.length?`<button class="btn" data-a="bpPrintAll">Imprimir / PDF</button>`:""}<button class="btn primary" data-a="bpNew">+ Nova bola parada</button></div>${sub||""}
   <div class="seg" style="margin:4px 0 14px"><button data-a="bpFilter" data-k="" class="${!f?"on":""}">Todas (${all.length})</button>${BP_TYPES.map(t=>`<button data-a="bpFilter" data-k="${t.k}" class="${f===t.k?"on":""}">${t.l}${cnt(t.k)?` (${cnt(t.k)})`:""}</button>`).join("")}</div>
   ${!list.length ? `<div class="empty"><b>${f?"Ainda não há "+esc(BPT(f).l.toLowerCase())+".":"Ainda não há bolas paradas."}</b>Cria uma a partir do modelo: livres ofensivos e defensivos, cantos curtos e longos, penáltis e lançamentos.<br><br><button class="btn primary" data-a="bpNew" data-k="${esc(f)}">+ Nova bola parada</button></div>`
     : groups.map(t=>`<section style="margin-bottom:18px"><div class="asec"><span>${esc(t.l)}</span><button class="btn sm" data-a="bpNew" data-k="${t.k}">+ ${esc(t.l)}</button></div><div class="bpgrid">${list.filter(b=>b.type===t.k).map(card).join("")}</div></section>`).join("")}`;
@@ -4282,7 +4374,9 @@ const MIGR = [
 function runMigrations(){
   if(MODE!=="local" && MODE!=="db") return;
   const done=clone(D.meta.mig||{}); let msg=[];
-  MIGR.forEach(m=>{ if(done[m.id]) return; try{ const r=m.run(); if(r) msg.push(r); done[m.id]=todayISO(); }catch(e){ console.error(e); } });
+  NOSTAMP++;
+  try{ MIGR.forEach(m=>{ if(done[m.id]) return; try{ const r=m.run(); if(r) msg.push(r); done[m.id]=todayISO(); }catch(e){ console.error(e); } }); }
+  finally{ NOSTAMP--; }
   if(Object.keys(done).length!==Object.keys(D.meta.mig||{}).length){ put("meta","mig",done); if(msg.length) toast(msg.join(" ")); }
 }
 
@@ -4874,7 +4968,8 @@ async function syncConnect(url,key){
 // staff repetido (mesmo nome, ids diferentes — p. ex. criado à mão num dispositivo e vindo dos dados iniciais noutro):
 // fica um só (o que tem foto; depois o mais completo; depois o id menor), com os campos vazios preenchidos pelo outro,
 // e as presenças do staff nos treinos passam para o que fica. Devolve quantos foram juntos.
-function dedupeStaff(){
+function dedupeStaff(){ NOSTAMP++; try{ return dedupeStaffRun(); } finally{ NOSTAMP--; } }   // automático: não muda o "quem alterou"
+function dedupeStaffRun(){
   const groups={};
   Object.entries(D.staff).forEach(([id,s])=>{ const k=nameKey(s&&s.name); if(k) (groups[k]=groups[k]||[]).push(id); });
   const score=id=>{ const s=D.staff[id]; return (s.photo||s.photoData?100:0)+Object.values(s).filter(v=>v!=null&&v!=="").length; };

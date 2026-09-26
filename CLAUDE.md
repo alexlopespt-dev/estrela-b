@@ -10,8 +10,8 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 - Staff (já na app): Miguel Motta (treinador principal), João Maltez e Tiago Isidoro (adjuntos), Alexandre Lopes (analista principal), Tiago Ferreira (analista adjunto), Bruno Anjos (treinador de GR), Mateus Alves (auxiliar), Diogo Gomes (team manager). Fotos ainda por receber.
 
 ## O que é
-Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 12 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-aba Convocatória com documentos; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Bolas paradas (quadro tático), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias — e "Presenças", grelha mensal `vPresencas`, `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 11 separadores:
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-abas Convocatória e Bolas paradas; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias — e "Presenças", grelha mensal `vPresencas`, `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -28,6 +28,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   quick.js     modo pós-jogo, grelha da época, importação da antiga app de ratings
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
+  who.js       quem alterou: identificação do dispositivo, carimbo _by/_at em put(), "Última alteração" nas fichas, "Últimas alterações" no Plantel
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
@@ -107,8 +108,13 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Secções: resumo (KPIs, leitura do dia, carga diária + bem-estar da equipa em dois gráficos alinhados — nunca dois eixos), indisponíveis (monitorização + lesões da app), quem recuperou desde ontem (barras divergentes), prontidão vs condição + grupos a 65, carga 7 dias (vermelho ≥ patamar alto `p80Carga`, amarelo ≥ `limiarCarga`), casos a decidir, guarda-redes, sem dados, leitura final.
 - A prontidão de ontem não vem no resumo do Sheets: `monSnap` guarda por dia `{nome:prontidão}` em `estrela-tecnico-v1:monhist` (21 dias, neste dispositivo) a cada leitura; `monPrev` usa o registo até 3 dias antes. Sem registo, a variação é do bem-estar (últimos dois dias da `serieBem`).
 
+## Quem alterou (who.js, test32)
+- O browser não sabe o nome do computador: cada dispositivo identifica-se uma vez (pessoa + nome do dispositivo, `estrela-tecnico-v1:eu`, só neste browser) → rótulo `meLabel()` "MacBook Pro de Alexandre" (sem identificação: "Mac (sem nome)"). Aviso no painel até se identificar (`meBanner`, ação `meCfg`).
+- `put()` grava `_by` (rótulo) e `_at` (ISO) em todas as coleções exceto `meta`; o que chega pela partilha/base de dados já traz o carimbo de quem fez. Alterações automáticas (`runMigrations`, `dedupeStaff`) correm com `NOSTAMP` e mantêm o carimbo anterior.
+- Fichas (treino, jogo, atleta, alvo, adversário) mostram "Última alteração" no fim (`edLine`); Plantel → "Últimas alterações" (`vWho`, 40 mais recentes, filtro por dispositivo `S.whoBy`). Só a última alteração de cada registo (não é histórico completo); apagados não aparecem.
+
 ## Bolas paradas (bp.js, test28)
-- Separador "Bolas paradas": cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" → `bpPrintForm` (escolher quais: caixas por bola parada, Todas/Nenhuma/+ tipo, "Uma por página" ou "Seguidas" = 2 campos por folha com altura fixa de 98 mm reais, tamanho da folha) → `bpPrint("id1,id2",lay)` com índice no início.
+- Jogos → sub-aba "Bolas paradas" (`S.jsub="bp"`, `vBP(sub)`; saiu do menu de cima: `go("bp")` e o separador guardado "bp" vão para aqui): cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" → `bpPrintForm` (escolher quais: caixas por bola parada, Todas/Nenhuma/+ tipo, "Uma por página" ou "Seguidas" = 2 campos por folha com altura fixa de 98 mm reais, tamanho da folha) → `bpPrint("id1,id2",lay)` com índice no início.
 - Campo desenhado a partir da imagem do modelo "Livres Laterais Ofensivos" (2000x1364 → coordenadas 1000x682, `bpPitch`): relva #0aa105 com faixas #068f03 só dentro do campo, baliza com rede em favo, círculos brancos r13 com contorno preto e nome por baixo (Open Sans 700 com halo claro), GR verde com gradiente, título branco em cima à esquerda (`tt`). Emblema pequeno no canto superior direito (`BP_CREST`, de `data/emblema_bp.b64`, 80 px com fundo transparente, placeholder `__BPCREST__`).
 - Documento `setpieces`: `{name,type,notes,tt,fr:[{it:[...]}]}`; cada item tem `k` fixo (liga o mesmo elemento entre passos para a animação). Tipos de item no topo de `bp.js`. Seta = curva quadrática (`cx,cy`), o ponto amarelo arrasta a curva.
 - Editor em janela de ecrã inteiro (`dialog.bpdlg`, não é apagado pelo `render()`): ferramentas, plantel (toca para pôr no campo ou dar nome ao círculo escolhido), cor/número, duplicar, desfazer/refazer (Ctrl+Z/Y, Delete, Ctrl+D, setas), passos + "Animar", "Repor modelo", Imagem (PNG 2000x1364) e PDF.
