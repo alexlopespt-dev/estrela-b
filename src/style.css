@@ -552,23 +552,27 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .kpi span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list.two>.li{border-top:1px solid var(--line)}
 
-/* ---- ecrã de arranque (≤ 1,8 s; só CSS, some sozinho mesmo sem JavaScript) ---- */
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 38%,#7a1c30 0%,#3f0913 48%,#14030a 100%);animation:spOut .42s cubic-bezier(.4,0,.2,1) 1.32s forwards}
-#splash::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(242,189,75,.16),transparent 38%);animation:spGlow 1.4s ease-out both}
+/* ---- ecrã de arranque (≤ 1,8 s; só CSS, some sozinho mesmo sem JavaScript) ----
+   Só se animam opacidade e transform (correm na placa gráfica): ficam fluidas mesmo enquanto a app carrega. */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 38%,#7a1c30 0%,#3f0913 48%,#14030a 100%);will-change:opacity,transform;animation:spOut .45s cubic-bezier(.4,0,.2,1) 1.3s forwards}
+#splash::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(242,189,75,.16),transparent 38%);opacity:0;will-change:opacity;animation:spFade 1s ease-out .05s forwards}
 .sp-c{position:relative;width:216px;height:216px;display:grid;place-items:center}
-.sp-crest{width:116px;height:auto;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45));animation:spIn .7s cubic-bezier(.2,.8,.2,1) both}
-.sp-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.sp-ring circle{fill:none;stroke-width:2.2}
-.sp-r0{stroke:rgba(255,255,255,.1)}
-.sp-r1{stroke:#f2bd4b;stroke-linecap:round;stroke-dasharray:578;stroke-dashoffset:578;animation:spDraw 1.15s cubic-bezier(.45,0,.2,1) .12s forwards;filter:drop-shadow(0 0 6px rgba(242,189,75,.55))}
-.sp-t{font-family:var(--fc,"Barlow Condensed",sans-serif);font-weight:700;font-size:13px;letter-spacing:.42em;text-transform:uppercase;color:rgba(242,189,75,.85);padding-left:.42em;animation:spText .7s ease .35s both}
-@keyframes spIn{from{opacity:0;transform:scale(.86) translateY(6px)}to{opacity:1;transform:none}}
-@keyframes spDraw{to{stroke-dashoffset:0}}
-@keyframes spText{from{opacity:0;letter-spacing:.7em}to{opacity:1}}
-@keyframes spGlow{from{opacity:0}to{opacity:1}}
+.sp-crest{width:116px;height:auto;filter:drop-shadow(0 10px 26px rgba(0,0,0,.45));opacity:0;transform:scale(.88);will-change:opacity,transform;animation:spIn .75s cubic-bezier(.2,.8,.2,1) .05s forwards}
+.sp-ring0,.sp-ring{position:absolute;inset:0;width:100%;height:100%}
+.sp-ring0 circle,.sp-ring circle{fill:none;stroke-width:2.2}
+.sp-ring0 circle{stroke:rgba(255,255,255,.1)}
+.sp-ring0{opacity:0;animation:spFade .5s ease .05s forwards}
+.sp-ring circle{stroke-linecap:round}
+.sp-ring{opacity:0;will-change:opacity,transform;animation:spFade .45s ease .15s forwards,spSpin 1.6s cubic-bezier(.45,.05,.3,1) .1s both}
+.sp-t{font-family:var(--fc,"Barlow Condensed",sans-serif);font-weight:700;font-size:14px;letter-spacing:.34em;text-transform:uppercase;color:rgba(242,189,75,.9);padding-left:.34em;
+  opacity:0;transform:translateY(8px);will-change:opacity,transform;animation:spUp .6s cubic-bezier(.2,.8,.2,1) .4s forwards}
+@keyframes spIn{to{opacity:1;transform:none}}
+@keyframes spFade{to{opacity:1}}
+@keyframes spSpin{from{transform:rotate(-120deg)}to{transform:rotate(300deg)}}
+@keyframes spUp{to{opacity:1;transform:none}}
 @keyframes spOut{to{opacity:0;visibility:hidden;transform:scale(1.03)}}
-@media (prefers-reduced-motion:reduce){ .sp-crest,.sp-r1,.sp-t,#splash::after{animation:none} .sp-r1{stroke-dashoffset:0} #splash{animation-duration:.25s;animation-delay:.6s} }
+@media (prefers-reduced-motion:reduce){ .sp-crest,.sp-t,.sp-ring0,#splash::after{animation:none;opacity:1;transform:none} .sp-ring{animation:none;opacity:1} #splash{animation-duration:.25s;animation-delay:.6s} }
 /* ---- computador (Mac): página mais larga e separadores todos visíveis ---- */
 @media (min-width:1280px){
   .wrap,.top-in,nav.tabs{max-width:1280px}

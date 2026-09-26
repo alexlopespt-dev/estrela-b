@@ -97,7 +97,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 ## Painel e arranque (test30)
 - Painel no computador em 3 colunas (`.dash`: Próximos | Alertas + Disponibilidade | Forma e destaques; 2 colunas até 1180 px, 1 até 760 px). Destaques em listas `.ldr` (posição, foto, nome, valor).
 - A partir de 1280 px a página tem 1280 px de largura e os separadores cabem todos (`nav.tabs` com espaço distribuído).
-- Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS, anel dourado + emblema, some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
+- Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
 
 ## Bolas paradas (bp.js, test28)
 - Separador "Bolas paradas": cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" → `bpPrintForm` (escolher quais: caixas por bola parada, Todas/Nenhuma/+ tipo, "Uma por página" ou "Seguidas" = 2 campos por folha com altura fixa de 98 mm reais, tamanho da folha) → `bpPrint("id1,id2",lay)` com índice no início.
