@@ -579,3 +579,4 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   nav.tabs{justify-content:space-between}
   nav.tabs button{padding:9px 9px 12px;font-size:15.5px}
 }
+.btn.off{opacity:.55}

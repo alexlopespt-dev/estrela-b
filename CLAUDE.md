@@ -33,6 +33,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
+  prejogo.js   relatório pré-jogo da monitorização (PDF só em MD-1 e MD, gráficos SVG, textos automáticos)
   boot.js      arranque: base de dados online (window.claude.use) ou localStorage
 data/
   seed_local.json         dados iniciais completos (versão offline)
@@ -98,6 +99,11 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Painel no computador em 3 colunas (`.dash`: Próximos | Alertas + Disponibilidade | Forma e destaques; 2 colunas até 1180 px, 1 até 760 px). Destaques em listas `.ldr` (posição, foto, nome, valor).
 - A partir de 1280 px a página tem 1280 px de largura e os separadores cabem todos (`nav.tabs` com espaço distribuído).
 - Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
+
+## Relatório pré-jogo (prejogo.js, test31)
+- Monitorização → "Relatório pré-jogo" (ação `preJogo`, via `printAsk("prejogo")` → `preJogoPrint()`): só com `MON.data.md.falta` 0 ou 1 (`preJogoOk`); nos outros dias o botão fica apagado (`.btn.off`) e explica com toast.
+- Secções: resumo (KPIs, leitura do dia, carga diária + bem-estar da equipa em dois gráficos alinhados — nunca dois eixos), indisponíveis (monitorização + lesões da app), quem recuperou desde ontem (barras divergentes), prontidão vs condição + grupos a 65, carga 7 dias (vermelho ≥ patamar alto `p80Carga`, amarelo ≥ `limiarCarga`), casos a decidir, guarda-redes, sem dados, leitura final.
+- A prontidão de ontem não vem no resumo do Sheets: `monSnap` guarda por dia `{nome:prontidão}` em `estrela-tecnico-v1:monhist` (21 dias, neste dispositivo) a cada leitura; `monPrev` usa o registo até 3 dias antes. Sem registo, a variação é do bem-estar (últimos dois dias da `serieBem`).
 
 ## Bolas paradas (bp.js, test28)
 - Separador "Bolas paradas": cartões por tipo (`BP_TYPES`: lof livre ofensivo, ldf livre defensivo, cco canto curto, clo canto longo, pen penálti, lan lançamento), filtro, "Imprimir / PDF" → `bpPrintForm` (escolher quais: caixas por bola parada, Todas/Nenhuma/+ tipo, "Uma por página" ou "Seguidas" = 2 campos por folha com altura fixa de 98 mm reais, tamanho da folha) → `bpPrint("id1,id2",lay)` com índice no início.

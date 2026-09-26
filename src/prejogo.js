@@ -1,0 +1,177 @@
+/* ================= relatório pré-jogo (Monitorização → no dia anterior e no dia do jogo) ================= */
+// Lê o resumo da monitorização (MON.data) e gera um PDF de 5 secções: resumo + tendência da equipa, variação do dia,
+// prontidão vs condição (3 grupos), carga acumulada e casos a decidir. Textos gerados a partir dos números.
+// A prontidão de ontem vem de um registo diário guardado neste dispositivo (monSnap); sem ele usa a variação do bem-estar.
+const MONH_LS = LS+":monhist";
+function monSnap(d){
+  if(!d||!d.hoje||!Array.isArray(d.jogadores)) return;
+  try{ const h=JSON.parse(localStorage.getItem(MONH_LS)||"{}"); h[d.hoje]={}; d.jogadores.forEach(j=>{ if(j.prontidao!=null) h[d.hoje][j.nome]=j.prontidao; });
+    Object.keys(h).sort().slice(0,-21).forEach(k=>delete h[k]); localStorage.setItem(MONH_LS,JSON.stringify(h)); }catch(e){}
+}
+function monPrev(d){ try{ const h=JSON.parse(localStorage.getItem(MONH_LS)||"{}"); const k=Object.keys(h).filter(x=>x<d.hoje).sort().pop(); return k&&dayDiff(k,d.hoje)<=3?{date:k,v:h[k]}:null; }catch(e){ return null; } }
+const preJogoOk = d => !!(d && d.md && (d.md.falta===0 || d.md.falta===1));
+const pj1 = x => x==null||!isFinite(x)?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
+const pj2 = x => x==null||!isFinite(x)?"—":(Math.round(x*100)/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pj0 = x => x==null||!isFinite(x)?"—":Math.round(x).toLocaleString("pt-PT");
+const listPt = a => a.length<2?a.join(""):a.slice(0,-1).join(", ")+" e "+a[a.length-1];
+const pjDot = t => t.replace(/\.(<\/b>)?\./g,".$1");
+const PJ = {grena:"#8f2239", gold:"#c9951a", pos:"#1f7a3d", neg:"#c62828", warn:"#d98b00", mute:"#b9aeb1", ink:"#221418", ink2:"#6b5a5f", grid:"#ece4e6"};
+
+/* ---- gráficos (SVG estático, uma medida por gráfico) ---- */
+const pjNice = m => { const r=m/4, p=Math.pow(10,Math.floor(Math.log10(Math.max(r,1e-9)))), st=[1,2,2.5,5,10].map(k=>k*p).find(k=>k>=r); return {step:st, max:Math.max(st,Math.ceil(m/st-1e-9)*st)}; };
+function pjBars(rows,o){   // barras horizontais: rows [{l, v, c, t}] ; o: {max, lines:[{v,l,c}], w}
+  const W=o.w||700, LW=108, RW=46, rh=15, gap=4, H=rows.length*(rh+gap)+30, nm=pjNice(Math.max(1,...rows.map(r=>r.v||0),...(o.lines||[]).map(L=>L.v))), max=o.max||nm.max, X=v=>LW+(W-LW-RW)*Math.max(0,v)/max;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" font-family="Barlow,Arial,sans-serif" font-size="10.5">`;
+  const tk=o.max?4:Math.round(max/nm.step); for(let k=0;k<=tk;k++){ const v=o.max?max*k/4:nm.step*k, x=X(v); s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H-22}" stroke="${PJ.grid}"/><text x="${x}" y="${H-8}" text-anchor="middle" fill="${PJ.ink2}">${pj0(v)}</text>`; }
+  (o.lines||[]).forEach(L=>{ const x=X(L.v); s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H-22}" stroke="${L.c}" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${x+3}" y="${H-24}" fill="${L.c}" font-weight="700" font-size="9.5">${esc(L.l)}</text>`; });
+  rows.forEach((r,i)=>{ const y=i*(rh+gap)+2, w=Math.max(2,X(r.v||0)-LW);
+    s+=`<text x="${LW-6}" y="${y+rh-4}" text-anchor="end" fill="${PJ.ink}" font-weight="600">${esc(r.l)}</text><rect x="${LW}" y="${y}" width="${w}" height="${rh}" rx="3" fill="${r.c}"/>
+      <text x="${LW+w+4}" y="${y+rh-4}" fill="${PJ.ink2}" font-weight="700">${esc(r.t??pj0(r.v))}</text>`; });
+  return s+"</svg>";
+}
+function pjDiverging(rows,o){   // variação: positivo verde à direita, negativo vermelho à esquerda, zero ao centro
+  const W=700, LW=108, rh=14, gap=4, H=rows.length*(rh+gap)+30, m=Math.max(0.01,...rows.map(r=>Math.abs(r.v))), C=LW+(W-LW-30)/2, half=(W-LW-40)/2, X=v=>C+half*v/m;
+  let s=`<svg viewBox="0 0 ${W} ${H+8}" width="100%" font-family="Barlow,Arial,sans-serif" font-size="10.5">`;
+  [-m,-m/2,0,m/2,m].forEach(v=>{ const x=X(v); s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H-22}" stroke="${v===0?"#9a8a8f":PJ.grid}"/><text x="${x}" y="${H-8}" text-anchor="middle" fill="${PJ.ink2}">${v>0?"+":""}${o.fmt(v)}</text>`; });
+  rows.forEach((r,i)=>{ const y=i*(rh+gap)+2, x0=Math.min(C,X(r.v)), w=Math.max(1.5,Math.abs(X(r.v)-C)), c=r.v>0?PJ.pos:r.v<0?PJ.neg:PJ.mute;
+    s+=`<text x="${LW-6}" y="${y+rh-3}" text-anchor="end" fill="${PJ.ink}" font-weight="600">${esc(r.l)}</text><rect x="${x0}" y="${y}" width="${w}" height="${rh}" rx="3" fill="${c}"/>
+      <text x="${r.v<0?x0-4:x0+w+4}" y="${y+rh-3}" text-anchor="${r.v<0?"end":"start"}" fill="${PJ.ink2}" font-weight="700">${r.v>0?"+":""}${o.fmt(r.v)}</text>`; });
+  return s+`<text x="${C}" y="${H+5}" text-anchor="middle" fill="${PJ.ink2}" font-size="9.5">${esc(o.axis)}</text></svg>`;
+}
+function pjPaired(rows){   // prontidão (grená) e condição (dourado) lado a lado, 0–100
+  const W=700, LW=108, rh=7, gap=7, H=rows.length*(rh*2+gap)+34, X=v=>LW+(W-LW-40)*Math.max(0,Math.min(100,v||0))/100;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" font-family="Barlow,Arial,sans-serif" font-size="10.5">`;
+  [0,25,50,65,75,100].forEach(v=>{ const x=X(v); s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H-22}" stroke="${v===65?"#9a8a8f":PJ.grid}" ${v===65?'stroke-dasharray="4 3"':""}/><text x="${x}" y="${H-8}" text-anchor="middle" fill="${PJ.ink2}">${v}</text>`; });
+  rows.forEach((r,i)=>{ const y=i*(rh*2+gap)+2;
+    s+=`<text x="${LW-6}" y="${y+rh*2-2}" text-anchor="end" fill="${PJ.ink}" font-weight="600">${esc(r.l)}</text>`;
+    [[r.p,PJ.grena,0],[r.c,PJ.gold,rh+1]].forEach(([v,c,dy])=>{ if(v==null) return; const w=Math.max(2,X(v)-LW); s+=`<rect x="${LW}" y="${y+dy}" width="${w}" height="${rh}" rx="2" fill="${c}"/><text x="${LW+w+4}" y="${y+dy+rh-0.5}" fill="${PJ.ink2}" font-size="9" font-weight="700">${pj0(v)}</text>`; }); });
+  return s+"</svg>";
+}
+function pjTeam(d){   // dois gráficos alinhados pelo dia: carga diária da equipa (barras) e bem-estar médio (linha) — nunca dois eixos
+  const dias=d.dias||[], n=dias.length, js=d.jogadores;
+  const load=dias.map((_,i)=>js.reduce((s,j)=>s+((j.serieCarga||[])[i]||0),0));
+  const bem=dias.map((_,i)=>{ const v=js.map(j=>(j.serieBem||[])[i]).filter(x=>x!=null); return v.length?avg(v):null; });
+  const W=700, L=46, R=16, cw=(W-L-R)/n, bw=Math.max(6,cw*0.62), X=i=>L+cw*i+cw/2;
+  const nl=pjNice(Math.max(1,...load)), maxL=nl.max, H1=120;
+  let s=`<svg viewBox="0 0 ${W} ${H1+150}" width="100%" font-family="Barlow,Arial,sans-serif" font-size="10">`;
+  s+=`<text x="${L}" y="11" fill="${PJ.ink}" font-weight="700" font-size="11">Carga diária da equipa (UA)</text>`;
+  Array.from({length:Math.round(maxL/nl.step)+1},(_,i)=>i*nl.step/maxL).forEach(k=>{ const y=H1-(H1-22)*k, v=maxL*k; s+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="${PJ.grid}"/><text x="${L-5}" y="${y+3}" text-anchor="end" fill="${PJ.ink2}">${pj0(v)}</text>`; });
+  load.forEach((v,i)=>{ const h=(H1-22)*v/maxL, fol=(d.folga||[])[i]; s+=`<rect x="${X(i)-bw/2}" y="${H1-h}" width="${bw}" height="${Math.max(0,h)}" rx="3" fill="${fol?"#e3d3d7":PJ.grena}"/>`; });
+  const y0=H1+40, H2=90, vals=bem.filter(x=>x!=null), lo=Math.floor((Math.min(...vals)-.15)*4)/4, hi=Math.ceil((Math.max(...vals)+.15)*4)/4, Y=v=>y0+H2-(H2-8)*(v-lo)/Math.max(.25,hi-lo);
+  s+=`<text x="${L}" y="${y0-8}" fill="${PJ.ink}" font-weight="700" font-size="11">Bem-estar médio da equipa (1–5)</text>`;
+  [lo,(lo+hi)/2,hi].forEach(v=>{ s+=`<line x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}" stroke="${PJ.grid}"/><text x="${L-5}" y="${Y(v)+3}" text-anchor="end" fill="${PJ.ink2}">${pj2(v)}</text>`; });
+  let path=""; bem.forEach((v,i)=>{ if(v==null) return; path+=(path?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1); });
+  s+=`<path d="${path}" fill="none" stroke="${PJ.grena}" stroke-width="2"/>`;
+  bem.forEach((v,i)=>{ if(v==null) return; const last=i===n-1; s+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${last?4.5:3}" fill="${last?PJ.gold:"#fff"}" stroke="${PJ.grena}" stroke-width="1.6"/>${last?`<text x="${X(i)}" y="${Y(v)-8}" text-anchor="middle" font-weight="800" fill="${PJ.ink}">${pj2(v)}</text>`:""}`; });
+  dias.forEach((k,i)=>{ s+=`<text x="${X(i)}" y="${y0+H2+14}" text-anchor="middle" fill="${PJ.ink2}" font-size="9">${k.slice(8,10)}/${k.slice(5,7)}</text>`; });
+  return {svg:s+"</svg>", load, bem};
+}
+
+/* ---- relatório ---- */
+function preJogoPrint(){
+  const d=MON.data; if(!d) return toast("Sem dados da monitorização.");
+  const md=d.md||{}, js=d.jogadores, {map}=monMatch();
+  const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?p.name:j.nome; };
+  const disp=js.filter(j=>j.estado==="Disponível"), fora=js.filter(j=>j.estado!=="Disponível");
+  const com=disp.filter(j=>j.prontidao!=null), med=com.length?avg(com.map(j=>j.prontidao)):null, ac65=com.filter(j=>j.prontidao>=65).length;
+  const risco=js.filter(j=>j.estadoBem==="RISCO"), semResp=disp.filter(j=>j.estadoBem==="sem resposta"||j.prontidao==null);
+  const gameDate=addDays(d.hoje,md.falta||0), g=games().find(x=>x.date===gameDate);
+  const team=pjTeam(d), bem=team.bem, nb=bem.length, bHoje=bem[nb-1], iPrev=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null) return i; return -1; })(), bOntem=iPrev>=0?bem[iPrev]:null;
+  let streak=0; for(let i=iPrev;i>0;i--){ if(bem[i]!=null&&bem[i-1]!=null&&bem[i]<bem[i-1]) streak++; else break; }
+  const maxDesde=(()=>{ for(let i=nb-2;i>=0;i--) if(bem[i]!=null&&bem[i]>=bHoje) return d.dias[i]; return null; })();
+  const folgaHoje=(d.folga||[])[nb-1];
+  const prev=monPrev(d), dP=j=>prev&&prev.v[j.nome]!=null&&j.prontidao!=null?j.prontidao-prev.v[j.nome]:null;
+  const medOntem=prev?(()=>{ const v=com.map(j=>prev.v[j.nome]).filter(x=>x!=null); return v.length?avg(v):null; })():null;
+  const mono=avg(disp.map(j=>j.monotonia).filter(x=>x!=null));
+  const dia=iso=>cap1(fmtD(iso,{weekday:"long",day:"numeric",month:"long"}));
+  const quando=md.falta===0?`Jogo hoje, ${dia(gameDate).toLowerCase()}`:`Jogo amanhã, ${dia(gameDate).toLowerCase()}`;
+  const sub=[quando, g&&g.opp?`${g.venue==="F"?"@":"vs"} ${g.opp}`:"", md.etiqueta||"", `dados de ${md.falta===0?"hoje":"hoje"}, ${fmtD(d.hoje,{weekday:"long",day:"2-digit",month:"2-digit"})}${folgaHoje?" (dia de folga)":""}`].filter(Boolean).join("  ·  ");
+  // --- texto do resumo
+  const par=[];
+  if(bHoje!=null && bOntem!=null){ const up=bHoje>bOntem+0.02, dn=bHoje<bOntem-0.02;
+    par.push(up?`O bem-estar médio da equipa subiu de ${pj2(bOntem)} para <b>${pj2(bHoje)}</b>${streak>=2?`, depois de ${streak} dias seguidos a descer`:""}${maxDesde?` — o valor mais alto desde ${fmtD(maxDesde,{day:"numeric",month:"numeric"})}`:(nb>3?" — o valor mais alto dos últimos "+nb+" dias":"")}.`
+      :dn?`O bem-estar médio da equipa desceu de ${pj2(bOntem)} para <b>${pj2(bHoje)}</b>${streak>=1?` (${streak+1}.º dia seguido a descer)`:""}.`
+      :`O bem-estar médio da equipa mantém-se estável em <b>${pj2(bHoje)}</b>.`); }
+  par.push(risco.length?`Há <b>${risco.length} ${risco.length>1?"jogadores":"jogador"} em risco</b>: ${listPt(risco.map(nm))}.`:`<b>Não há nenhum jogador em risco</b> neste momento.`);
+  par.push(`A prontidão média é <b>${pj0(med)}</b>${medOntem!=null?` (ontem ${pj0(medOntem)})`:""}, com ${ac65} de ${com.length} jogadores acima de 65 e ${com.filter(j=>j.prontidao<50).length} abaixo de 50.`);
+  if(mono!=null) par.push(`A monotonia semanal média está em ${pj2(mono)}${mono>=2?" — <b>acima do limiar de alerta (2,0)</b>: a carga tem sido pouco variada.":", abaixo do limiar de alerta (2,0)."}`);
+  // --- indisponíveis (monitorização + clínico da app)
+  const indisp=fora.map(j=>{ const p=map[j.nome]?P(map[j.nome]):null, inj=p?activeInjury(p.id):null;
+    return {n:nm(j), s:j.estado, desde:inj&&inj.date?fmtD(inj.date,{day:"2-digit",month:"2-digit"}):"—", nota:j.estadoNota||(inj?[inj.diag||inj.zone||inj.type, validISO(inj.exp)?"regresso previsto a "+fmtD(inj.exp,{day:"2-digit",month:"2-digit"}):""].filter(Boolean).join(" — "):"")}; });
+  players().filter(p=>avail(p.id)==="out" && !fora.some(j=>map[j.nome]===p.id) && !disp.some(j=>map[j.nome]===p.id)).forEach(p=>{ const inj=activeInjury(p.id)||{}; indisp.push({n:p.name,s:"Lesionado",desde:inj.date?fmtD(inj.date,{day:"2-digit",month:"2-digit"}):"—",nota:inj.diag||inj.zone||""}); });
+  // --- variação do dia
+  const useP=!!prev && disp.some(j=>dP(j)!=null);
+  const lastTwo=j=>{ const s=(j.serieBem||[]); const a=s[s.length-1]; let b=null; for(let i=s.length-2;i>=0;i--) if(s[i]!=null){ b=s[i]; break; } return a!=null&&b!=null?a-b:null; };
+  const vrows=disp.map(j=>({l:nm(j), v:useP?dP(j):lastTwo(j)})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
+  const melh=vrows.filter(r=>r.v>0), pior=vrows.filter(r=>r.v<0);
+  const fmtV=useP?(v=>pj0(v)):(v=>pj2(v));
+  // --- grupos
+  const G={nuc:[],div:[],fre:[],bai:[]};
+  com.forEach(j=>{ const c=j.condicao; if(c==null) return; const k=j.prontidao>=65?(c>=65?"nuc":"fre"):(c>=65?"div":"bai"); G[k].push(j); });
+  const byP=a=>a.slice().sort((x,y)=>y.prontidao-x.prontidao);
+  const gName=j=>nm(j)+(j.posicao==="GR"?" (GR)":"");
+  const topCarga=disp.filter(j=>j.cargaTopo||j.estadoCarga==="PICO DE CARGA").map(nm);
+  // --- carga 7 dias
+  const lim=d.limiarCarga||1500, top=Math.max(d.p80Carga||2100, lim+1);
+  const crows=disp.filter(j=>j.carga7!=null).sort((a,b)=>b.carga7-a.carga7).map(j=>({l:nm(j), v:j.carga7, c:j.carga7>=top?PJ.neg:j.carga7>=lim?PJ.warn:PJ.mute}));
+  const acima=crows.filter(r=>r.v>=top), meio=crows.filter(r=>r.v>=lim&&r.v<top);
+  // --- casos a decidir
+  const tag=j=>(j.prontidao!=null&&j.prontidao<50)||j.estadoBem==="RISCO"?["DECIDIR",PJ.neg]:(j.cargaTopo||j.estadoCarga==="PICO DE CARGA")?["GERIR MINUTOS",PJ.warn]:["VIGIAR","#b8860b"];
+  const casos=disp.filter(j=>j.posicao!=="GR" && (j.prio>0||(j.prontidao!=null&&j.prontidao<55)||j.estadoCarga==="PICO DE CARGA")).sort((a,b)=>(b.prio||0)-(a.prio||0)||(a.prontidao??999)-(b.prontidao??999)).slice(0,6);
+  const caso=j=>{ const [t,c]=tag(j), dv=useP?dP(j):null;
+    return `<div class="pj-case"><div class="pj-case-h"><b>${esc(nm(j))}</b><span style="background:${c}">${t}</span></div>
+      <p>${esc(j.leitura||"")} Prontidão <b>${pj0(j.prontidao)}</b>${dv!=null?` (${dv>0?"+":""}${pj0(dv)} desde ontem)`:""}, condição ${pj0(j.condicao)}, bem-estar 3 dias ${pj2(j.bem3)} (habitual ${pj2(j.base)}${j.z!=null?`, desvio ${pj2(j.z)}`:""}). ${j.critico?`Item mais baixo: ${esc(j.critico)}. `:""}Carga 7 dias ${pj0(j.carga7)} UA${j.acwr!=null?`, ACWR ${pj2(j.acwr)}`:""}.</p></div>`; };
+  const grs=byP(disp.filter(j=>j.posicao==="GR"&&j.prontidao!=null));
+  // --- leitura final
+  const fin=[];
+  fin.push(risco.length?`${risco.length} ${risco.length>1?"jogadores":"jogador"} em risco — confirmar antes de convocar: ${listPt(risco.map(nm))}.`:`Ninguém em risco. Prontidão média ${pj0(med)}, ${ac65}/${com.length} acima de 65.`);
+  if(G.nuc.length) fin.push(`Onze natural a sair do núcleo utilizável (${G.nuc.length}). Em melhor estado: ${listPt(byP(G.nuc).slice(0,4).map(gName))}.`);
+  if(topCarga.length) fin.push(`Gestão de minutos para ${listPt(topCarga)} — carga no topo do plantel.`);
+  if(G.fre.length) fin.push(`Minutos de impacto (frescos, sem base para 90'): ${listPt(byP(G.fre).slice(0,5).map(gName))}.`);
+  if(grs.length) fin.push(`Baliza: ${gName(grs[0])} é a opção em melhor estado (prontidão ${pj0(grs[0].prontidao)}).`);
+  if(semResp.length) fin.push(`Sem dados suficientes: ${listPt(semResp.map(nm))} — perguntar como estão.`);
+  const kp=(v,l)=>`<div class="pj-k"><b>${v}</b><span>${l}</span></div>`;
+  const css=`<style>.pj-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:4px 0 12px}.pj-k{background:#f8f3f4;border:1px solid #ede3e5;border-radius:10px;padding:9px 6px;text-align:center}
+    .pj-k b{display:block;font-family:"Barlow Condensed",Arial Narrow,sans-serif;font-size:26px;font-weight:800;color:#3c0a14;line-height:1}.pj-k span{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6a72}
+    .pj-fig{border:1px solid #eadfe2;border-radius:10px;padding:10px 12px 6px;margin:8px 0 6px;page-break-inside:avoid}.pj-cap{font-size:10.5px;color:#7a666c;margin:2px 0 10px}
+    .pj-grps{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.pj-grp.z{padding:6px 12px;color:#7a666c}.pj-grp.z h3{margin:0;color:#7a666c}.pj-grp.z .d,.pj-grp.z .who{display:none}.pj-fin-w{page-break-inside:avoid}.pj-grp{border:1px solid #eadfe2;border-radius:10px;padding:9px 12px;margin:8px 0;page-break-inside:avoid}.pj-grp h3{margin:0 0 3px;font-size:13px}.pj-grp .who{font-weight:700;margin-top:5px}
+    .pj-case{border:1px solid #eadfe2;border-radius:10px;padding:8px 12px;margin:7px 0;page-break-inside:avoid}.pj-case-h{display:flex;justify-content:space-between;align-items:center}.pj-case-h b{font-size:13px}
+    .pj-case-h span{color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:5px}.pj-case p{margin:4px 0 0}
+    .pj-leg{display:flex;gap:16px;font-size:10.5px;color:#6b5a5f;margin:0 0 4px}.pj-leg i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+    .pj-pb{page-break-before:always}ul.pj-fin li{margin:4px 0}</style>`;
+  const body=`${css}
+    <p class="note" style="margin-top:-6px">${esc(sub)}</p>
+    <div class="pj-kpis">${kp(disp.length,"Disponíveis")}${kp(pj0(med),"Prontidão média")}${kp(`${ac65}/${com.length}`,"Acima de 65")}${kp(risco.length,"Em risco")}${kp(pj2(bHoje),"Bem-estar equipa")}${kp(indisp.length,"Indisponíveis")}</div>
+    <h2>Leitura do dia</h2>${par.map(p=>`<p>${p}</p>`).join("")}
+    <div class="pj-fig">${team.svg}<div class="pj-cap">Dias sem barra: folga ou sem registos. O último ponto (dourado) é o dia de hoje.</div></div>
+    <h2>Indisponíveis para o jogo</h2>
+    ${indisp.length?`<table><thead><tr><th>Jogador</th><th>Situação</th><th class="c">Desde</th><th>Nota</th></tr></thead><tbody>${indisp.map(r=>`<tr><td><b>${esc(r.n)}</b></td><td>${esc(r.s)}</td><td class="c">${esc(r.desde)}</td><td>${esc(r.nota||"")}</td></tr>`).join("")}</tbody></table>`:"<p>Plantel todo disponível.</p>"}
+    <p class="note">Restam ${disp.length} jogadores disponíveis.</p>
+    <h2 class="pj-pb">${useP?"Quem recuperou desde ontem — e quem não":"Variação do bem-estar desde o último registo"}</h2>
+    <p>${melh.length} de ${vrows.length} jogadores melhoraram${pior.length?` e ${pior.length} pioraram`:""}${useP?` (prontidão, desde ${fmtD(prev.date,{day:"2-digit",month:"2-digit"})})`:" (bem-estar, escala 1–5)"}.
+      ${melh.length?` A maior subida é de <b>${esc(melh[0].l)}</b> (+${fmtV(melh[0].v)}).`:""}${pior.length?` Do outro lado, ${listPt(pior.slice(-3).reverse().map(r=>`<b>${esc(r.l)}</b> (${fmtV(r.v)})`))}.`:""}</p>
+    <div class="pj-fig">${pjDiverging(vrows,{fmt:fmtV,axis:useP?"Variação da prontidão (pontos)":"Variação do bem-estar (1–5)"})}</div>
+    <h2 class="pj-pb">Como está cada jogador</h2>
+    <p>A <b>prontidão</b> mede como o jogador está agora e muda de dia para dia. A <b>condição</b> mede o que construiu nas últimas semanas e muda devagar. Fresco e mal preparado, ou preparado e cansado, pedem decisões opostas.</p>
+    <div class="pj-fig"><div class="pj-leg"><span><i style="background:${PJ.grena}"></i>Prontidão — como está agora</span><span><i style="background:${PJ.gold}"></i>Condição — o que construiu</span><span>Linha tracejada: 65</span></div>
+      ${pjPaired(byP(com).map(j=>({l:gName(j),p:j.prontidao,c:j.condicao})))}</div>
+    <div class="pj-grps">
+    <div class="pj-grp${G.nuc.length?"":" z"}" style="border-left:4px solid ${PJ.pos}"><h3>Núcleo utilizável — ${G.nuc.length}</h3><span class="d">Prontidão e condição altas: estão bem agora e têm base para o jogo inteiro. É daqui que sai o onze natural.${topCarga.filter(n=>G.nuc.some(j=>nm(j)===n)).length?` ${listPt(topCarga.filter(n=>G.nuc.some(j=>nm(j)===n)))} têm a carga mais alta: primeiros candidatos a gestão de minutos.`:""}</span><div class="who">${byP(G.nuc).map(gName).join(" · ")||"—"}</div></div>
+    <div class="pj-grp${G.div.length?"":" z"}" style="border-left:4px solid ${PJ.warn}"><h3>Preparados mas ainda em dívida — ${G.div.length}</h3><span class="d">Condição alta, prontidão em baixo. Aguentam fisicamente, mas beneficiam de entrar com o jogo em andamento.</span><div class="who">${byP(G.div).map(gName).join(" · ")||"—"}</div></div>
+    <div class="pj-grp${G.fre.length?"":" z"}" style="border-left:4px solid ${PJ.neg}"><h3>Frescos mas sem base — ${G.fre.length}</h3><span class="d">Prontidão boa, condição baixa: frescos porque treinaram pouco. 90 minutos seria um salto de carga — jogadores para minutos de impacto.</span><div class="who">${byP(G.fre).map(gName).join(" · ")||"—"}</div></div>
+    ${G.bai.length?`<div class="pj-grp" style="border-left:4px solid #6b5a5f"><h3>Em baixo nas duas — ${G.bai.length}</h3><span class="d">Prontidão e condição abaixo de 65.</span><div class="who">${byP(G.bai).map(gName).join(" · ")}</div></div>`:""}</div>
+    <h2 class="pj-pb">Carga acumulada — quem está no limite</h2>
+    <p>A vermelho, os jogadores a partir de ${pj0(top)} UA em 7 dias (o patamar alto do plantel); a amarelo, entre ${pj0(lim)} e ${pj0(top)}. ${acima.length?`<b>${acima.length} no patamar alto</b>: ${listPt(acima.map(r=>esc(r.l)))}.`:"Ninguém acima do patamar."}${meio.length?` ${meio.length} na zona intermédia.`:""}</p>
+    <div class="pj-fig">${pjBars(crows,{lines:[{v:lim,l:pj0(lim)+" UA",c:PJ.warn},{v:top,l:pj0(top)+" UA",c:PJ.neg}]})}<div class="pj-cap">Carga de treino dos últimos 7 dias (PSE × minutos).</div></div>
+    <h2 class="pj-pb">Casos a decidir antes do jogo</h2>
+    ${casos.length?casos.map(caso).join(""):"<p>Sem casos a assinalar.</p>"}
+    ${grs.length?`<h2>Guarda-redes</h2><p>${grs.map((j,i)=>`${i===0?"<b>":""}${esc(nm(j))}${i===0?"</b>":""}: prontidão ${pj0(j.prontidao)}, condição ${pj0(j.condicao)}, bem-estar ${pj2(j.bem3)}${j.critico?` (item mais baixo ${esc(j.critico)})`:""}`).join(". ")}. ${grs.length>1?`${esc(nm(grs[0]))} é a opção em melhor estado.`:""}</p>`:""}
+    ${semResp.length?`<h2>Sem dados suficientes</h2><p>${listPt(semResp.map(j=>`<b>${esc(nm(j))}</b> (${j.nResp||0} respostas, carga 7 dias ${pj0(j.carga7)} UA)`))}. Se forem utilizados, convém ser com minutos controlados — não porque os números sejam maus, mas porque não existem.</p>`:""}
+    <div class="pj-fin-w"><h2>Leitura final para o jogo</h2><ul class="pj-fin">${fin.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+    <p class="note">Gerado pela app a partir do painel de monitorização (${esc(monAge())}). Os textos são automáticos: confirmar com a equipa técnica.</p>`;
+  printDoc(`relatorio-pre-jogo-${d.hoje}`, "Relatório pré-jogo", pjDot(body));
+}
+Object.assign(A,{
+  preJogo: () => { if(!preJogoOk(MON.data)) return toast("O relatório pré-jogo fica disponível no dia anterior ao jogo e no dia do jogo."); printAsk("prejogo",""); }
+});
+monSnap(MON.data);   // dados já em cache no arranque

@@ -20,6 +20,7 @@ async function monFetch(manual){
     if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
     if(!Array.isArray(d.jogadores)) throw new Error("A resposta não tem jogadores.");
     MON.data=d; MON.at=new Date().toISOString();
+    monSnap(d);
     try{ localStorage.setItem(MON_LS,JSON.stringify({data:d,at:MON.at})); }catch(e){}
     if(manual) toast(`Monitorização atualizada — ${d.jogadores.length} jogadores`);
   }catch(e){
@@ -103,7 +104,7 @@ function monCard(){
 function vMon(){
   const c=monCfg(), d=MON.data;
   const head=`<div class="bar"><h2>Monitorização</h2>${d?`<span class="small muted">${esc(monAge())}</span>`:""}<span class="sp"></span>
-    <button class="btn" data-a="monCfg">${c.url?"Ligação ao Sheets":"Ligar ao Google Sheets"}</button>${c.url?`<button class="btn primary" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button>`:""}</div>
+    <button class="btn" data-a="monCfg">${c.url?"Ligação ao Sheets":"Ligar ao Google Sheets"}</button>${c.url?`<button class="btn primary" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button>`:""}${d?`<button class="btn${preJogoOk(d)?"":" off"}" data-a="preJogo" title="Disponível no dia anterior ao jogo e no dia do jogo">Relatório pré-jogo</button>`:""}</div>
     ${MON.err?`<div class="alert bad" style="cursor:default"><i></i><span class="main"><b>${esc(MON.err)}</b><small>${d?"A mostrar os últimos dados recebidos.":"Confirma o endereço e a chave em “Ligação ao Sheets”."}</small></span></div>`:""}`;
   if(!c.url) return head+`<div class="empty"><b>Sem ligação ao painel de monitorização</b>Os questionários de bem-estar e de PSE são tratados no Google Sheets "Estrela B - Painel". Liga-o aqui para veres a prontidão, o bem-estar e a carga de cada atleta na app.</div>`;
   if(!d) return head+`<div class="empty"><b>${MON.loading?"A ler o Google Sheets…":"Ainda sem dados"}</b></div>`;
