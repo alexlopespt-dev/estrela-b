@@ -1,6 +1,9 @@
 /* ================= arranque ================= */
 const use = n => (window.claude && typeof window.claude.use==="function") ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
 document.getElementById("crest").src = CREST;
+// ecrã de arranque: some sozinho por CSS (≤ 1,8 s); aqui só se retira do DOM no fim
+(()=>{ const sp=document.getElementById("splash"); if(!sp) return; const rm=()=>{ if(sp.parentNode) sp.remove(); };
+  sp.addEventListener("animationend",e=>{ if(e.animationName==="spOut") rm(); }); setTimeout(rm,2000); })();
 /* tema: automático (segue o sistema), escuro ou claro — escolha guardada neste dispositivo */
 const THEMES=[["auto","Tema automático (segue o sistema)"],["dark","Modo noite"],["light","Modo dia"]];
 let THEME="auto"; try{ const t=localStorage.getItem(LS+":theme"); if(t==="dark"||t==="light") THEME=t; }catch(e){}

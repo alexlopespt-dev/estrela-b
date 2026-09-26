@@ -23,6 +23,7 @@ def build(seed, out):
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in JS_ORDER)
     h = open(os.path.join(SRC, "shell.html")).read().replace("/*CSS*/", css).replace("/*JS*/", js)
     h = (h.replace('"__CREST__"', json.dumps(crest))
+          .replace("__CRESTSRC__", crest.strip())
           .replace("__HORBG__", open(os.path.join(DATA, "horario_fundo.b64")).read().strip())
           .replace("__BPCREST__", open(os.path.join(DATA, "emblema_bp.b64")).read().strip())
           .replace("__EXIMG__", json.dumps(imgs))
