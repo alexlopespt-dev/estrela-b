@@ -645,3 +645,19 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .crit b{display:block;font-family:var(--fc);font-size:26px;line-height:1.1;margin-top:2px}
 .crit small{color:var(--muted);font-size:12px}
 @media (max-width:620px){ .crit{grid-template-columns:1fr} .csel{max-width:170px} }
+
+/* cabeçalho no telemóvel: nome numa linha, "Equipa B · III Distrital · 2026/27" noutra */
+.team .ts-m{display:none}
+@media (max-width:520px){
+  .team{min-width:0;flex:1}
+  .team h1{font-size:clamp(17px,5.4vw,22px);white-space:nowrap;line-height:1.05}
+  .team h1 .tn2{display:none}
+  .team p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;font-size:12.5px}
+  .team .ts-d{display:none}.team .ts-m{display:inline}
+  .syncst{font-size:0;padding:0;width:32px;height:32px;justify-content:center;gap:0}
+  .syncst::before{width:10px;height:10px}
+  /* ícones numa faixa em cima, à direita (como os títulos grandes do iPhone); emblema + nome por baixo, a largura toda */
+  .top-in{gap:12px;padding-top:48px}
+  .top-act{position:absolute;top:10px;right:14px}
+  .top-act .themebt{width:32px;height:32px}
+}

@@ -660,6 +660,22 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .crit small{color:var(--muted);font-size:12px}
 @media (max-width:620px){ .crit{grid-template-columns:1fr} .csel{max-width:170px} }
 
+/* cabeçalho no telemóvel: nome numa linha, "Equipa B · III Distrital · 2026/27" noutra */
+.team .ts-m{display:none}
+@media (max-width:520px){
+  .team{min-width:0;flex:1}
+  .team h1{font-size:clamp(17px,5.4vw,22px);white-space:nowrap;line-height:1.05}
+  .team h1 .tn2{display:none}
+  .team p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;font-size:12.5px}
+  .team .ts-d{display:none}.team .ts-m{display:inline}
+  .syncst{font-size:0;padding:0;width:32px;height:32px;justify-content:center;gap:0}
+  .syncst::before{width:10px;height:10px}
+  /* ícones numa faixa em cima, à direita (como os títulos grandes do iPhone); emblema + nome por baixo, a largura toda */
+  .top-in{gap:12px;padding-top:48px}
+  .top-act{position:absolute;top:10px;right:14px}
+  .top-act .themebt{width:32px;height:32px}
+}
+
 </style>
 </head>
 <body>
@@ -1138,9 +1154,13 @@ function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 /* ================= render principal ================= */
 function render(){
   const m=meta();
-  $("#tTeam").textContent = m.full || m.team || "Estrela B";   // nome completo no cabeçalho (meta/team.full)
-  document.title = (m.full || m.team || "Estrela B") + " — Departamento técnico";
-  $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
+  // nome completo no cabeçalho (meta/team.full). No telemóvel: "CF Estrela da Amadora" numa linha e, por baixo,
+  // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
+  const full=m.full || m.team || "Estrela B", cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
+  $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
+  document.title = full + " — Departamento técnico";
+  $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`
+    + `<span class="ts-m">${[n2?esc(n2):"", m.comp?esc(m.comp):"", m.season?"<b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" · ")}</span>`;
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
   $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
     return `<button role="tab" data-a="tab" data-t="${t.k}" aria-selected="${S.tab===t.k && !S.page ? "true" : S.tab===t.k ? "true":"false"}">${t.l}${n?`<span class="dot">${n}</span>`:""}</button>`; }).join("");

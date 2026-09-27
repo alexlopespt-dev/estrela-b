@@ -22,7 +22,12 @@ with sync_playwright() as pw:
         if not pg.query_selector('.d2-mp [data-a="monCfg"]') or pg.query_selector('.mp-att'): errs.append(f"sem mon {w}")
         pg.click('nav [data-t="mon"]'); pg.click('.bar [data-a="monCfg"]'); pg.fill('#dlg [name=url]',"https://script.google.com/macros/s/X/exec"); pg.fill('#dlg [name=key]',"k"); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(900)
         pg.click('nav [data-t="painel"]'); pg.wait_for_timeout(400); chk(pg,"painel "+str(w))
-        if pg.inner_text('#tTeam')!="CF Estrela da Amadora — Equipa B" or not pg.title().startswith("CF Estrela da Amadora"): errs.append(f"nome no cabeçalho {w}: "+pg.inner_text('#tTeam'))
+        if pg.text_content('#tTeam')!="CF Estrela da Amadora — Equipa B" or not pg.title().startswith("CF Estrela da Amadora"): errs.append(f"nome no cabeçalho {w}: "+pg.text_content('#tTeam'))
+        # telemóvel: nome e subtítulo numa linha cada, sem "Departamento técnico"
+        if w<=520:
+            hh=pg.evaluate("[document.querySelector('#tTeam').getBoundingClientRect().height, parseFloat(getComputedStyle(document.querySelector('#tTeam')).lineHeight), document.querySelector('#tSub').getBoundingClientRect().height, document.querySelector('#tSub').innerText]")
+            print("cabeçalho telemóvel:", hh)
+            if hh[0]>hh[1]*1.4 or hh[2]>24 or "Departamento" in hh[3] or "Equipa B" not in hh[3] or pg.inner_text('#tTeam')!="CF Estrela da Amadora": errs.append(f"cabeçalho no telemóvel {hh}")
         nx=pg.inner_text('.nx'); att=pg.eval_on_selector_all('.mp-att .li',"e=>e.map(x=>x.innerText.replace(/\\n/g,' | '))")
         print(w, theme, "| jogo:", nx.split("\n")[:4], "| atenção:", len(att), att[:2])
         if "Atlético CP B" not in nx or "2D" not in nx or "MD-3" not in nx: errs.append(f"próximo jogo {w}")

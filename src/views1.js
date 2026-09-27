@@ -14,9 +14,13 @@ function back(){ S.page=null; render(); window.scrollTo({top:0}); }
 /* ================= render principal ================= */
 function render(){
   const m=meta();
-  $("#tTeam").textContent = m.full || m.team || "Estrela B";   // nome completo no cabeçalho (meta/team.full)
-  document.title = (m.full || m.team || "Estrela B") + " — Departamento técnico";
-  $("#tSub").innerHTML = ["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ");
+  // nome completo no cabeçalho (meta/team.full). No telemóvel: "CF Estrela da Amadora" numa linha e, por baixo,
+  // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
+  const full=m.full || m.team || "Estrela B", cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
+  $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
+  document.title = full + " — Departamento técnico";
+  $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`
+    + `<span class="ts-m">${[n2?esc(n2):"", m.comp?esc(m.comp):"", m.season?"<b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" · ")}</span>`;
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
   $("#tabs").innerHTML = TABS.map(t=>{ const n = t.k==="clinico"?nInj : 0;   // alertas da app: no sino do cabeçalho (painel.js)
     return `<button role="tab" data-a="tab" data-t="${t.k}" aria-selected="${S.tab===t.k && !S.page ? "true" : S.tab===t.k ? "true":"false"}">${t.l}${n?`<span class="dot">${n}</span>`:""}</button>`; }).join("");
