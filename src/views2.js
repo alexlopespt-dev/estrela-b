@@ -116,7 +116,7 @@ function vPlantel(){
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa técnica</h3><button class="btn sm primary" data-a="stfNew">+ Elemento</button></div>
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
   ${vWho()}
-  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3></div><div class="card-b">
+  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
       <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: CF Estrela da Amadora — Equipa B"></label>

@@ -31,6 +31,7 @@ def build(seed, out):
           .replace("__MODELO__", json.dumps(mj, ensure_ascii=False))
           .replace("__MJIMG__", json.dumps(mjimg))
           .replace("__OPPIMG__", json.dumps(opp, ensure_ascii=False))
+          .replace("__BUILD__", __import__("datetime").datetime.now(__import__("zoneinfo").ZoneInfo("Europe/Lisbon")).strftime("%d/%m/%Y %H:%M"))
           .replace("__SEED__", json.dumps(seed, ensure_ascii=False) if seed else "null"))
     os.makedirs(DIST, exist_ok=True)
     path = os.path.join(DIST, out)
