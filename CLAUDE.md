@@ -78,6 +78,7 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 
 ## Carga e relatório semanal
 - Treinos → Planeamento, cartão "Carga planeada vs. real" (`vCarga`, microciclo escolhido em "O que temos trabalhado" ou a semana atual): planeada = `INT_RPE[int]` (Baixa 3, Média 5, Alta 7, Muito alta 9) × minutos do plano (ou duração); real = RPE médio dos presentes × duração. Alerta se real (ou planeada) > 120% da média real dos até 4 microciclos anteriores (`cargaHabitual`). Jogos marcados no dia, fora das contas.
+- O microciclo escolhe-se no próprio cartão (lista `select[data-c=cargaMc]` → `S.cargaMc`; vazio = segue "O que temos trabalhado"/semana atual). Linha de ritmo `cargaRitmo(w)`: real até agora (treinos com RPE) e % vs. planeado desses treinos, média por treino, projeção da semana = real + o que falta (planeado × desvio real/planeado até agora; sem planeado, a média por treino); alerta "A este ritmo, X% acima do habitual" quando a projeção passa 120% (test27).
 - "Relatório PDF" → `weekPrint(start,end)` (via `printAsk("week","start|end")`): resumo, carga (gráfico), treinos, momentos (circular), jogos, lesões, destaques, presenças (test27).
 
 ## Modelo de dados (coleções em COLS, um documento por registo)

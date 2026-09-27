@@ -767,6 +767,7 @@ const A = {
 
 /* ================= alterações em campos ================= */
 const Cg = {
+  cargaMc: el => { S.cargaMc=el.value; render(); },
   f: el => { const {col,id,f,t}=el.dataset; if(!D[col]||!D[col][id]) return; const o=clone(D[col][id]);
     let v = el.value; if(typeof v==="string") v=v.trim();
     if(t==="num"){ v=parseNum(v); if(v!=null && v<0){ toast("O valor não pode ser negativo."); schedule(); return; } }

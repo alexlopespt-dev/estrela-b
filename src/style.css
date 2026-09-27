@@ -636,3 +636,12 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 @media (max-width:760px){ .dash2,.dash2:not(:has(.d2-att)){grid-template-columns:minmax(0,1fr);grid-template-areas:"nm" "mp" "att"} .d2-mp{grid-template-columns:1fr 1fr} .dash3{grid-template-columns:minmax(0,1fr)}
   .wk-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory} .wk-d{flex:0 0 132px;scroll-snap-align:start} .nx-t{width:92px} .nx-c{width:62px;height:62px} .nx-c img{width:42px;height:42px} .nx-clk b{font-size:30px} .bar .hello{display:none} }
 @media (max-width:420px){ .d2-mp{grid-template-columns:1fr} }
+
+/* carga planeada vs. real: ritmo da semana e escolha do microciclo */
+.csel{max-width:260px;font-size:13px;padding:5px 30px 5px 10px;min-height:32px}
+.crit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.crit>div{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--surface-2)}
+.crit span{display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.crit b{display:block;font-family:var(--fc);font-size:26px;line-height:1.1;margin-top:2px}
+.crit small{color:var(--muted);font-size:12px}
+@media (max-width:620px){ .crit{grid-template-columns:1fr} .csel{max-width:170px} }

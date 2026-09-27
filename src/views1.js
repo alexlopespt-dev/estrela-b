@@ -489,20 +489,41 @@ function cargaLegend(w,print){
   const it=(real,l,v)=>`<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px"><i style="display:inline-block;width:14px;height:10px;border-radius:2px;${real?`background:${cR}`:`border:1.5px solid ${cR};background:color-mix(in srgb,${print?"#2a78d6":"var(--m-oo)"} 18%,transparent)`}"></i>${l} <b>${v==null?"—":Math.round(v)+" UA"}</b></span>`;
   return it(false,"Planeada",w.planned)+it(true,"Real",w.real);
 }
-function cargaAlerta(w){
+function cargaAlerta(w,rt){
   const h=cargaHabitual(w.start); if(!h) return "";
   const out=[]; const p=v=>Math.round((v/h.v-1)*100);
   if(w.real!=null && w.real>h.v*1.2) out.push(`<span class="tag bad">⚠ Carga real ${p(w.real)}% acima do habitual</span>`);
+  else if(rt && !rt.fim && rt.proj>h.v*1.2) out.push(`<span class="tag warn">⚠ A este ritmo, ${p(rt.proj)}% acima do habitual</span>`);
   else if(w.planned!=null && w.planned>h.v*1.2) out.push(`<span class="tag warn">⚠ Planeado ${p(w.planned)}% acima do habitual</span>`);
   return `${out.join(" ")}<span class="small muted">Habitual (média real de ${plural(h.n,"microciclo anterior","microciclos anteriores")}): <b>${Math.round(h.v)} UA</b></span>`;
 }
+// ritmo da semana: com a semana a meio, a média real por treino até agora e a projeção se se mantiver
+function cargaRitmo(w){
+  const ls=w.trs.map(t=>({t,...trLoad(t)})), done=ls.filter(x=>x.real!=null), n=ls.length;
+  if(!done.length) return null;
+  const real=done.reduce((s,x)=>s+x.real,0), pl=done.filter(x=>x.planned!=null), plan=pl.reduce((s,x)=>s+x.planned,0);
+  const media=real/done.length, rest=ls.filter(x=>x.real==null);
+  // o que falta: planeado ajustado pelo desvio real/planeado até agora; sem planeado, a média real por treino
+  const k=pl.length&&plan?pl.reduce((s,x)=>s+x.real,0)/plan:null;
+  const proj=real+rest.reduce((s,x)=>s+(x.planned!=null&&k!=null?x.planned*k:media),0);
+  return {real,media,nd:done.length,n,plan:pl.length?plan:null,dif:pl.length&&plan?Math.round((pl.reduce((s,x)=>s+x.real,0)/plan-1)*100):null,proj,fim:!rest.length};
+}
 function vCarga(){
-  const mc=distMicro(), start=mc?mc.start:mondayOf(todayISO()), end=mc?mc.end:addDays(mondayOf(todayISO()),6);
+  const micros=cycles("micro").slice().reverse();
+  if(S.cargaMc && !D.cycles[S.cargaMc]) S.cargaMc="";
+  const mc=S.cargaMc?{id:S.cargaMc,...D.cycles[S.cargaMc]}:distMicro(), start=mc?mc.start:mondayOf(todayISO()), end=mc?mc.end:addDays(mondayOf(todayISO()),6);
   const w=cargaSemana(start,end), semInt=w.trs.filter(t=>!INT_RPE[t.int]).length, semRpe=w.trs.filter(t=>t.date<=todayISO()&&trLoad(t).real==null).length;
-  return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Carga planeada vs. real</h3><span class="sub">${mc?esc(mc.name):"Esta semana"}</span>
-      <button class="btn sm gold" data-a="prWeek" data-k="${esc(start)}" data-e="${esc(end)}">Relatório PDF</button></div>
+  const rt=cargaRitmo(w), h=cargaHabitual(start), U=v=>Math.round(v).toLocaleString("pt-PT")+" UA";
+  const sel=`<select class="inp csel" data-c="cargaMc" aria-label="Microciclo">${micros.length?micros.map(c=>`<option value="${esc(c.id)}" ${mc&&mc.id===c.id?"selected":""}>${esc(c.name||"Microciclo")} · ${fmtD(c.start,{day:"numeric",month:"short"})}–${fmtD(c.end,{day:"numeric",month:"short"})}</option>`).join(""):`<option value="">Esta semana</option>`}</select>`;
+  return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Carga planeada vs. real</h3><span style="display:flex;gap:8px;align-items:center">${sel}
+      <button class="btn sm gold" data-a="prWeek" data-k="${esc(start)}" data-e="${esc(end)}">Relatório PDF</button></span></div>
     <div class="card-b">
-      ${w.trs.length?`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">${cargaLegend(w)}${cargaAlerta(w)}</div>${cargaChart(w)}
+      ${rt?`<div class="crit">
+        <div><span>${rt.fim?"Carga real":"Real até agora"}</span><b>${U(rt.real)}</b><small>${rt.nd} de ${rt.n} treino${rt.n>1?"s":""}${rt.dif!=null?` · ${rt.dif>=0?"+":""}${rt.dif}% vs. planeado`:""}</small></div>
+        <div><span>Média por treino</span><b>${U(rt.media)}</b><small>RPE × minutos dos presentes</small></div>
+        <div><span>${rt.fim?"Total da semana":"Projeção da semana"}</span><b>${U(rt.proj)}</b><small>${rt.fim?"semana fechada":"se mantiver este ritmo"}${h?` · habitual ${U(h.v)}`:""}</small></div>
+      </div>`:""}
+      ${w.trs.length?`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">${cargaLegend(w)}${cargaAlerta(w,rt)}</div>${cargaChart(w)}
       <p class="note">Planeada = intensidade do treino (Baixa 3 · Média 5 · Alta 7 · Muito alta 9) × minutos do plano. Real = RPE médio dos presentes × duração. Os jogos aparecem no dia mas não entram nas contas.${semInt?` ${plural(semInt,"treino")} sem intensidade.`:""}${semRpe?` ${plural(semRpe,"treino já feito","treinos já feitos")} sem RPE.`:""}</p>`
       :`<div class="small muted">Sem treinos ${mc?"neste microciclo":"nesta semana"}.</div>`}
     </div></section>`;
