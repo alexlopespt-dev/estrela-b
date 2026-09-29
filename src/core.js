@@ -8,7 +8,7 @@ const EXVEC = __EXVEC__;   // desenhos vetoriais das imagens da biblioteca (imgk
 const OPPIMG = __OPPIMG__;   // emblemas dos adversários (nome -> dataURL), embutidos no build
 const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
 // foto do utilizador > desenho vetorial da biblioteca (salvo se escolheu ver as originais) > imagem original
-const exImg = x => x && ((x.imgA && blobSrc(x.imgA)) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
+const exImg = x => x && ((x.imgA && blobSrc(x.imgA)) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.vec && exOwnVecSrc(x.vec)) || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];
 const GROUP = p => { p=(p||"").toUpperCase(); if(p==="GR")return "GR"; if(p==="LAT"||p==="DC")return "DEF"; if(p==="MDF"||p==="MC")return "MED"; if(!p) return "X"; return "ATA"; };
 const GORDER = {GR:0,DEF:1,MED:2,ATA:3,X:4};

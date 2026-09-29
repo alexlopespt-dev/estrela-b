@@ -726,6 +726,24 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .nx-empty .empty .btn{background:var(--ouro);color:#2a0512;border-color:transparent}
 .envpill{position:fixed;left:10px;bottom:10px;z-index:70;background:#f2bd4b;color:#2a0512;font:800 11px/1 var(--fb);letter-spacing:.08em;padding:7px 10px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}
 
+/* ---- editor de desenho dos exercícios (dwv.js) ---- */
+.dvpitch svg{background:#4e9c36}
+.dvring{fill:none;stroke:#ffe14d;stroke-dasharray:4 3;pointer-events:none}
+.dvh{fill:#fff;stroke:#1f5fd1;cursor:move}
+.dvi{cursor:grab}
+.dvrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.dvrow .small{min-width:62px}
+.dvseg{margin-top:6px;display:flex;flex-wrap:wrap}
+.dvseg button{padding:5px 9px;font-size:13px}
+.dvimp{position:absolute;inset:0;z-index:5;background:var(--surface);padding:14px;overflow:auto;border-radius:inherit}
+.dvimp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.dvimp .inp{width:100%;margin-bottom:10px}
+.dvimp-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.dvimp-i{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:8px;color:var(--text)}
+.dvimp-i b{font-size:13px;line-height:1.2}.dvimp-i small{color:var(--muted);font-size:12px}
+.dvimp-t svg{width:100%;height:auto;display:block}
+.bpdlg .dlg-b{position:relative}
+
 </style>
 </head>
 <body>
@@ -761,7 +779,7 @@ const EXVEC = {};   // desenhos vetoriais das imagens da biblioteca (imgk -> des
 const OPPIMG = {};   // emblemas dos adversários (nome -> dataURL), embutidos no build
 const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
 // foto do utilizador > desenho vetorial da biblioteca (salvo se escolheu ver as originais) > imagem original
-const exImg = x => x && ((x.imgA && blobSrc(x.imgA)) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
+const exImg = x => x && ((x.imgA && blobSrc(x.imgA)) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.vec && exOwnVecSrc(x.vec)) || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];
 const GROUP = p => { p=(p||"").toUpperCase(); if(p==="GR")return "GR"; if(p==="LAT"||p==="DC")return "DEF"; if(p==="MDF"||p==="MC")return "MED"; if(!p) return "X"; return "ATA"; };
 const GORDER = {GR:0,DEF:1,MED:2,ATA:3,X:4};
@@ -854,7 +872,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 14:25";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 14:48";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -1117,13 +1135,21 @@ function vecFig(it){   // jogador visto de cima: ombros/braços (c), tronco (t2)
     <path d="M-4 -1.8H4V1.9H-4Z" fill="${c}"/>${t2?`<ellipse cx="0" cy=".3" rx="3.6" ry="2.3" fill="${t2}"/>`:""}
     <circle cx="0" cy="0" r="2.1" fill="${it.hair||"#3a2410"}" stroke="#1a1a1a" stroke-width=".35"/></g>`;
 }
+/* bola dos treinos (MKA: branca com painéis azul, grená, azul-escuro e amarelo e linhas vermelhas), desenhada com raio 1 e escalada */
+const BALL_IN = `<circle r="1" fill="#fbfbfb"/>
+  <path d="M-.62-.5L-.08-.78L.06-.36L-.47-.1Z" fill="#2458c8"/><path d="M-.08-.78L.34-.84L.46-.42L.06-.36Z" fill="#c42a42"/>
+  <path d="M.16.02L.78-.22L.9.12L.3.3Z" fill="#1b2140"/><path d="M.34-.84L.62-.62L.78-.22L.46-.42Z" fill="#2458c8"/>
+  <path d="M-.86.04L-.52-.06L-.38.4L-.7.58Q-.84.34-.86.04Z" fill="#cfae1d"/><path d="M.02.48L.44.36L.52.74L.14.9Z" fill="#2458c8" fill-opacity=".9"/>
+  <path d="M-.36.62L.2.46M-.3-.18L.12-.02M.52.4L.84.3" stroke="#e0283a" stroke-width=".09" fill="none" stroke-linecap="round"/>
+  <circle r=".94" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".12"/>`;
+function vecBall(x,y,r){ return `<g transform="translate(${vn(x)} ${vn(y)}) scale(${vn(r)})">${BALL_IN}<circle r="1" fill="none" stroke="#1d1f33" stroke-width=".2"/></g>`; }
+
 function vecItem(it,uid){
   const x=vn(it.x), y=vn(it.y);
   switch(it.t){
     case "d": { const r=it.r||6.5, o=it.o||"#1c1c1c", ow=it.ow??(r*0.2);
       return `<g><circle cx="${x}" cy="${y}" r="${vn(r)}" fill="${it.c||"#fff"}" stroke="${o}" stroke-width="${vn(ow)}"/>${it.sh===0?"":`<circle cx="${x}" cy="${y}" r="${vn(r-ow/2)}" fill="url(#dsh${uid})"/>`}${it.txt?`<text x="${x}" y="${vn(it.y+(it.fs||r*0.9)*0.36)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${vn(it.fs||r*0.9)}" fill="${it.tc||"#111"}">${esc(it.txt)}</text>`:""}</g>`; }
-    case "ball": { const r=it.r||2.2;
-      return `<g><circle cx="${x}" cy="${y}" r="${vn(r)}" fill="#fff" stroke="#222" stroke-width="${vn(r*0.28)}"/><circle cx="${x}" cy="${y}" r="${vn(r*0.38)}" fill="#333"/></g>`; }
+    case "ball": return vecBall(x,y,it.r||2.2);
     case "balls": { const r=it.r||2.2, n=it.n||5, out=[]; for(let i=0;i<n;i++){ const a=i*2.4, rr=r*1.25*Math.sqrt(i); out.push(vecItem({t:"ball",x:it.x+rr*Math.cos(a),y:it.y+rr*Math.sin(a),r},uid)); } return `<g>${out.join("")}</g>`; }
     case "cone": { const s=it.s||1, c=it.c||"#f08a24";
       return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="2.6" rx="3.6" ry="1.1" fill="#000" fill-opacity=".25"/><path d="M0 -4.4L3 2.4H-3Z" fill="${c}" stroke="#5a2d00" stroke-width=".45"/><path d="M-3.6 2.2h7.2v1h-7.2z" fill="${c}" stroke="#5a2d00" stroke-width=".35"/><path d="M-1.1 -1.4h2.2" stroke="#fff" stroke-width=".7"/></g>`; }
@@ -1188,7 +1214,11 @@ let EXV_MODE="v"; try{ if(localStorage.getItem(LS+":exv")==="o") EXV_MODE="o"; }
 const EXV_URL={};
 function setExvMode(m){ EXV_MODE=m==="o"?"o":"v"; try{ localStorage.setItem(LS+":exv",EXV_MODE); }catch(e){} }
 // desenho vetorial em uso para o exercício (null se tiver foto própria, se não houver desenho ou se estiver a ver as originais)
-const exVecOf = x => (x && x.imgk && !(x.imgA||x.imgL||x.imgG||x.img) && EXV_MODE!=="o" && EXVEC[x.imgk]) || null;
+// o desenho do próprio exercício (vec, feito ou alterado no editor) ganha ao da biblioteca (imgk)
+const exVecOf = x => (x && !(x.imgA||x.imgL||x.imgG||x.img) && (x.vec || (x.imgk && EXV_MODE!=="o" && EXVEC[x.imgk]))) || null;
+const OWNV_URL = new WeakMap();
+function exOwnVecSrc(v){ if(!v||!(v.it||v.fld||v.bgc)) return null; let u=OWNV_URL.get(v);
+  if(!u){ u="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(vecSVG(v,{r:0,img:1})); OWNV_URL.set(v,u); } return u; }
 // SVG como imagem (data URL, em cache): leve nas grelhas com muitos exercícios
 function exVecSrc(k){ if(EXV_MODE==="o"||!EXVEC[k]) return null;
   return EXV_URL[k] || (EXV_URL[k]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(vecSVG(EXVEC[k],{r:0,img:1}))); }
@@ -2319,7 +2349,7 @@ function itemSVG(it,i,sel){
     return `<g ${hit}><circle cx="${n(it.x)}" cy="${n(it.y)}" r="19" fill="${DCOL[it.t]}" stroke="#fff" stroke-width="3"/><text x="${n(it.x)}" y="${n(it.y)+6}" text-anchor="middle" font-size="${it.t==="G"?15:17}" font-weight="700" font-family="Barlow, Arial, sans-serif" fill="${it.t==="G"?"#2a1a08":"#fff"}">${esc(lab)}</text></g>`;
   }
   if(it.t==="cone") return `<g ${hit}><path d="M${n(it.x)} ${n(it.y)-13}L${n(it.x)+12} ${n(it.y)+10}H${n(it.x)-12}z" fill="#ff8a1f" stroke="#fff" stroke-width="2"/></g>`;
-  if(it.t==="ball") return `<g ${hit}><circle cx="${n(it.x)}" cy="${n(it.y)}" r="10" fill="#fff" stroke="#222" stroke-width="2"/><circle cx="${n(it.x)}" cy="${n(it.y)}" r="3.5" fill="#222"/></g>`;
+  if(it.t==="ball") return `<g ${hit}>${vecBall(n(it.x),n(it.y),11)}</g>`;
   if(it.t==="mg"||it.t==="gl"){ const w=it.t==="gl"?90:46, h=it.t==="gl"?24:16; return `<g ${hit}><rect x="${n(it.x)-w/2}" y="${n(it.y)-h/2}" width="${w}" height="${h}" fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="3"/><line x1="${n(it.x)-w/2}" y1="${n(it.y)}" x2="${n(it.x)+w/2}" y2="${n(it.y)}" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/></g>`; }
   if(it.t==="zone"){ const x=Math.min(it.x,it.x+it.w), y=Math.min(it.y,it.y+it.h); return `<g ${hit}><rect x="${n(x)}" y="${n(y)}" width="${n(Math.abs(it.w))}" height="${n(Math.abs(it.h))}" fill="rgba(242,189,75,.18)" stroke="#f2bd4b" stroke-width="3" stroke-dasharray="12 8" rx="6"/></g>`; }
   if(it.t==="run"||it.t==="pass"||it.t==="drib"){
@@ -2335,64 +2365,7 @@ function drawSVG(drw,opts={}){
   return `<svg ${opts.id?`id="${opts.id}"`:""} viewBox="0 0 ${DW} ${DH}" style="width:100%;height:auto;display:block;border-radius:10px;${opts.interactive?"touch-action:none;user-select:none;-webkit-user-select:none;":""}" role="img" aria-label="Desenho do exercício">${arrowDefs()}<g id="${opts.id?opts.id+"Field":""}">${fieldSVG(d.f||"half")}</g><g id="${opts.id?opts.id+"Items":""}">${items.map(({it,i})=>itemSVG(it,opts.interactive?i:null)).join("")}</g></svg>`;
 }
 
-/* ================= editor ================= */
-function drawEditor(exId){
-  const ex=D.exercises[exId]; if(!ex) return;
-  const drw=clone(ex.drw||{f:"half",it:[]}); drw.it=drw.it||[];
-  const body=`
-    <div class="seg" style="margin-bottom:10px">${[["full","Campo inteiro"],["half","Meio-campo"],["free","Espaço livre"]].map(([k,l])=>`<button data-a="dwField" data-k="${k}">${l}</button>`).join("")}</div>
-    <div class="dtools">${DTOOLS.map(t=>`<button data-a="dwTool" data-k="${t.k}" title="${t.l}"><span class="dic" style="${DCOL[t.k]?`color:${DCOL[t.k]}`:ACOL[t.k]?`color:${t.k==="run"?"var(--text)":ACOL[t.k]}`:""}">${t.ic}</span>${t.l}</button>`).join("")}</div>
-    <div id="dwWrap" style="margin-top:10px">${drawSVG(drw,{id:"pitch",interactive:true})}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center"><button class="btn sm" data-a="dwUndo">Desfazer</button><button class="btn sm ghost" data-a="dwClear">Limpar tudo</button><span class="small muted" id="dwHint"></span></div>`;
-  modal({title:"Desenho do exercício",sub:esc(ex.name),big:true,body,foot:footSave("Guardar desenho"),ctx:{drw,tool:"A",hist:[],
-    save:()=>{ const cur=D.exercises[exId]; if(!cur){ closeModal(); return; } put("exercises",exId,{...clone(cur),drw:M.drw}); closeModal(); toast("Desenho guardado"); exView(exId); }
-  }});
-  $("#dlg").classList.add("wide");
-  dwRefresh();
-  const svg=$("#pitch");
-  let act=null;
-  const cap=e=>{ try{ svg.setPointerCapture(e.pointerId); }catch(err){} };
-  const pt=e=>{ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const r=p.matrixTransform(svg.getScreenCTM().inverse()); return {x:Math.max(0,Math.min(DW,r.x)),y:Math.max(0,Math.min(DH,r.y))}; };
-  const snap=()=>{ M.hist.push(JSON.stringify(M.drw)); if(M.hist.length>60) M.hist.shift(); M.dirty=true; };
-  svg.addEventListener("pointerdown",e=>{
-    if(!M||!M.drw) return; e.preventDefault();
-    const p=pt(e), g=e.target.closest("[data-i]"), idx=g?+g.dataset.i:null, T=M.tool, it=M.drw.it;
-    if(T==="del"){ if(idx!=null){ snap(); it.splice(idx,1); dwRefresh(); } return; }
-    if(T==="move"||(idx!=null && !["run","pass","drib","zone"].includes(T))){
-      if(idx==null) return; snap(); act={mode:"drag",i:idx,last:p}; cap(e); return; }
-    if(["run","pass","drib"].includes(T)){ snap(); it.push({t:T,x1:p.x,y1:p.y,x2:p.x,y2:p.y}); act={mode:"line",i:it.length-1}; cap(e); dwRefresh(); return; }
-    if(T==="zone"){ snap(); it.push({t:"zone",x:p.x,y:p.y,w:0,h:0}); act={mode:"zone",i:it.length-1}; cap(e); dwRefresh(); return; }
-    snap();
-    const o={t:T,x:p.x,y:p.y};
-    if(T==="A"||T==="B"){ const nums=it.filter(x=>x.t===T).map(x=>+x.n||0); o.n=(nums.length?Math.max(...nums):0)+1; }
-    it.push(o); dwRefresh();
-  });
-  svg.addEventListener("pointermove",e=>{
-    if(!act||!M||!M.drw) return; const p=pt(e), it=M.drw.it[act.i]; if(!it) return;
-    if(act.mode==="drag"){ const dx=p.x-act.last.x, dy=p.y-act.last.y; act.last=p;
-      if("x1" in it){ it.x1+=dx; it.y1+=dy; it.x2+=dx; it.y2+=dy; } else { it.x+=dx; it.y+=dy; } }
-    else if(act.mode==="line"){ it.x2=p.x; it.y2=p.y; }
-    else if(act.mode==="zone"){ it.w=p.x-it.x; it.h=p.y-it.y; }
-    dwRefresh();
-  });
-  const end=()=>{ if(!act||!M||!M.drw){ act=null; return; } const it=M.drw.it[act.i];
-    if(it && act.mode==="line" && Math.hypot(it.x2-it.x1,it.y2-it.y1)<20){ M.drw.it.splice(act.i,1); M.hist.pop(); }
-    if(it && act.mode==="zone" && (Math.abs(it.w)<20||Math.abs(it.h)<20)){ M.drw.it.splice(act.i,1); M.hist.pop(); }
-    if(it && act.mode==="zone"){ if(it.w<0){ it.x+=it.w; it.w=-it.w; } if(it.h<0){ it.y+=it.h; it.h=-it.h; } }
-    act=null; dwRefresh(); };
-  svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
-}
-function dwRefresh(){
-  if(!M||!M.drw) return;
-  {
-    const order=t=>(t==="zone"?0:(t==="run"||t==="pass"||t==="drib")?1:2);
-    $("#pitchItems").innerHTML=M.drw.it.map((it,i)=>({it,i})).sort((a,b)=>order(a.it.t)-order(b.it.t)).map(({it,i})=>itemSVG(it,i)).join("");
-  }
-  $$("#dlg [data-a=dwTool]").forEach(b=>b.classList.toggle("on",b.dataset.k===M.tool));
-  $$("#dlg [data-a=dwField]").forEach(b=>b.classList.toggle("on",b.dataset.k===(M.drw.f||"half")));
-  const hints={move:"Arrasta os elementos para os mover.",del:"Toca num elemento para o apagar.",run:"Arrasta no campo para desenhar a seta.",pass:"Arrasta no campo para desenhar o passe.",drib:"Arrasta no campo para desenhar a condução.",zone:"Arrasta no campo para marcar a zona."};
-  const h=$("#dwHint"); if(h) h.textContent = hints[M.tool] || "Toca no campo para colocar. Arrasta um elemento para o mover.";
-}
+/* o editor está em dwv.js (formato vetorial v2); isto só desenha os desenhos antigos (drw) que ainda não foram abertos no editor */
 
 /* ================= modo pós-jogo ================= */
 const RATES = [4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10];
@@ -3081,8 +3054,8 @@ function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px;white-space:pre-line"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
-    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
-    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.drw&&(x.drw.it||[]).length?"Editar desenho":"Desenhar"}</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
+    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!x.vec&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
+    foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.vec||(x.imgk&&EXVEC[x.imgk])||(x.drw&&(x.drw.it||[]).length)?"Editar desenho":"Desenhar"}</button><button class="btn" data-a="exFrom" data-id="${esc(id)}" title="Cria um exercício novo igual a este, para alterares">⧉ Novo a partir deste</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
   const x=id?D.exercises[id]:{};
@@ -3598,10 +3571,6 @@ const A = {
   exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },
-  dwTool: el => { if(!M||!M.drw) return; M.tool=el.dataset.k; dwRefresh(); },
-  dwField: el => { if(!M||!M.drw) return; M.hist.push(JSON.stringify(M.drw)); M.dirty=true; M.drw.f=el.dataset.k; $("#pitchField").innerHTML=fieldSVG(M.drw.f); dwRefresh(); },
-  dwUndo: () => { if(!M||!M.drw) return; const h=M.hist.pop(); if(!h){ toast("Nada para desfazer."); return; } M.drw=JSON.parse(h); $("#pitchField").innerHTML=fieldSVG(M.drw.f||"half"); dwRefresh(); },
-  dwClear: () => { if(!M||!M.drw||!M.drw.it.length) return; M.hist.push(JSON.stringify(M.drw)); M.dirty=true; M.drw.it=[]; dwRefresh(); },
   catCfg: () => catCfgForm(),
   evalCfg: () => evalCfgForm(),
   pickCat: el => { if(!M) return; M.pickCat=el.dataset.k; $$("#dlg [data-a=pickCat]").forEach(b=>b.classList.toggle("on",b.dataset.k===el.dataset.k)); pickFilter(); },
@@ -3677,6 +3646,270 @@ document.addEventListener("input", e=>{
     const a=M.areaAvg(k); $("#av_"+k).textContent=a==null?"–":fmt1(a); }
 });
 $("#crest").addEventListener("click", ()=>go("painel"));
+
+/* ================= editor de desenho dos exercícios (formato vetorial v2, o mesmo da biblioteca) =================
+   Um só formato para tudo: desenhos novos, os 129 da biblioteca (EXVEC, passam a poder ser alterados) e os antigos do
+   editor anterior (drw, convertidos ao abrir). Guarda-se no exercício como `vec` ({v:2,w,h,fld|bgc,it}) e ganha ao da
+   biblioteca. Ecrã inteiro, como as bolas paradas: o campo cabe sempre no ecrã (no iPad arrasta-se para cima e para baixo
+   sem a página fugir). Tipos de item e desenho: vec.js (vecItem). */
+const DV_TOOLS = [
+  {k:"sel",l:"Mover",ic:"✥"},
+  {k:"pA",l:"Jogador",ic:"●",c:"#8a1a30"},{k:"pB",l:"Adversário",ic:"●",c:"#1f5fa8"},{k:"pG",l:"GR",ic:"●",c:"#f2bd4b"},{k:"pJ",l:"Joker",ic:"●",c:"#ec8420"},
+  {k:"ball",l:"Bola",ic:"⚽"},{k:"balls",l:"Bolas",ic:"⚽"},{k:"cone",l:"Cone",ic:"▲",c:"#f08a24"},{k:"mk",l:"Sinalizador",ic:"◉",c:"#f2b42a"},
+  {k:"mg",l:"Mini-baliza",ic:"⊓"},{k:"goal",l:"Baliza",ic:"⊓"},{k:"pole",l:"Estaca",ic:"│",c:"#e8742a"},{k:"ladder",l:"Escada",ic:"☰",c:"#c9a400"},{k:"hurdle",l:"Barreira",ic:"╥"},
+  {k:"run",l:"Movimento",ic:"→"},{k:"pass",l:"Passe",ic:"⇢",c:"#c9a400"},{k:"drib",l:"Condução",ic:"⤳",c:"#2f7fb8"},
+  {k:"line",l:"Linha",ic:"—"},{k:"dline",l:"Linha tracejada",ic:"┄"},{k:"zone",l:"Zona",ic:"▭",c:"#c9a400"},{k:"txt",l:"Texto",ic:"T"},
+  {k:"del",l:"Apagar",ic:"✕",c:"var(--r5)"}
+];
+const DV_PCOL = {pA:["#8a1a30","#fff"],pB:["#1f5fa8","#fff"],pG:["#f2bd4b","#2a1a08"],pJ:["#ec8420","#fff"]};
+const DV_SW = {d:["#8a1a30","#1f5fa8","#f2bd4b","#ec8420","#ffffff","#141414","#1c6a3d"], ln:["#ffffff","#141414","#f2bd4b","#e0283a","#9ed3ff"],
+  rect:["#f2bd4b","#ffffff","#e0283a","#1f5fa8","#141414"], txt:["#ffffff","#141414","#f2bd4b"], cone:["#f08a24","#f2c02a","#e0283a","#1f5fa8","#ffffff"],
+  mk:["#f2b42a","#f08a24","#e0283a","#1f5fa8","#ffffff"], pole:["#e8742a","#f2c02a","#e0283a","#1f5fa8"]};
+const DV_ROT = ["goal","ladder","hurdle","stake","pen"];
+function dvBands(start,len,n){ const out=[]; for(let i=1;i<n;i+=2) out.push([+(start+i*len/n).toFixed(2),+(start+(i+1)*len/n).toFixed(2)]); return out; }
+const DV_PRE = {
+  full: () => { const W=440, H=302, s=4, tx=(W-105*s)/2, ty=(H-68*s)/2; return {v:2,w:W,h:H,fld:{ori:"h",s,asp:1,tx,ty,L:105,W:68,bands:dvBands(tx,105*s,10)},it:[]}; },
+  half: () => { const W=440, s=+((W-20)/68).toFixed(4), H=Math.round(12+52.5*s+20); return {v:2,w:W,h:H,fld:{ori:"v",s,asp:1,tx:10,ty:+(12-52.5*s).toFixed(2),L:105,W:68,bands:dvBands(12,52.5*s,5)},it:[]}; },
+  free: () => ({v:2,w:440,h:302,bgc:"#4e9c36",it:[]})
+};
+/* desenho antigo (editor anterior, 1050x680) → v2, no mesmo sítio e com o mesmo tamanho */
+function drwToVec(drw){
+  if(!drw) return null;
+  const f=drw.f||"half", v={v:2,w:DW,h:DH,it:[]};
+  if(f==="free") v.bgc="#2d7a48";
+  else if(f==="half") v.fld={ori:"v",s:640/52.5,asp:(1010/68)/(640/52.5),tx:20,ty:20,L:105,W:68,bands:[]};
+  else v.fld={ori:"h",s:640/68,asp:(1010/105)/(640/68),tx:20,ty:20,L:105,W:68,bands:[]};
+  (drw.it||[]).forEach(it=>{
+    if(DV_PCOL["p"+it.t]){ const [c,tc]=DV_PCOL["p"+it.t]; v.it.push({t:"d",x:it.x,y:it.y,r:19,c,tc,o:"#ffffff",ow:3,fs:it.t==="G"?15:17,txt:it.t==="G"?"GR":it.t==="J"?"J":String(it.n??""),sh:0}); }
+    else if(it.t==="cone") v.it.push({t:"cone",x:it.x,y:it.y,s:3});
+    else if(it.t==="ball") v.it.push({t:"ball",x:it.x,y:it.y,r:11});
+    else if(it.t==="mg"||it.t==="gl") v.it.push({t:"goal",x:it.x,y:it.y,w:it.t==="gl"?90:46,h:it.t==="gl"?24:16});
+    else if(it.t==="zone") v.it.push({t:"rect",x:Math.min(it.x,it.x+it.w),y:Math.min(it.y,it.y+it.h),w:Math.abs(it.w),h:Math.abs(it.h),c:"#f2bd4b",fill:"#f2bd4b",fo:.18,lw:3,dash:"12 8"});
+    else if(it.t==="run"||it.t==="pass"||it.t==="drib") v.it.push({t:"ln",pts:[[it.x1,it.y1],[it.x2,it.y2]],arr:1,lw:it.t==="drib"?5:4,
+      c:it.t==="pass"?"#f2bd4b":it.t==="drib"?"#9ed3ff":"#ffffff",...(it.t==="pass"?{dash:"16 11"}:{}),...(it.t==="drib"?{wave:1,amp:5,wl:12}:{})});
+  });
+  return v;   // meio-campo antigo: baliza em cima (x=0 no v2), a outra metade fica fora do desenho
+}
+/* desenho de partida de um exercício: o seu, o da biblioteca, o antigo convertido, ou campo vazio */
+const dvOf = x => x ? (x.vec ? clone(x.vec) : x.imgk && EXVEC[x.imgk] ? clone(EXVEC[x.imgk]) : x.drw && (x.drw.it||[]).length ? drwToVec(x.drw) : null) : null;
+const dvK = () => (M&&M.vec&&M.vec.w||440)/440;
+const dvR = v => Math.round(v*100)/100;
+
+/* ---- desenho com zonas de toque ---- */
+function dvHit(it,k){
+  const t=10*k;
+  if(it.t==="ln"){ const p=it.pts||[]; return p.length<2?"":`<path d="M${p.map(q=>dvR(q[0])+" "+dvR(q[1])).join("L")}" stroke="transparent" stroke-width="${dvR(t*1.4)}" fill="none" stroke-linecap="round"/>`; }
+  if(it.t==="rect") return `<rect x="${dvR(it.x)}" y="${dvR(it.y)}" width="${dvR(it.w)}" height="${dvR(it.h)}" fill="none" stroke="transparent" stroke-width="${dvR(t*1.4)}"/>`;
+  if(it.x==null) return "";
+  return `<circle cx="${dvR(it.x)}" cy="${dvR(it.y)}" r="${dvR(Math.max(t,(it.r||0)+2*k,(it.w||0)/2,(it.h||0)/2))}" fill="transparent"/>`;
+}
+function dvSVG(){
+  const v=M.vec, k=dvK(), uid="dv";
+  const order={bib:7,rect:0,ln:1,goal:2,ladder:2,hurdle:2,stake:4,pen:4,dome:4,stick:4,mk:3,cone:3,pole:4,flag:4,ball:5,balls:5,sq:6,tri:6,x:6,fig:7,d:8,txt:9};
+  const its=(v.it||[]).map((it,i)=>({it,i})).sort((a,b)=>((order[a.it.t]??5)-(order[b.it.t]??5))||((a.it.z||0)-(b.it.z||0))||(a.i-b.i));
+  return `${vecDefs(uid)}${v.fld?vecField(v.fld,v.w,v.h,uid):`<rect width="${v.w}" height="${v.h}" fill="${v.bgc||VEC_GRASS[0]}"/>`}
+    ${its.map(({it,i})=>`<g class="dvi" data-i="${i}">${vecItem(it,uid)}${dvHit(it,k)}</g>`).join("")}<g id="dvSel"></g>`;
+}
+function dvSelDraw(){
+  const g=$("#dvSel"); if(!g) return; const i=M.sel, it=i==null?null:M.vec.it[i]; if(!it){ g.innerHTML=""; return; }
+  const k=dvK(), el=$(`#dvS .dvi[data-i="${i}"]`); let bb=null; try{ bb=el&&el.getBBox(); }catch(e){}
+  let s="";
+  if(bb && it.t!=="ln") s+=`<rect x="${dvR(bb.x-3*k)}" y="${dvR(bb.y-3*k)}" width="${dvR(bb.width+6*k)}" height="${dvR(bb.height+6*k)}" rx="${dvR(3*k)}" class="dvring" style="stroke-width:${dvR(1.2*k)}"/>`;
+  const H=(x,y,h)=>`<circle cx="${dvR(x)}" cy="${dvR(y)}" r="${dvR(4.5*k)}" class="dvh" data-h="${h}" style="stroke-width:${dvR(1.2*k)}"/>`;
+  if(it.t==="ln"){ const p=it.pts; s+=H(p[0][0],p[0][1],"a")+H(p[p.length-1][0],p[p.length-1][1],"b"); }
+  if(it.t==="rect") s+=H(it.x+it.w,it.y+it.h,"rs");
+  g.innerHTML=s;
+}
+function dvRefresh(full){
+  if(!M||!M.vec) return;
+  const svg=$("#dvS"); if(!svg) return;
+  svg.setAttribute("viewBox",`0 0 ${M.vec.w} ${M.vec.h}`);
+  $("#dvWrap").style.maxWidth=`calc((100dvh - 300px) * ${(M.vec.w/M.vec.h).toFixed(3)})`;
+  svg.innerHTML=dvSVG(); dvSelDraw();
+  $$("#dlg [data-a=dvTool]").forEach(b=>b.classList.toggle("on",b.dataset.k===M.tool));
+  const hints={sel:"Toca num elemento para o escolher; arrasta para o mover.",del:"Toca num elemento para o apagar.",run:"Arrasta no campo para desenhar o movimento.",pass:"Arrasta no campo para desenhar o passe.",
+    drib:"Arrasta no campo para desenhar a condução.",line:"Arrasta no campo para desenhar a linha.",dline:"Arrasta no campo para desenhar a linha tracejada.",zone:"Arrasta no campo para marcar a zona."};
+  const h=$("#dvHint"); if(h) h.textContent=hints[M.tool]||"Toca no campo para pôr. Arrasta um elemento para o mover.";
+  if(full!==false) dvProps();
+}
+/* ---- painel do elemento escolhido ---- */
+function dvProps(){
+  const p=$("#dvProps"); if(!p) return; const it=M.sel==null?null:M.vec.it[M.sel];
+  if(!it){ p.innerHTML=`<p class="small muted" style="margin:0">Escolhe um elemento (ferramenta Mover) para mudar a cor, o número, o tamanho ou rodar.</p>`; return; }
+  const sw=(key,list,cur)=>`<div class="bpsw">${list.map(c=>`<button data-a="dvSet" data-f="${key}" data-v="${c}" class="${String(cur||"").toLowerCase()===c?"on":""}" style="background:${c}" aria-label="Cor ${c}"></button>`).join("")}</div>`;
+  const names={d:"Jogador",ball:"Bola",balls:"Bolas",cone:"Cone",mk:"Sinalizador",goal:"Baliza",pole:"Estaca",ladder:"Escada",hurdle:"Barreira",ln:"Linha / seta",rect:"Zona",txt:"Texto",fig:"Jogador",x:"Marca",tri:"Marca",sq:"Marca",stake:"Estaca",pen:"Bandeirola",dome:"Prato",stick:"Estaca",flag:"Bandeira",bib:"Coletes"};
+  let h=`<div class="qlbl"><span>${esc(names[it.t]||"Elemento")}</span></div>`;
+  if(it.t==="d") h+=`<label class="fld">Número / letra<input data-dvf="txt" value="${esc(it.txt||"")}" maxlength="3"></label>${sw("c",DV_SW.d,it.c)}`;
+  if(it.t==="txt") h+=`<label class="fld">Texto<input data-dvf="txt" value="${esc(it.txt||"")}" maxlength="40"></label>${sw("c",DV_SW.txt,it.c)}`;
+  if(it.t==="ln") h+=`${sw("c",DV_SW.ln,it.c)}<div class="seg dvseg">${[["s","Contínua"],["d","Tracejada"],["w","Ondulada"]].map(([s,l])=>`<button data-a="dvLine" data-s="${s}" class="${(it.wave?"w":it.dash?"d":"s")===s?"on":""}">${l}</button>`).join("")}</div>
+    <div class="seg dvseg">${[["0","Sem seta"],["1","Seta"],["2","Duas setas"]].map(([s,l])=>`<button data-a="dvArr" data-s="${s}" class="${String(it.arr||0)===s?"on":""}">${l}</button>`).join("")}</div>`;
+  if(it.t==="rect") h+=`${sw("c",DV_SW.rect,it.c)}<div class="seg dvseg"><button data-a="dvFill" class="${it.fill&&it.fill!=="none"?"on":""}">Com fundo</button><button data-a="dvDash" class="${it.dash?"on":""}">Tracejado</button></div>`;
+  if(DV_SW[it.t]&&!["d","ln","rect","txt"].includes(it.t)) h+=sw("c",DV_SW[it.t],it.c||DV_SW[it.t][0]);
+  h+=`<div class="dvrow"><span class="small muted">Tamanho</span><button class="btn sm" data-a="dvSize" data-n="-1" aria-label="Mais pequeno">−</button><button class="btn sm" data-a="dvSize" data-n="1" aria-label="Maior">+</button></div>`;
+  if(DV_ROT.includes(it.t)||it.t==="fig") h+=`<div class="dvrow"><span class="small muted">Rodar</span><button class="btn sm" data-a="dvRot" data-n="-15">↺ 15°</button><button class="btn sm" data-a="dvRot" data-n="15">↻ 15°</button><button class="btn sm" data-a="dvRot" data-n="90">90°</button></div>`;
+  h+=`<div class="dvrow"><button class="btn sm" data-a="dvDup">⧉ Duplicar</button><button class="btn sm ghost" data-a="dvDel">Apagar</button></div>`;
+  p.innerHTML=h;
+}
+/* ---- histórico ---- */
+function dvSnap(){ M.hist.push(JSON.stringify(M.vec)); if(M.hist.length>80) M.hist.shift(); M.fut=[]; M.dirty=true; }
+/* ---- criar elementos ---- */
+function dvNew(T,p){
+  const k=dvK(), r=v=>dvR(v*k), it=M.vec.it;
+  if(DV_PCOL[T]){ const [c,tc]=DV_PCOL[T];
+    const nums=it.filter(x=>x.t==="d"&&x.c===c).map(x=>parseInt(x.txt,10)||0);
+    return {t:"d",x:p.x,y:p.y,r:r(6.5),c,tc,fs:r(6.2),txt:T==="pG"?"GR":T==="pJ"?"J":String((nums.length?Math.max(...nums):0)+1)}; }
+  const o=({ball:{t:"ball",r:r(2.8)},balls:{t:"balls",r:r(2.4),n:6},cone:{t:"cone",s:dvR(1.25*k)},mk:{t:"mk",r:r(2.8)},
+    mg:{t:"goal",w:r(12),h:r(4),a:0},goal:{t:"goal",w:r(30),h:r(8),a:0},pole:{t:"pole",h:r(13)},ladder:{t:"ladder",w:r(7),h:r(40),a:0},
+    hurdle:{t:"hurdle",w:r(13),a:0},txt:{t:"txt",s:r(10),c:"#ffffff",stroke:"#1c1c1c",sw:r(2),txt:"Texto"}})[T];
+  return o ? {...o,x:p.x,y:p.y} : null;
+}
+function dvLineNew(T,p){
+  const k=dvK(), r=v=>dvR(v*k), base={t:"ln",pts:[[p.x,p.y],[p.x,p.y]],lw:r(1.4)};
+  return ({run:{...base,c:"#ffffff",arr:1},pass:{...base,c:"#f2bd4b",arr:1,dash:`${r(5)} ${r(3.5)}`},drib:{...base,c:"#9ed3ff",arr:1,wave:1,amp:r(1.8),wl:r(4.5)},
+    line:{...base,c:"#ffffff",lw:r(1.3)},dline:{...base,c:"#ffffff",lw:r(1.3),dash:`${r(4)} ${r(3)}`}})[T];
+}
+/* ---- mover um elemento ---- */
+function dvMove(it,dx,dy){
+  if(it.t==="ln") it.pts=it.pts.map(q=>[dvR(q[0]+dx),dvR(q[1]+dy)]);
+  else { it.x=dvR(it.x+dx); it.y=dvR(it.y+dy); }
+}
+function dvBind(){
+  const svg=$("#dvS"); let act=null;
+  const pt=e=>{ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const r=p.matrixTransform(svg.getScreenCTM().inverse());
+    return {x:dvR(Math.max(0,Math.min(M.vec.w,r.x))),y:dvR(Math.max(0,Math.min(M.vec.h,r.y)))}; };
+  const cap=e=>{ try{ svg.setPointerCapture(e.pointerId); }catch(err){} };
+  // Safari (iPad/iPhone): enquanto se arrasta um elemento, a página não se mexe
+  svg.addEventListener("touchmove",e=>{ if(act) e.preventDefault(); },{passive:false});
+  svg.addEventListener("touchstart",e=>{ if(e.touches.length===1) e.preventDefault(); },{passive:false});
+  svg.addEventListener("pointerdown",e=>{
+    if(!M||!M.vec) return; e.preventDefault();
+    const p=pt(e), hEl=e.target.closest("[data-h]"), g=e.target.closest(".dvi"), i=g?+g.dataset.i:null, T=M.tool, its=M.vec.it;
+    if(hEl&&M.sel!=null){ dvSnap(); act={mode:"h",h:hEl.dataset.h,i:M.sel}; cap(e); return; }
+    if(T==="del"){ if(i!=null){ dvSnap(); its.splice(i,1); M.sel=null; dvRefresh(); } return; }
+    if(i!=null && !["run","pass","drib","line","dline","zone"].includes(T)){ const was=M.sel; M.sel=i; dvSnap(); act={mode:"drag",i,last:p,moved:false}; cap(e); if(was!==i) dvRefresh(); else dvSelDraw(); return; }
+    if(T==="sel"){ if(M.sel!=null){ M.sel=null; dvRefresh(); } return; }
+    if(["run","pass","drib","line","dline"].includes(T)){ dvSnap(); its.push(dvLineNew(T,p)); M.sel=its.length-1; act={mode:"line",i:M.sel}; cap(e); dvRefresh(false); return; }
+    if(T==="zone"){ dvSnap(); const k=dvK(); its.push({t:"rect",x:p.x,y:p.y,w:0,h:0,c:"#f2bd4b",fill:"#f2bd4b",fo:.18,lw:dvR(1.2*k),dash:`${dvR(5*k)} ${dvR(3*k)}`}); M.sel=its.length-1; act={mode:"zone",i:M.sel,x0:p.x,y0:p.y}; cap(e); dvRefresh(false); return; }
+    const o=dvNew(T,p); if(!o) return;
+    dvSnap(); its.push(o); M.sel=its.length-1; dvRefresh();
+    if(T==="txt"){ const inp=$("#dvProps [data-dvf=txt]"); if(inp){ inp.focus(); inp.select(); } }
+  });
+  svg.addEventListener("pointermove",e=>{
+    if(!act||!M||!M.vec) return; const p=pt(e), it=M.vec.it[act.i]; if(!it) return;
+    if(act.mode==="drag"){ const dx=p.x-act.last.x, dy=p.y-act.last.y; act.last=p; if(dx||dy){ act.moved=true; dvMove(it,dx,dy); } }
+    else if(act.mode==="line"){ it.pts[it.pts.length-1]=[p.x,p.y]; }
+    else if(act.mode==="zone"){ it.x=Math.min(act.x0,p.x); it.y=Math.min(act.y0,p.y); it.w=dvR(Math.abs(p.x-act.x0)); it.h=dvR(Math.abs(p.y-act.y0)); }
+    else if(act.mode==="h"){ if(act.h==="a") it.pts[0]=[p.x,p.y]; else if(act.h==="b") it.pts[it.pts.length-1]=[p.x,p.y];
+      else if(act.h==="rs"){ it.w=dvR(Math.max(6*dvK(),p.x-it.x)); it.h=dvR(Math.max(6*dvK(),p.y-it.y)); } }
+    dvRefresh(false);
+  });
+  const end=()=>{ if(!act||!M||!M.vec){ act=null; return; } const it=M.vec.it[act.i], k=dvK();
+    if(act.mode==="drag"&&!act.moved){ M.hist.pop(); }   // só escolheu, não mexeu
+    if(it&&act.mode==="line"){ const a=it.pts[0], b=it.pts[it.pts.length-1]; if(Math.hypot(b[0]-a[0],b[1]-a[1])<8*k){ M.vec.it.splice(act.i,1); M.sel=null; M.hist.pop(); } }
+    if(it&&act.mode==="zone"&&(it.w<8*k||it.h<8*k)){ M.vec.it.splice(act.i,1); M.sel=null; M.hist.pop(); }
+    act=null; dvRefresh(); };
+  svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",end);
+}
+/* ---- abrir o editor ---- */
+function drawEditor(exId){
+  const ex=D.exercises[exId]; if(!ex) return;
+  const vec=dvOf(ex)||DV_PRE.half(); vec.it=vec.it||[];
+  const lib=!!(ex.imgk&&EXVEC[ex.imgk]);
+  const photo=!!(ex.img||ex.imgA||ex.imgL||ex.imgG);
+  const body=`
+    <div class="bptop">
+      <div class="seg" aria-label="Campo">${[["full","Campo inteiro"],["half","Meio-campo"],["free","Espaço livre"]].map(([k,l])=>`<button data-a="dvField" data-k="${k}">${l}</button>`).join("")}</div>
+      <span class="bpact"><button class="btn sm" data-a="dvUndo" title="Desfazer (Ctrl+Z)">↶ Desfazer</button><button class="btn sm" data-a="dvRedo" title="Refazer (Ctrl+Y)">↷ Refazer</button>
+      <button class="btn sm" data-a="dvImport">Importar desenho</button>${lib?`<button class="btn sm" data-a="dvLib">Repor o da biblioteca</button>`:""}<button class="btn sm ghost" data-a="dvClear">Limpar</button></span>
+    </div>
+    ${photo?`<p class="note" style="margin:0">Este exercício tem uma foto: a foto é mostrada em vez do desenho. Para usares o desenho, apaga a foto na ficha do exercício.</p>`:""}
+    <div class="dtools bptools">${DV_TOOLS.map(t=>`<button data-a="dvTool" data-k="${t.k}" title="${t.l}"><span class="dic" style="${t.c?`color:${t.c}`:""}">${t.k==="ball"||t.k==="balls"?`<svg viewBox="-1.2 -1.2 2.4 2.4" width="16" height="16" aria-hidden="true">${BALL_IN}<circle r="1" fill="none" stroke="#1d1f33" stroke-width=".2"/></svg>`:t.ic}</span>${t.l}</button>`).join("")}</div>
+    <div class="bpmain">
+      <div class="bpstage"><div class="bppitch dvpitch" id="dvWrap"><svg id="dvS" viewBox="0 0 ${vec.w} ${vec.h}" role="img" aria-label="Desenho do exercício"></svg></div>
+        <div class="small muted" id="dvHint" style="margin-top:6px"></div></div>
+      <aside class="bpside"><div id="dvProps"></div></aside>
+    </div>
+    <div class="dvimp" id="dvImp" hidden></div>`;
+  modal({title:"Desenho do exercício",sub:esc(ex.name),big:true,body,foot:footSave("Guardar desenho"),ctx:{vec,tool:"sel",sel:null,hist:[],fut:[],exId,
+    save:()=>{ const cur=D.exercises[exId]; if(!cur){ closeModal(); return; }
+      const o={...clone(cur),vec:clone(M.vec)}; delete o.drw; put("exercises",exId,o); M.dirty=false; closeModal();
+      toast(photo?"Desenho guardado (a foto continua a ser mostrada)":"Desenho guardado"); exView(exId); }
+  }});
+  $("#dlg").classList.add("bpdlg");
+  dvBind(); dvRefresh();
+  $$("#dlg [data-a=dvField]").forEach(b=>b.classList.remove("on"));
+}
+/* ---- importar o desenho de outro exercício ---- */
+function dvImportList(q){
+  const box=$("#dvImp"); if(!box) return;
+  const nk=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  const list=exercises().filter(x=>x.id!==M.exId&&(x.vec||(x.imgk&&EXVEC[x.imgk])||(x.drw&&(x.drw.it||[]).length)))
+    .filter(x=>!q||nk(x.name+" "+(x.cat||"")).includes(nk(q)));
+  box.querySelector(".dvimp-l").innerHTML=list.length?list.slice(0,60).map(x=>{ const v=dvOf(x);
+    return `<button class="dvimp-i" data-a="dvPick" data-id="${esc(x.id)}"><span class="dvimp-t">${v?vecSVG(v,{r:6}):""}</span><b>${esc(x.name)}</b><small>${esc(x.cat||"")}</small></button>`; }).join("")
+    :`<div class="empty"><b>Nenhum exercício com desenho</b></div>`;
+}
+Object.assign(A,{
+  dvTool: el => { if(!M||!M.vec) return; M.tool=el.dataset.k; dvRefresh(false); },
+  dvField: el => { if(!M||!M.vec) return; const k=el.dataset.k, n=DV_PRE[k]();
+    const go=()=>{ dvSnap(); const sx=n.w/M.vec.w, sy=n.h/M.vec.h;   // os elementos ficam no mesmo sítio relativo
+      n.it=M.vec.it.map(it=>{ const o=clone(it); if(o.t==="ln") o.pts=o.pts.map(q=>[dvR(q[0]*sx),dvR(q[1]*sy)]); else { o.x=dvR(o.x*sx); o.y=dvR(o.y*sy); } return o; });
+      M.vec=n; M.sel=null; dvRefresh(); };
+    go(); },
+  dvUndo: () => { if(!M||!M.vec) return; const h=M.hist.pop(); if(!h) return toast("Nada para desfazer."); M.fut.push(JSON.stringify(M.vec)); M.vec=JSON.parse(h); M.sel=null; M.dirty=true; dvRefresh(); },
+  dvRedo: () => { if(!M||!M.vec) return; const h=M.fut.pop(); if(!h) return toast("Nada para refazer."); M.hist.push(JSON.stringify(M.vec)); M.vec=JSON.parse(h); M.sel=null; M.dirty=true; dvRefresh(); },
+  dvClear: () => { if(!M||!M.vec||!M.vec.it.length) return; dvSnap(); M.vec.it=[]; M.sel=null; dvRefresh(); },
+  dvLib: () => { const ex=D.exercises[M.exId]; if(!ex||!EXVEC[ex.imgk]) return; dvSnap(); M.vec=clone(EXVEC[ex.imgk]); M.sel=null; dvRefresh(); toast("Reposto o desenho da biblioteca"); },
+  dvImport: () => { const box=$("#dvImp"); box.hidden=false; box.innerHTML=`<div class="dvimp-h"><b>Importar o desenho de outro exercício</b><button class="btn sm" data-a="dvImpClose">Fechar</button></div>
+      <input class="inp" id="dvImpQ" placeholder="Procurar por nome ou categoria" autocomplete="off"><div class="dvimp-l"></div>`;
+    dvImportList(""); const q=$("#dvImpQ"); q.addEventListener("input",()=>dvImportList(q.value.trim())); },
+  dvImpClose: () => { const b=$("#dvImp"); if(b){ b.hidden=true; b.innerHTML=""; } },
+  dvPick: el => { const x=D.exercises[el.dataset.id]; if(!x) return; const v=dvOf({id:el.dataset.id,...x}); if(!v) return;
+    dvSnap(); M.vec=v; M.vec.it=M.vec.it||[]; M.sel=null; A.dvImpClose(); dvRefresh(); toast(`Desenho de "${x.name}" importado — agora podes alterá-lo.`); },
+  dvSet: el => { const it=M.vec.it[M.sel]; if(!it) return; dvSnap(); it[el.dataset.f]=el.dataset.v;
+    if(it.t==="d"&&el.dataset.f==="c") it.tc=/^#(f2bd4b|ffffff)$/i.test(el.dataset.v)?"#2a1a08":"#ffffff";
+    if(it.t==="rect"&&el.dataset.f==="c"&&it.fill&&it.fill!=="none") it.fill=el.dataset.v; dvRefresh(); },
+  dvLine: el => { const it=M.vec.it[M.sel]; if(!it||it.t!=="ln") return; dvSnap(); const k=dvK(), s=el.dataset.s;
+    delete it.wave; delete it.dash; if(s==="d") it.dash=`${dvR(5*k)} ${dvR(3.5*k)}`; if(s==="w"){ it.wave=1; it.amp=it.amp||dvR(1.8*k); it.wl=it.wl||dvR(4.5*k); } dvRefresh(); },
+  dvArr: el => { const it=M.vec.it[M.sel]; if(!it||it.t!=="ln") return; dvSnap(); const n=+el.dataset.s; if(n) it.arr=n; else delete it.arr; dvRefresh(); },
+  dvFill: () => { const it=M.vec.it[M.sel]; if(!it||it.t!=="rect") return; dvSnap(); if(it.fill&&it.fill!=="none"){ it.fill="none"; } else { it.fill=it.c||"#f2bd4b"; it.fo=.18; } dvRefresh(); },
+  dvDash: () => { const it=M.vec.it[M.sel]; if(!it||it.t!=="rect") return; dvSnap(); const k=dvK(); if(it.dash) delete it.dash; else it.dash=`${dvR(5*k)} ${dvR(3*k)}`; dvRefresh(); },
+  dvSize: el => { const it=M.vec.it[M.sel]; if(!it) return; dvSnap(); const f=+el.dataset.n>0?1.15:1/1.15;
+    ["r","s","fs","lw","amp","wl","sw"].forEach(k=>{ if(typeof it[k]==="number") it[k]=dvR(it[k]*f); });
+    if(it.t==="rect"){ const cx=it.x+it.w/2, cy=it.y+it.h/2; it.w=dvR(it.w*f); it.h=dvR(it.h*f); it.x=dvR(cx-it.w/2); it.y=dvR(cy-it.h/2); }
+    else if(it.t!=="ln"){ ["w","h"].forEach(k=>{ if(typeof it[k]==="number") it[k]=dvR(it[k]*f); }); }
+    if(it.t==="d"&&it.fs==null) it.fs=dvR((it.r||6.5)*0.9);
+    dvRefresh(); },
+  dvRot: el => { const it=M.vec.it[M.sel]; if(!it) return; dvSnap(); it.a=((+it.a||0)+ +el.dataset.n+360)%360; dvRefresh(); },
+  dvDup: () => { const it=M.vec.it[M.sel]; if(!it) return; dvSnap(); const o=clone(it), d=8*dvK(); dvMove(o,d,d); M.vec.it.push(o); M.sel=M.vec.it.length-1; dvRefresh(); },
+  dvDel: () => { if(M.sel==null) return; dvSnap(); M.vec.it.splice(M.sel,1); M.sel=null; dvRefresh(); }
+});
+document.addEventListener("change",e=>{ const el=e.target; if(!el.dataset||!el.dataset.dvf||!M||!M.vec||M.sel==null) return;
+  const it=M.vec.it[M.sel]; if(!it) return; dvSnap(); it[el.dataset.dvf]=el.value; dvRefresh(false); });
+document.addEventListener("input",e=>{ const el=e.target; if(!el.dataset||!el.dataset.dvf||!M||!M.vec||M.sel==null) return;
+  const it=M.vec.it[M.sel]; if(!it) return; it[el.dataset.dvf]=el.value; M.dirty=true; const s=$("#dvS"); if(s){ s.innerHTML=dvSVG(); dvSelDraw(); } });
+document.addEventListener("keydown",e=>{ if(!M||!M.vec||!$("#dlg").open) return; const t=e.target;
+  if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey?A.dvRedo():A.dvUndo(); }
+  else if(mod&&e.key.toLowerCase()==="y"){ e.preventDefault(); A.dvRedo(); }
+  else if(mod&&e.key.toLowerCase()==="d"&&M.sel!=null){ e.preventDefault(); A.dvDup(); }
+  else if((e.key==="Delete"||e.key==="Backspace")&&M.sel!=null){ e.preventDefault(); A.dvDel(); }
+  else if(M.sel!=null&&e.key.startsWith("Arrow")){ e.preventDefault(); const it=M.vec.it[M.sel], s=(e.shiftKey?5:1)*dvK(); dvSnap();
+    dvMove(it,e.key==="ArrowLeft"?-s:e.key==="ArrowRight"?s:0,e.key==="ArrowUp"?-s:e.key==="ArrowDown"?s:0); dvRefresh(false); }
+});
+
+/* ---- novo exercício a partir de um que já existe (copia tudo, incluindo o desenho, e abre o editor) ---- */
+function exFromCopy(srcId){
+  const x=D.exercises[srcId]; if(!x) return null;
+  const names=new Set(exercises().map(e=>e.name)); let nm=`${x.name} (cópia)`, i=2; while(names.has(nm)) nm=`${x.name} (cópia ${i++})`;
+  const o=clone(x); o.name=nm; delete o._by; delete o._at; delete o.auto;
+  const v=dvOf({id:srcId,...x}); if(v){ o.vec=v; delete o.drw; if(!x.vec&&x.imgk&&EXVEC[x.imgk]) delete o.imgk; }
+  const id=uid("ex"); put("exercises",id,o); return id;
+}
+Object.assign(A,{
+  exFrom: el => { const id=exFromCopy(el.dataset.id); if(!id) return; toast("Cópia criada — altera o desenho e depois, em Editar, o nome e a descrição."); drawEditor(id); }
+});
 
 /* ================= quem alterou (dispositivo + pessoa) ================= */
 // O browser não tem acesso ao nome do computador ("MacBook Pro de Alexandre"): cada dispositivo identifica-se uma vez

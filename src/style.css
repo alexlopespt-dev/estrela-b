@@ -711,3 +711,21 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .nx-empty .empty b{color:#fff}
 .nx-empty .empty .btn{background:var(--ouro);color:#2a0512;border-color:transparent}
 .envpill{position:fixed;left:10px;bottom:10px;z-index:70;background:#f2bd4b;color:#2a0512;font:800 11px/1 var(--fb);letter-spacing:.08em;padding:7px 10px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}
+
+/* ---- editor de desenho dos exercícios (dwv.js) ---- */
+.dvpitch svg{background:#4e9c36}
+.dvring{fill:none;stroke:#ffe14d;stroke-dasharray:4 3;pointer-events:none}
+.dvh{fill:#fff;stroke:#1f5fd1;cursor:move}
+.dvi{cursor:grab}
+.dvrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.dvrow .small{min-width:62px}
+.dvseg{margin-top:6px;display:flex;flex-wrap:wrap}
+.dvseg button{padding:5px 9px;font-size:13px}
+.dvimp{position:absolute;inset:0;z-index:5;background:var(--surface);padding:14px;overflow:auto;border-radius:inherit}
+.dvimp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.dvimp .inp{width:100%;margin-bottom:10px}
+.dvimp-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.dvimp-i{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:8px;color:var(--text)}
+.dvimp-i b{font-size:13px;line-height:1.2}.dvimp-i small{color:var(--muted);font-size:12px}
+.dvimp-t svg{width:100%;height:auto;display:block}
+.bpdlg .dlg-b{position:relative}

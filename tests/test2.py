@@ -42,7 +42,7 @@ with sync_playwright() as pw:
     print("ex visible:", pg.eval_on_selector_all(".ex","e=>e.filter(x=>x.style.display!=='none').length"))
     pg.click('[data-a="exNew"]'); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(80); print("ex no name:",pg.inner_text("#toast"))
     pg.fill('#dlg [name=name]',"Meu exercício"); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(400)
-    if pg.locator('#dlg [data-a="dwTool"]').count(): pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(200)
+    if pg.locator('#dlg [data-a="dvTool"]').count(): pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(200)
     pg.click('.ex >> nth=0'); pg.wait_for_timeout(100); pg.click('#dlg [data-a="exEdit"]'); pg.wait_for_timeout(100); pg.click('#dlg [data-a="mClose"]')
     # planning cycles
     pg.click('[data-a="tsub"][data-k="plan"]'); pg.click('[data-a="cycNew"][data-k="meso"]'); pg.fill('#dlg [name=end]',"2026-09-01"); pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(80); print("meso bad:",pg.inner_text("#toast"))

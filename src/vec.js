@@ -60,13 +60,21 @@ function vecFig(it){   // jogador visto de cima: ombros/braços (c), tronco (t2)
     <path d="M-4 -1.8H4V1.9H-4Z" fill="${c}"/>${t2?`<ellipse cx="0" cy=".3" rx="3.6" ry="2.3" fill="${t2}"/>`:""}
     <circle cx="0" cy="0" r="2.1" fill="${it.hair||"#3a2410"}" stroke="#1a1a1a" stroke-width=".35"/></g>`;
 }
+/* bola dos treinos (MKA: branca com painéis azul, grená, azul-escuro e amarelo e linhas vermelhas), desenhada com raio 1 e escalada */
+const BALL_IN = `<circle r="1" fill="#fbfbfb"/>
+  <path d="M-.62-.5L-.08-.78L.06-.36L-.47-.1Z" fill="#2458c8"/><path d="M-.08-.78L.34-.84L.46-.42L.06-.36Z" fill="#c42a42"/>
+  <path d="M.16.02L.78-.22L.9.12L.3.3Z" fill="#1b2140"/><path d="M.34-.84L.62-.62L.78-.22L.46-.42Z" fill="#2458c8"/>
+  <path d="M-.86.04L-.52-.06L-.38.4L-.7.58Q-.84.34-.86.04Z" fill="#cfae1d"/><path d="M.02.48L.44.36L.52.74L.14.9Z" fill="#2458c8" fill-opacity=".9"/>
+  <path d="M-.36.62L.2.46M-.3-.18L.12-.02M.52.4L.84.3" stroke="#e0283a" stroke-width=".09" fill="none" stroke-linecap="round"/>
+  <circle r=".94" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".12"/>`;
+function vecBall(x,y,r){ return `<g transform="translate(${vn(x)} ${vn(y)}) scale(${vn(r)})">${BALL_IN}<circle r="1" fill="none" stroke="#1d1f33" stroke-width=".2"/></g>`; }
+
 function vecItem(it,uid){
   const x=vn(it.x), y=vn(it.y);
   switch(it.t){
     case "d": { const r=it.r||6.5, o=it.o||"#1c1c1c", ow=it.ow??(r*0.2);
       return `<g><circle cx="${x}" cy="${y}" r="${vn(r)}" fill="${it.c||"#fff"}" stroke="${o}" stroke-width="${vn(ow)}"/>${it.sh===0?"":`<circle cx="${x}" cy="${y}" r="${vn(r-ow/2)}" fill="url(#dsh${uid})"/>`}${it.txt?`<text x="${x}" y="${vn(it.y+(it.fs||r*0.9)*0.36)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${vn(it.fs||r*0.9)}" fill="${it.tc||"#111"}">${esc(it.txt)}</text>`:""}</g>`; }
-    case "ball": { const r=it.r||2.2;
-      return `<g><circle cx="${x}" cy="${y}" r="${vn(r)}" fill="#fff" stroke="#222" stroke-width="${vn(r*0.28)}"/><circle cx="${x}" cy="${y}" r="${vn(r*0.38)}" fill="#333"/></g>`; }
+    case "ball": return vecBall(x,y,it.r||2.2);
     case "balls": { const r=it.r||2.2, n=it.n||5, out=[]; for(let i=0;i<n;i++){ const a=i*2.4, rr=r*1.25*Math.sqrt(i); out.push(vecItem({t:"ball",x:it.x+rr*Math.cos(a),y:it.y+rr*Math.sin(a),r},uid)); } return `<g>${out.join("")}</g>`; }
     case "cone": { const s=it.s||1, c=it.c||"#f08a24";
       return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="2.6" rx="3.6" ry="1.1" fill="#000" fill-opacity=".25"/><path d="M0 -4.4L3 2.4H-3Z" fill="${c}" stroke="#5a2d00" stroke-width=".45"/><path d="M-3.6 2.2h7.2v1h-7.2z" fill="${c}" stroke="#5a2d00" stroke-width=".35"/><path d="M-1.1 -1.4h2.2" stroke="#fff" stroke-width=".7"/></g>`; }
@@ -131,7 +139,11 @@ let EXV_MODE="v"; try{ if(localStorage.getItem(LS+":exv")==="o") EXV_MODE="o"; }
 const EXV_URL={};
 function setExvMode(m){ EXV_MODE=m==="o"?"o":"v"; try{ localStorage.setItem(LS+":exv",EXV_MODE); }catch(e){} }
 // desenho vetorial em uso para o exercício (null se tiver foto própria, se não houver desenho ou se estiver a ver as originais)
-const exVecOf = x => (x && x.imgk && !(x.imgA||x.imgL||x.imgG||x.img) && EXV_MODE!=="o" && EXVEC[x.imgk]) || null;
+// o desenho do próprio exercício (vec, feito ou alterado no editor) ganha ao da biblioteca (imgk)
+const exVecOf = x => (x && !(x.imgA||x.imgL||x.imgG||x.img) && (x.vec || (x.imgk && EXV_MODE!=="o" && EXVEC[x.imgk]))) || null;
+const OWNV_URL = new WeakMap();
+function exOwnVecSrc(v){ if(!v||!(v.it||v.fld||v.bgc)) return null; let u=OWNV_URL.get(v);
+  if(!u){ u="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(vecSVG(v,{r:0,img:1})); OWNV_URL.set(v,u); } return u; }
 // SVG como imagem (data URL, em cache): leve nas grelhas com muitos exercícios
 function exVecSrc(k){ if(EXV_MODE==="o"||!EXVEC[k]) return null;
   return EXV_URL[k] || (EXV_URL[k]="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(vecSVG(EXVEC[k],{r:0,img:1}))); }

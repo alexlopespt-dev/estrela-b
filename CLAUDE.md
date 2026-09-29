@@ -24,10 +24,11 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   views2.js    jogos, ficha de jogo, plantel, ficha do atleta, radar
   views3.js    testes físicos, clínico, scouting, estatísticas
   cfg.js       categorias de exercícios e atributos de avaliação configuráveis
-  draw.js      editor de desenho de exercícios (SVG 1050x680)
+  draw.js      só os desenhos antigos (`drw`, SVG 1050x680) para mostrar; o editor novo está em dwv.js
   quick.js     modo pós-jogo, grelha da época, importação da antiga app de ratings
   print.js     documentos para imprimir/PDF (plano ao estilo "Plano de Treino" com um exercício em grande por página, relatório de treino, atleta, jogo, adversário)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
+  dwv.js       editor de desenho dos exercícios no formato vetorial v2 (ecrã inteiro, iPad), "Novo a partir deste", importar desenho
   who.js       quem alterou: identificação do dispositivo, carimbo _by/_at em put(), "Última alteração" nas fichas, "Últimas alterações" no Plantel
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   tat.js       Plantel → Esquema tático (campo tipo Football Manager: formação, função/missão e atleta por posição, arrastar posições, PNG)
@@ -117,8 +118,8 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|pos|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
-- Exercício: `{name, cat, obj, desc, cp, dur, players, space, mat, pr:[principleId], mom:[oo|od|tro|trd|fbp], imgk?, img?, drw?, auto?}` — `mom` = momento(s) escolhido(s) no formulário (siglas OF OD TO TD BP em `MOMENTS[].ab`, `exMoms(x)`)
-  - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `drw` é desenho do editor, `auto:true` = descrição proposta ainda por confirmar.
+- Exercício: `{name, cat, obj, desc, cp, dur, players, space, mat, pr:[principleId], mom:[oo|od|tro|trd|fbp], imgk?, img?, vec?, drw?, auto?}` — `mom` = momento(s) escolhido(s) no formulário (siglas OF OD TO TD BP em `MOMENTS[].ab`, `exMoms(x)`)
+  - `imgk` aponta para `EXIMG` (imagem embutida, só 440 px), `imgA` é foto em `assets` (online), `imgL` é foto no IndexedDB (offline, carregada para `IMGC` no arranque), `img` é dataURL antiga/de cópia, `vec` é o desenho próprio do exercício (formato v2, editor dwv.js), `drw` é desenho do editor antigo (convertido para `vec` ao abrir/guardar), `auto:true` = descrição proposta ainda por confirmar.
 - Ciclo: `{kind:"meso"|"micro", name, start, end, period (Preparatório|Competitivo|Transitório), obj, notes}`
 - Princípio: `{name, moment (oo|od|tro|trd|fbp), parent, desc}` — 5 momentos, percentagens somam 100% (tempo de um bloco dividido pelos momentos que trabalha: os dos princípios do bloco; se não tiver, `blockMoms(x)` = o `mom` escolhido no próprio bloco do treino (botões OF OD TO TD BP, ação `planMom`) ou, se nunca escolhido, o `mom` do exercício; ao escolher no treino, um exercício sem momento fica com esse). "O que temos trabalhado" (Treinos → Planeamento) mostra um gráfico circular por microciclo/período/época (`momentPie`, cores `--m-<k>` validadas com o skill dataviz para os dois temas) + legenda com sigla, % e minutos (test24).
 
@@ -183,9 +184,13 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Adversário: `{name, comp, crk?, imgA?/imgL?/crest?, formation, style, keys:[], reports:[], ...}`; jogos ligam-se ao adversário pelo nome (`oppByName`).
 
 ## Desenhos vetoriais dos exercícios
-- `exImg(x)`: foto do utilizador (`imgA`/`imgL`/`img`) > desenho vetorial (`EXVEC[imgk]`, como SVG em data URL, em cache) > JPEG original (`EXIMG[imgk]`). Na ficha do exercício há "Desenho vetorial | Imagem original" (guardado por dispositivo em `estrela-tecnico-v1:exv`). No PDF do plano o desenho entra como `<svg>` embutido (`exVecOf`).
+- `exImg(x)`: foto do utilizador (`imgA`/`imgL`/`img`) > desenho próprio `x.vec` (`exOwnVecSrc`) > desenho vetorial (`EXVEC[imgk]`, como SVG em data URL, em cache) > JPEG original (`EXIMG[imgk]`). Na ficha do exercício há "Desenho vetorial | Imagem original" (guardado por dispositivo em `estrela-tecnico-v1:exv`). No PDF do plano o desenho entra como `<svg>` embutido (`exVecOf`).
 - Formato v2: `{v:2,w,h,fld:{ori,s,asp,tx,ty,L,W,bands},it:[...]}` em píxeis da captura original (440x302; exi129 é 420x605 sem campo, `bgc`). Tipos de item e ordem de desenho no topo de `src/vec.js`.
 - Pipeline (Python, em `tools/vetorizar/`, pasta de trabalho DIR com `ex/*.png` = imagens originais): `fit_all.py` ajusta o campo (medidas do programa em `VEC_PROP`) -> `fld.json`; campo limpo renderizado para `bg/`; `rascunho.py DIR` deteta e classifica elementos -> `draft/`; `manual/exiNNN.json` tem as correções feitas à mão, imagem a imagem (`keep`/`del`/`mod`/`add`/`fld`/`nofld`, ou `custom`); `cmp.py DIR exi...` mostra original | vetorial; `exportar.py DIR` grava `data/exercicios_vetor.json`.
+- **Editor (dwv.js, test39)**: janela de ecrã inteiro (`#dlg.bpdlg`) que edita o formato v2 (`dvOf(x)`: `x.vec` > `EXVEC[imgk]` > `drw` convertido por `drwToVec` > meio-campo vazio); grava em `vec` e apaga `drw` (o `imgk` fica, para a "Imagem original"). Campo inteiro/meio-campo/espaço livre (`DV_PRE`, os elementos são reescalados), ferramentas `DV_TOOLS` (jogadores, bola, bolas, cone, sinalizador, balizas, estaca, escada, barreira, movimento/passe/condução, **Linha** e **Linha tracejada**, zona, texto, apagar), painel de propriedades (cor, número/texto, linha contínua/tracejada/ondulada, sem seta/seta/duas setas, pegas nas pontas, fundo/tracejado da zona, tamanho, rodar, duplicar), desfazer/refazer, Ctrl+Z/Y/D, Delete, setas. "Importar desenho" (lista com pesquisa → `dvPick`) e "Repor o da biblioteca" (`dvLib`).
+- **iPad**: o campo cabe no ecrã (`#dvWrap` com largura máxima calculada pela altura, `100dvh`), `touch-action:none` e `touchstart`/`touchmove` com `preventDefault` (`passive:false`) — arrastar para cima/baixo mexe o elemento e não a página (era o problema do editor antigo).
+- **Bola**: `BALL_IN`/`vecBall` (vec.js) = bola MKA dos treinos (branca, painéis azul/grená/azul-escuro/amarelo, linhas vermelhas); usada em todos os desenhos (biblioteca, editor, desenhos antigos em draw.js) e no PDF.
+- **Novo a partir deste** (ficha do exercício, `exFrom` → `exFromCopy`): copia o exercício ("X (cópia)", "X (cópia 2)"…) com o desenho em `vec` (sem `imgk` quando vem da biblioteca) e abre logo o editor; nome/descrição mudam-se depois em Editar. O original não muda.
 - Todos os 129 foram revistos lado a lado com o original. Para corrigir um: editar `data/exercicios_vetor.json` diretamente (mais simples) ou o `manual/` + reexportar.
 
 ## Regras e armadilhas (aprendidas à custa de erros)
