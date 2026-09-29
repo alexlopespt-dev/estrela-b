@@ -211,3 +211,7 @@ details.cfg summary::-webkit-details-marker{display:none}
 .steps{margin:6px 0 4px;padding-left:22px;font-size:15px;line-height:1.45}.steps li{margin:4px 0}
 .top .me-ph{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--gold);box-shadow:0 4px 12px rgba(0,0,0,.35);background:#3a0818}
 .top .me-ph.ini{display:grid;place-items:center;font:800 20px var(--fc);color:var(--gold)}
+.ag.fim{opacity:.55}
+.now{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;background:var(--ok);color:#fff;font:700 11px var(--fb);vertical-align:2px}
+.now.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.upd{text-align:center;font-size:12px;color:var(--muted);margin:16px 0 0}

@@ -192,11 +192,16 @@ function matchCard(g,o={}){
     <div class="mc-row"><div class="mc-t">${crest(L[0],L[1],52)}<b>${esc(L[0])}</b></div>${mid}<div class="mc-t">${crest(R[0],R[1],52)}<b>${esc(R[0])}</b></div></div>
     ${o.foot?`<div class="mc-foot">${o.foot}</div>`:""}</section>`;
 }
+/* já acabou? (hoje, depois da hora + duração; sem hora conta como o dia todo) */
+function acabou(a){ if(a.date<today()) return true; if(a.date>today()||!a.time) return false;
+  const [h,m]=a.time.split(":").map(Number), n=new Date(); return n.getHours()*60+n.getMinutes() > h*60+m+(+a.dur||90); }
+function aDecorrer(a){ if(a.date!==today()||!a.time) return false; const [h,m]=a.time.split(":").map(Number), n=new Date(), x=n.getHours()*60+n.getMinutes(); return x>=h*60+m && x<=h*60+m+(+a.dur||90); }
 function evCard(a){
-  if(a.tipo==="jogo") return `<div class="ag jogo"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Jogo</span></div><div class="ag-b">
-    <div class="ag-m">${crest(a.opp,0,30)}<div><b>${a.venue==="F"?"@ ":"vs "}${esc(a.opp)}</b><span class="meta">${a.comp?`${I.cup}${esc(a.comp)}`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div></div></div>`;
-  return `<div class="ag"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Treino</span></div><div class="ag-b">
-    <b>${esc(a.theme||"Treino")}</b><span class="meta">${a.dur?`${I.clock}${esc(a.dur)} min`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div>`;
+  const st=acabou(a)?" fim":"", tg=aDecorrer(a)?`<span class="now">A decorrer</span>`:acabou(a)?`<span class="now off">Terminado</span>`:"";
+  if(a.tipo==="jogo") return `<div class="ag jogo${st}"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Jogo</span></div><div class="ag-b">
+    <div class="ag-m">${crest(a.opp,0,30)}<div><b>${a.venue==="F"?"@ ":"vs "}${esc(a.opp)}${tg}</b><span class="meta">${a.comp?`${I.cup}${esc(a.comp)}`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div></div></div>`;
+  return `<div class="ag${st}"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Treino</span></div><div class="ag-b">
+    <b>${esc(a.theme||"Treino")}${tg}</b><span class="meta">${a.dur?`${I.clock}${esc(a.dur)} min`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div>`;
 }
 function vHoje(){
   const d=S.data, t=today(), r=(d&&d.respostas)||{}, hj=agendaDe(t);
@@ -219,7 +224,7 @@ function vHoje(){
   if(conv) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(conv,{chip:`<span class="chip-s ${conv.convocado?"gold":""}">${conv.convocado?"✓ Estás convocado":"Convocatória publicada"}</span>`,
       foot:`<span>${esc(quando(conv.date))}</span>${conv.meetT?`<span>${I.bus}Concentração ${esc(conv.meetT)}</span>`:""}`})}</button>`;
   else if(prox&&diasAte(prox.date)<=7) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""})}</button>`;
-  let seg=((d&&d.agenda)||[]).filter(a=>a.date>=t).slice(0,3);
+  let seg=((d&&d.agenda)||[]).filter(a=>a.date>t||(a.date===t&&!acabou(a))).slice(0,3);
   if(!seg.length&&d&&(d.proximos||[])[0]) seg=[{...d.proximos[0],tipo:"jogo"}];   // nada nos próximos 15 dias: mostra o próximo jogo
   return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}${pushCard("hoje")}
     <h3 class="sec-t">A seguir</h3>${seg.length?seg.map(a=>`<div class="ag-day">${esc(dayName(a.date))}</div>${evCard(a)}`).join(""):`<div class="card empty"><b>Sem treinos nem jogos marcados</b></div>`}</main>`;
@@ -313,6 +318,7 @@ function vEu(){
     <details class="card cfg"><summary>Este telemóvel</summary><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
       <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></details></main>`;
 }
+function atualizado(){ return S.at?`<p class="upd">Atualizado às ${esc(new Date(S.at).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}))}${new Date(S.at).toDateString()!==new Date().toDateString()?" de "+esc(new Date(S.at).toLocaleDateString("pt-PT",{day:"numeric",month:"short"})):""}</p>`:""; }
 function offline(){
   if(S.err==="rede"&&S.at) return `<div class="off">Sem ligação — a mostrar os dados de ${esc(new Date(S.at).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}.</div>`;
   if(S.err&&S.err!=="rede"&&S.err!=="link") return `<div class="off">${esc(S.err)}</div>`;
@@ -348,7 +354,7 @@ function render(){
   const app=$("#app"); const sy=window.scrollY;
   if(!S.cfg||S.err==="link"){ app.innerHTML=vLink(); return; }
   if(!S.data){ app.innerHTML=top()+`<main><div class="card empty"><b>${S.err==="rede"?"Sem ligação":"A carregar…"}</b>${S.err==="rede"?"Liga os dados móveis ou o Wi-Fi e tenta de novo.":""}${S.err==="rede"?`<button class="cta" data-a="refresh">Tentar de novo</button>`:""}</div></main>`; return; }
-  const v={hoje:vHoje,agenda:vAgenda,jogo:vJogo,eu:vEu}[S.tab]();
+  const v={hoje:vHoje,agenda:vAgenda,jogo:vJogo,eu:vEu}[S.tab]().replace("</main>",atualizado()+"</main>");
   const nav=`<nav class="tabs" aria-label="Secções">${[["hoje","Hoje"],["agenda","Agenda"],["jogo","Jogos"],["eu","Eu"]].map(([k,l])=>`<button data-a="tab" data-t="${k}" ${S.tab===k?'aria-current="page"':""}>${IC[k]}${l}</button>`).join("")}</nav>`;
   const sheet=S.view==="bem"?vBemForm():S.view==="pse"?vPseForm():S.view&&S.view.t?vObrigado():"";
   app.innerHTML=v+nav+sheet;

@@ -306,6 +306,11 @@ function ligacoesNomes_(nomes, players, manual) {
     var c = ids.filter(function (id) { return !usados[id] && cabe(players[id].name, n); });
     if (c.length === 1) { map[n] = c[0]; usados[c[0]] = 1; }
   });
+  nomes.forEach(function (n) {   // abreviado na folha: "Hugo R." = "Hugo Rocha" (só se houver um único)
+    if (n in map) return;
+    var c = ids.filter(function (id) { return !usados[id] && !players[id].archived && cabe(n, players[id].name); });
+    if (c.length === 1) { map[n] = c[0]; usados[c[0]] = 1; }
+  });
   return map;
 }
 
@@ -513,6 +518,24 @@ function atChave_(s) {
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }
 function atMesmo_(a, b) { return !!atChave_(a) && atChave_(a) === atChave_(b); }
+/** Equivalências do separador "· Nomes" do Painel (como veio do formulário -> nome oficial), as mesmas da monitorização. */
+var AT_ALIAS = null;
+function atAliases_() {
+  if (AT_ALIAS) return AT_ALIAS;
+  AT_ALIAS = {};
+  try {
+    var f = destino_().getSheetByName(PREFIXO + 'Nomes');
+    if (f && f.getLastRow() >= 4) f.getRange(4, 1, f.getLastRow() - 3, 2).getValues().forEach(function (l) {
+      var de = String(l[0] || '').trim(), para = String(l[1] || '').trim(); if (de && para) AT_ALIAS[atChave_(de)] = para;
+    });
+  } catch (e) {}
+  return AT_ALIAS;
+}
+/** Esta linha da folha é deste atleta? (nome como escrito, pela equivalência da monitorização, ou o nome da app) */
+function atEle_(bruto, A) {
+  var al = atAliases_()[atChave_(bruto)];
+  return atMesmo_(bruto, A.nome) || atMesmo_(bruto, A.p.name) || (!!al && (atMesmo_(al, A.nome) || atMesmo_(al, A.p.name)));
+}
 
 /** Minutos, golos… de um atleta num jogo (a mesma conta que a app da equipa técnica, gameCalc). */
 function atJogo_(g, pid) {
@@ -598,7 +621,7 @@ function atleta_(tok) {
   var lb = atLinhas_(B), lp = atLinhas_(P), desde = atKey_(new Date(Date.now() - 13 * 864e5));
   var hojeBem = null, hist = {}, hojePse = [];
   lb.forEach(function (l) {
-    if (!atMesmo_(l.v[B.c.n], A.nome) && !atMesmo_(l.v[B.c.n], A.p.name)) return;
+    if (!atEle_(l.v[B.c.n], A)) return;
     var k = atKey_(l.d); if (k < desde) return;
     var i = [B.c.sono, B.c.fadiga, B.c.dor, B.c.stress].map(function (c) { return atNum_(l.v[c]); });
     if (i.some(function (v) { return v === null; })) return;
@@ -606,7 +629,7 @@ function atleta_(tok) {
     if (k === hoje) hojeBem = { h: atHora_(l.d), i: i };
   });
   lp.forEach(function (l) {
-    if (atKey_(l.d) !== hoje || (!atMesmo_(l.v[P.c.n], A.nome) && !atMesmo_(l.v[P.c.n], A.p.name))) return;
+    if (atKey_(l.d) !== hoje || !atEle_(l.v[P.c.n], A)) return;
     hojePse.push({ h: atHora_(l.d), tipo: String(l.v[P.c.tipo] || ''), rpe: atNum_(l.v[P.c.rpe]), dur: atMin_(l.v[P.c.dur]) });
   });
   return {
@@ -670,7 +693,7 @@ function atResponder_(p) {
     vals[F.c.n] = A.nome; vals[F.c.t] = agora;
     // já respondeu hoje (pela app ou pelo formulário)? Então só amanhã — como no painel do Sheets, uma resposta por dia
     var ja = linhas.filter(function (l) {
-      return atKey_(l.d) === hoje && (atMesmo_(l.v[F.c.n], A.nome) || atMesmo_(l.v[F.c.n], A.p.name));
+      return atKey_(l.d) === hoje && atEle_(l.v[F.c.n], A);
     }).pop();
     if (ja) return { erro: 'ja', msg: (bem ? 'Já respondeste ao bem-estar hoje' : 'Já registaste o PSE hoje') + ' (às ' + atHora_(ja.d) + '). Voltas a responder amanhã.' };
     var row = atUltimaLinha_(F) + 1;
@@ -870,7 +893,7 @@ function avisosAtletas() {
   var nomeDe = {};
   try { var map = ligacoesNomes_(nomesMonitorizacao_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
   var resp = function (id, chave) {   // chaves dos nomes que já responderam hoje (null se não deu para ler a folha)
-    try { var F = atFolha_(id, chave), s = {}; atLinhas_(F).forEach(function (l) { if (atKey_(l.d) === hoje) s[atChave_(l.v[F.c.n])] = 1; }); return s; } catch (e) { return null; }
+    try { var F = atFolha_(id, chave), s = {}, al = atAliases_(); atLinhas_(F).forEach(function (l) { if (atKey_(l.d) !== hoje) return; var k = atChave_(l.v[F.c.n]); s[k] = 1; if (al[k]) s[atChave_(al[k])] = 1; }); return s; } catch (e) { return null; }
   };
   var sess = Object.keys(ev).map(function (id) { var e = ev[id]; return e && e.date === hoje && (e.type === 'treino' || e.type === 'jogo') ? { id: id, e: e } : null; }).filter(Boolean);
   var bem = null, pse = null, enviados = 0;

@@ -34,10 +34,11 @@ ontem=iso(T-datetime.timedelta(days=1)).replace("-","/")
 try:
   post({"a":"x"})   # garante que o script arrancou
   urllib.request.urlopen(BASE+"/__run?f=prepararDadosApp").read()
-  prep({"nomes":["Luís A.","Hugo R.","Rui"],"respostas":[
+  prep({"nomes":["Luís A.","Hugo R.","Rui"],"aliases":[["Luisinho","Luís A."]],"respostas":[
     {"id":ID_BEM,"nome":"respostas","linhas":[H_BEM,
       [ontem+" 07:10:00","Luís.A.","4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo",16,"Atenção"],
       [ontem+" 07:20:00","Rui","2 - Mau","2 - Cansado","3 - Alguma Dor","3 - Normal",10,"Risco"],
+      [iso(T-datetime.timedelta(days=2)).replace("-","/")+" 08:00:00","Luisinho","3 - Normal","3 - Normal","3 - Alguma Dor","3 - Normal",12,"Risco"],
       [hoje.replace("-","/")+" 06:31:43","Hugo R.","2 - Mau","3 - Normal","3 - Alguma Dor","4 - Tranquilo",12,"Risco"]]},
     {"id":ID_PSE,"nome":"respostas","linhas":[H_PSE,[ontem+" 21:00:00","Rui","Treino","01:30:00","7 - Muito difícil","Cansado"],[ontem+" 21:05:00","Hugo R.","Recuperação","00:40:00","3 - Moderado","Bem"]]}]})
   d=lambda n: iso(T+datetime.timedelta(days=n))
@@ -51,6 +52,7 @@ try:
           "ev":[{"t":"golo","min":30,"pid":"ta1"},{"t":"assist","min":30,"pid":"ta2"},{"t":"sub","min":60,"in":"ta2","out":"ta1"}],"rt":{"ta1":8},"ga":1,"closed":True}},
        {"c":"events","i":"j_prox","d":{"type":"jogo","date":d(3),"time":"15:00","opp":"Atlético CP B","venue":"F","comp":"III Divisão","place":"Tapadinha","dur":90,
           "call":["ta1","ta3"],"xi":["ta1"],"meetT":"13:15","meetP":"Estádio","cnum":{"ta1":10},"sched":[{"l":"Concentração","t":"13:15"},{"l":"Jogo","t":"15:00"}]}},
+       {"c":"events","i":"tr_madrugada","d":{"type":"treino","date":hoje,"time":"00:00","dur":90,"theme":"Madrugada","att":{}}},
        {"c":"events","i":"j_longe","d":{"type":"jogo","date":d(30),"time":"16:00","opp":"Porto Salvo","venue":"C","phase":"Jornada 9","dur":90}}]
   r=post({"k":KEY,"a":"push","ops":ops}); print("dados:", r.get("ok"), r.get("erros"))
   # ---- servidor
@@ -65,6 +67,7 @@ try:
   if "rt" in json.dumps(r) and '"rt"' in json.dumps(r): errs.append("notas enviadas ao atleta")
   if "Rui" in json.dumps(r["respostas"]): errs.append("respostas de outro atleta")
   if not any(h["d"]==d(-1) and h["t"]==16 for h in r["respostas"]["hist"]): errs.append("histórico (Luís.A. = Luís A.) "+str(r["respostas"]["hist"]))
+  if not any(h["d"]==d(-2) and h["t"]==12 for h in r["respostas"]["hist"]): errs.append("histórico pela equivalência do separador · Nomes (Luisinho) "+str(r["respostas"]["hist"]))
   rh=get({"a":"atleta","t":TOK_H}); print("Hugo respondeu pelo formulário:", rh["respostas"]["bem"])
   if not rh["respostas"]["bem"] or rh["respostas"]["bem"]["i"]!=[2,3,3,4]: errs.append("resposta do formulário não reconhecida")
   if "chave" in json.dumps(get({"a":"pull","since":0})) is False: pass
@@ -77,6 +80,8 @@ try:
     pg.goto("https://atleta.test/#s="+urllib.parse.quote(URL,safe="")+"&t="+TOK); pg.wait_for_timeout(1500)
     t=pg.inner_text("#app"); print("hoje:", t.replace("\n"," | ")[:160])
     if "Luís" not in t or "Como estás hoje?" not in t: errs.append("ecrã de hoje")
+    if "Madrugada" in t.split("A seguir")[-1]: errs.append("'A seguir' mostra um treino que já acabou")
+    if "Atualizado às" not in t: errs.append("hora dos dados")
     if "t="+TOK not in pg.url: errs.append("o link tem de ficar no endereço (iPhone: adicionar ao ecrã principal)")
     ov=pg.evaluate("document.documentElement.scrollWidth-document.documentElement.clientWidth")
     if ov>1: errs.append("overflow no telemóvel")
@@ -90,13 +95,13 @@ try:
     t=pg.inner_text(".sheet"); print("enviado:", t.replace("\n"," | "))
     if "Obrigado" not in t or "16/20" not in t: errs.append("confirmação do bem-estar")
     rows=estado()["resp"][ID_BEM]; nova=rows[-1]; print("linha nova:", nova)
-    if len(rows)!=5 or nova[1]!="Luís A." or nova[2:6]!=["4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo"] or (len(nova)>6 and nova[6] not in ("",None)): errs.append("linha do bem-estar")
+    if len(rows)!=6 or nova[1]!="Luís A." or nova[2:6]!=["4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo"] or (len(nova)>6 and nova[6] not in ("",None)): errs.append("linha do bem-estar")
     pg.click('.sheet [data-a="fechar"]'); pg.wait_for_timeout(900)
     if "Respondido às" not in pg.inner_text("#app"): errs.append("hoje não mostra respondido")
     # uma resposta por dia: sem botão para responder outra vez e o script recusa
     if pg.locator('[data-a="bem"]').count() or "Voltas a responder amanhã" not in pg.inner_text("#app"): errs.append("bem-estar: deixa responder outra vez")
     r=post({"a":"atleta_bem","t":TOK,"i":[2,2,2,2]}); rows=estado()["resp"][ID_BEM]; print("segunda resposta:", r.get("erro"), len(rows), rows[-1][2])
-    if r.get("erro")!="ja" or "amanhã" not in r.get("msg","") or len(rows)!=5 or rows[-1][2]!="4 - Bom": errs.append("segunda resposta do bem-estar aceite")
+    if r.get("erro")!="ja" or "amanhã" not in r.get("msg","") or len(rows)!=6 or rows[-1][2]!="4 - Bom": errs.append("segunda resposta do bem-estar aceite")
     # Hugo respondeu pelo formulário do Google: a app dele não deixa responder outra vez
     r=post({"a":"atleta_bem","t":TOK_H,"i":[3,3,3,3]}); print("Hugo (já respondeu no formulário):", r.get("erro"))
     if r.get("erro")!="ja": errs.append("resposta dada no formulário não conta")
@@ -122,6 +127,7 @@ try:
     if not st["atletas"] or not st["atletas"][1][0]: errs.append("marca no Painel")
     # agenda, jogo (convocatória ainda não publicada), eu
     pg.click('nav [data-t="agenda"]'); pg.wait_for_timeout(200); t=pg.inner_text("#app")
+    if "Madrugada" not in t or "Terminado" not in t: errs.append("agenda: treino de hoje já acabado")
     if "19:30" not in t or "Treino" not in t or "Atlético CP B" not in t or "folga" not in t.lower() or "Esta semana" not in t: errs.append("agenda")
     pg.screenshot(path=os.path.join(CAP,"t38_agenda.png"),full_page=True)
     pg.click('nav [data-t="jogo"]'); pg.wait_for_timeout(200); t=pg.inner_text("#app")

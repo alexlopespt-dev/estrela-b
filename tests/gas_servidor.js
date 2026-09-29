@@ -117,6 +117,7 @@ http.createServer((req,res)=>{
         p.nomes.forEach((n,i)=>pl.getRange(5+i,1,1,2).setValues([[n,"Campo"]])); }
       if(p.respostas){ p.respostas.forEach(r=>{ const ss=new SS(r.nome||"respostas",r.id); ss.sheets[0].name=r.folha||"Respostas ao formulário 1";
         ss.sheets[0].cells=r.linhas.map(l=>l.slice()); SSS[r.id]=ss; }); }
+      if(p.aliases){ const f=ctx.destino_(); const al=f.insertSheet("· Nomes"); p.aliases.forEach((r,i)=>al.getRange(4+i,1,1,2).setValues([r])); }
       if(p.manual){ const f=ctx.destino_(); const sh=ctx.folhaLesoes_(f);
         p.manual.forEach(r=>sh.getRange(sh.getLastRow()+1,1,1,5).setValues([r])); }
       send({m:"application/json",s:"{}"}); });
