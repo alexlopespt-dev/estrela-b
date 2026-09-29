@@ -30,7 +30,7 @@ with sync_playwright() as pw:
     if gr!="GR": errs.append("GR não é guarda-redes")
     pg.screenshot(path=os.path.join(CAP,"t35_tat.png"),full_page=True)
     # posição MOE: escolher o atleta que está no PL (troca), função EI, missão ataque, instruções
-    pg.click('svg.tac g.ts[data-k="MOE"]'); pg.wait_for_timeout(200)
+    pg.click('svg.tac g.ts[data-k="MOE"] rect'); pg.wait_for_timeout(200)
     pg.select_option('#dlg [name="p"]', filled["PL"]); pg.select_option('#dlg [name="r"]',"EI")
     pg.click('#dlg .tac-du label:has-text("Ataque")'); pg.fill('#dlg [name="ins"]',"ataca a profundidade")
     pg.click('#dlg [data-a="mSave"]'); pg.wait_for_timeout(300); chk(pg,"slot")
@@ -52,6 +52,9 @@ with sync_playwright() as pw:
         # cartões não se sobrepõem
         ov=pg.evaluate("""(()=>{const r=[...document.querySelectorAll('svg.tac g.ts rect')].map(e=>e.getBoundingClientRect());let n=0;for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){const a=r[i],b=r[j];if(a.left<b.right-2&&b.left<a.right-2&&a.top<b.bottom-2&&b.top<a.bottom-2)n++;}return n;})()""")
         if ov: errs.append(f"{f}: {ov} cartões sobrepostos")
+        # camisola de uma posição por cima do cartão de outra
+        ov2=pg.evaluate("""(()=>{const g=[...document.querySelectorAll('svg.tac g.ts')];let n=0;g.forEach(a=>{const u=a.querySelector('use').getBoundingClientRect();g.forEach(b=>{if(a===b)return;const r=b.querySelector('rect').getBoundingClientRect();if(u.left<r.right-2&&r.left<u.right-2&&u.top<r.bottom-2&&r.top<u.bottom-2)n++;});});return n;})()""")
+        if ov2: errs.append(f"{f}: {ov2} camisolas por cima de cartões")
     T=list(all_(pg).values())[0]
     if len(set(p for p in (v.get("p") for v in T["sl"].values()) if p))!=len(before): errs.append("atletas perdidos nas mudanças")
     # mover posições

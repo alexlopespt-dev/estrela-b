@@ -829,7 +829,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 09:11";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 11:19";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -4422,7 +4422,7 @@ const TAC_POS = {GR:["Guarda-redes","gk"],LE:["Lateral esquerdo","lat"],LD:["Lat
   MCE:["Médio centro esquerdo","mc"],MC:["Médio centro","mc"],MCD:["Médio centro direito","mc"],ME:["Médio esquerdo","wm"],MD:["Médio direito","wm"],
   MOE:["Médio ofensivo esquerdo","wing"],MO:["Médio ofensivo","am"],MOD:["Médio ofensivo direito","wing"],EE:["Extremo esquerdo","wing"],ED:["Extremo direito","wing"],
   PLE:["Ponta de lança esquerdo","st"],PL:["Ponta de lança","st"],PLD:["Ponta de lança direito","st"]};
-const TAC_B4 = {GR:[50,92],LE:[13,71],DCE:[37,77],DCD:[63,77],LD:[87,71]}, TAC_B3 = {GR:[50,92],DCE:[27,76],DC:[50,79],DCD:[73,76]};
+const TAC_B4 = {GR:[50,93],LE:[13,71],DCE:[37,77],DCD:[63,77],LD:[87,71]}, TAC_B3 = {GR:[50,93],DCE:[27,76],DC:[50,78],DCD:[73,76]};
 const TAC_FORMS = {
   "4-4-2":   {...TAC_B4, ME:[13,46],MCE:[37,50],MCD:[63,50],MD:[87,46],PLE:[37,16],PLD:[63,16]},
   "4-3-3":   {...TAC_B4, MDC:[50,59],MCE:[29,43],MCD:[71,43],EE:[14,19],PL:[50,12],ED:[86,19]},
@@ -4431,8 +4431,8 @@ const TAC_FORMS = {
   "4-3-1-2": {...TAC_B4, MCE:[27,52],MC:[50,56],MCD:[73,52],MO:[50,34],PLE:[37,13],PLD:[63,13]},
   "3-5-2":   {...TAC_B3, ALE:[10,49],MCE:[33,48],MDC:[50,60],MCD:[67,48],ALD:[90,49],PLE:[37,15],PLD:[63,15]},
   "3-4-3":   {...TAC_B3, ALE:[11,51],MCE:[37,53],MCD:[63,53],ALD:[89,51],EE:[16,20],PL:[50,12],ED:[84,20]},
-  "5-3-2":   {GR:[50,92],ALE:[9,65],DCE:[29,75],DC:[50,80],DCD:[71,75],ALD:[91,65],MCE:[28,47],MC:[50,51],MCD:[72,47],PLE:[37,15],PLD:[63,15]},
-  "5-4-1":   {GR:[50,92],ALE:[9,65],DCE:[29,75],DC:[50,80],DCD:[71,75],ALD:[91,65],ME:[13,43],MCE:[37,47],MCD:[63,47],MD:[87,43],PL:[50,13]}
+  "5-3-2":   {GR:[50,93],ALE:[9,65],DCE:[29,75],DC:[50,78],DCD:[71,75],ALD:[91,65],MCE:[28,47],MC:[50,51],MCD:[72,47],PLE:[37,15],PLD:[63,15]},
+  "5-4-1":   {GR:[50,93],ALE:[9,65],DCE:[29,75],DC:[50,78],DCD:[71,75],ALD:[91,65],ME:[13,43],MCE:[37,47],MCD:[63,47],MD:[87,43],PL:[50,13]}
 };
 // funções [sigla, nome, zonas onde é proposta]
 const TAC_ROLES = [["GR","Guarda-redes",["gk"]],["GRL","Guarda-redes líbero",["gk"]],
@@ -4452,16 +4452,19 @@ const TAC_FIT = {gk:["GR"],dc:["DC"],lat:["LAT"],wb:["LAT","EXT"],dm:["MDF","MC"
 const TW=680, TH=940;
 // equipamento principal 2026/27: riscas verticais grená e verde com filete branco, gola polo branca, mangas grená com punho verde/branco
 // (desenhado em coordenadas locais, centro da camisola em 0,0; reutilizado com <use>)
-const TAC_SH = "M-8 -25 L-18 -21 L-29 -9 L-23 -1 L-18 -5 L-18 22 L18 22 L18 -5 L23 -1 L29 -9 L18 -21 L8 -25 Q0 -20 -8 -25 Z";
-const TAC_KIT = `<defs><clipPath id="tacBody"><path d="M-8 -25 L-18 -21 L-18 22 L18 22 L18 -21 L8 -25 Q0 -20 -8 -25 Z"/></clipPath>
-  <g id="tacKit"><path d="${TAC_SH}" fill="#6e1428"/>
-    <g clip-path="url(#tacBody)">${[-18,-12,-6,0,6,12].map((x,i)=>`<rect x="${x}" y="-26" width="6" height="49" fill="${i%2?"#1f6b3a":"#6e1428"}"/>`).join("")}${[-12,-6,0,6,12].map(x=>`<line x1="${x}" x2="${x}" y1="-26" y2="23" stroke="#fff" stroke-width=".7"/>`).join("")}</g>
-    <path d="M-29 -9 L-23 -1" stroke="#1f6b3a" stroke-width="3.2"/><path d="M29 -9 L23 -1" stroke="#1f6b3a" stroke-width="3.2"/>
-    <path d="M-27.6 -7 L-21.6 1" stroke="#fff" stroke-width=".9"/><path d="M27.6 -7 L21.6 1" stroke="#fff" stroke-width=".9"/>
-    <path d="M-8 -25 Q0 -20 8 -25 L10 -22 Q0 -15 -10 -22 Z" fill="#fff"/><path d="M0 -19 V-13" stroke="#fff" stroke-width="1.6"/>
-    <image href="${CREST}" x="6.5" y="-15" width="7" height="8"/>
-    <path d="${TAC_SH}" fill="none" stroke="#2a0a12" stroke-width="1.3" stroke-linejoin="round"/></g>
-  <g id="tacGk"><path d="${TAC_SH}" fill="#8fe36f" stroke="#3d7a2a" stroke-width="1.3" stroke-linejoin="round"/><path d="M-8 -25 Q0 -20 8 -25 L10 -22 Q0 -15 -10 -22 Z" fill="#fff" opacity=".85"/></g></defs>`;
+const TAC_SH = "M-9 -31 L-38 -8 L-31 0 L-25 -5 L-25 30 L25 30 L25 -5 L31 0 L38 -8 L9 -31 Q0 -26 -9 -31 Z";
+const TAC_SLV = "M-11 -30.4 L-38 -8 L-31 0 L-25 -5 Z M11 -30.4 L38 -8 L31 0 L25 -5 Z";   // mangas raglan
+const TAC_COL = "M-9 -31 Q0 -35 9 -31 L12 -28.5 L5 -21 L0 -25.5 L-5 -21 L-12 -28.5 Z";   // gola polo
+const TAC_KIT = `<defs><clipPath id="tacClip"><path d="${TAC_SH}"/></clipPath>
+  <g id="tacKit"><g clip-path="url(#tacClip)">
+    ${[...Array(11)].map((_,i)=>`<rect x="${(-25+i*50/11).toFixed(2)}" y="-36" width="${(50/11+.05).toFixed(2)}" height="67" fill="${i%2?"#1f6b3a":"#6e1428"}"/>`).join("")}
+    ${[...Array(10)].map((_,i)=>`<rect x="${(-25+(i+1)*50/11-.35).toFixed(2)}" y="-36" width=".7" height="67" fill="#fff"/>`).join("")}
+    <path d="${TAC_SLV}" fill="#6e1428"/><path d="M-11 -30.4 L-25 -5 M11 -30.4 L25 -5" stroke="#4a0b18" stroke-width=".6"/>
+    <path d="M-38 -8 L-31 0 M38 -8 L31 0" stroke="#1f6b3a" stroke-width="5.6"/><path d="M-35.7 -10 L-28.7 -2 M35.7 -10 L28.7 -2" stroke="#fff" stroke-width=".9"/></g>
+    <path d="${TAC_COL}" fill="#fff" stroke="#c9c2c4" stroke-width=".5"/><path d="M0 -25.5 V-17" stroke="#fff" stroke-width="1.4"/>
+    <image href="${CREST}" x="8" y="-21" width="8" height="9.5"/>
+    <path d="${TAC_SH}" fill="none" stroke="#2a0a12" stroke-width="1.2" stroke-linejoin="round"/></g>
+  <g id="tacGk"><path d="${TAC_SH}" fill="#8fe36f" stroke="#3d7a2a" stroke-width="1.2" stroke-linejoin="round"/><path d="${TAC_COL}" fill="#fff" opacity=".85"/></g></defs>`;
 const tactics = () => Object.entries(D.tactics||{}).map(([id,x])=>({id,...x})).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt"));
 const tacZone = k => (TAC_POS[k]||["","mc"])[1];
 const tacRole = r => TAC_ROLES.find(x=>x[0]===r);
@@ -4491,8 +4494,8 @@ function tacSVG(t,{png=false,move=false,sel=""}={}){
   const nome=p=>tacShort(p.name);
   const slot=k=>{ const s=t.sl[k]||{}, z=tacZone(k), [cx,cy0]=tacPx(tacXY(t,k)), cy=cy0+hd, p=s.p?P(s.p):null, du=TAC_DUT[s.d]||TAC_DUT.apo, ro=s.r||TAC_DEF[z][0];
     const av=p?avail(p.id):"ok", nm=p?nome(p):"—", cw=132, top=cy+16, gk=z==="gk";
-    const shirt=`<use href="#${gk?"tacGk":"tacKit"}" transform="translate(${cx} ${cy-6}) scale(1.2)"/>
-      <text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="21" font-weight="800" fill="${gk?"#1d3d12":"#fff"}"${gk?"":` stroke="#2a0a12" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"`} font-family="Barlow Condensed,Arial Narrow,sans-serif">${p&&p.n!=null?esc(p.n):""}</text>`;
+    const shirt=`<use href="#${gk?"tacGk":"tacKit"}" transform="translate(${cx} ${cy-12}) scale(.95)"/>
+      <text x="${cx}" y="${cy+6}" text-anchor="middle" font-size="21" font-weight="800" fill="${gk?"#1d3d12":"#fff"}"${gk?"":` stroke="#2a0a12" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"`} font-family="Barlow Condensed,Arial Narrow,sans-serif">${p&&p.n!=null?esc(p.n):""}</text>`;
     const warn=av!=="ok"?`<circle cx="${cx+24}" cy="${cy-20}" r="8" fill="${av==="les"?"#d93636":"#f2bd4b"}" stroke="#fff" stroke-width="1.5"/>`:"";
     const long=nm.length>11;
     return `<g class="ts${sel===k?" on":""}" data-k="${k}"${move||png?"":` data-a="tacSlot" role="button" tabindex="0" aria-label="${esc(TAC_POS[k][0])}: ${esc(p?p.name:"sem atleta")}"`}>
