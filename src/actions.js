@@ -717,6 +717,8 @@ const A = {
   monCfg: () => monCfgForm(),
   monRefresh: () => monFetch(true),
   monF: el => { S.monF=el.dataset.k; render(); },
+  monV: el => { S.monV=el.dataset.k; render(); },
+  monDia: el => { S.monDia=el.dataset.d; render(); },
   monSort: el => { const k=el.dataset.k; if(S.monSort===k) S.monDir=-(S.monDir||1); else { S.monSort=k; S.monDir=["prio","carga7","acwr","monotonia","z"].includes(k)?-1:1; } render(); },
   oppCrestUp: el => { photoTarget="opp:"+el.dataset.id; pickFile("fileIn"); },
   oppDel: el => askConfirm("Eliminar esta ficha de adversário?","Eliminar",true).then(ok=>{ if(ok){ del("opponents",el.dataset.id); back(); } }),

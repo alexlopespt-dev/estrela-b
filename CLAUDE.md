@@ -109,6 +109,11 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - A partir de 1280 px a página tem 1280 px de largura e os separadores cabem todos (`nav.tabs` com espaço distribuído).
 - Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
 
+## Respostas do dia (mon.js, test34)
+- Monitorização → sub-aba "Respostas do dia" (`S.monV="resp"`, `monResp(d)`; dia em `S.monDia`, por omissão o mais recente): bem-estar (hora, sono/fadiga/dor/stress com o texto do formulário, total 4-20, estado como na folha: ≤12 Risco, 13-16 Atenção, 17+ OK — `monHooper`) e PSE (hora, sessão, duração, PSE, carga, sensação), "Sem resposta"/"Sem PSE" dos disponíveis/condicionados, "escreveu …" quando o nome veio escrito de outra forma.
+- Vem do resumo do Sheets: `respostas:{bem:[{d,h,n,nb,i:[s,f,d,st],t:[textos]}],pse:[{d,h,n,nb,tipo,dur,rpe,c,sen}]}` (últimos `DIAS_RESP`=7 dias, `respostasApp_` no monitorizacao_completo.gs). Script antigo sem `respostas` → aviso a pedir para colar a versão nova.
+- No .gs: `quando_()` aceita carimbos em número de série (coluna com formato de número, ex. 46292,44449) e em texto — antes essas linhas eram ignoradas; `chaveNome_` trata a pontuação como espaço ("Luís.A." = "Luís A.").
+
 ## Relatório pré-jogo (prejogo.js, test31)
 - Monitorização → "Relatório pré-jogo" (ação `preJogo`, via `printAsk("prejogo")` → `preJogoPrint()`): só em MD-1 e MD (`preJogoOk`); nos outros dias o botão fica apagado (`.btn.off`) e explica com toast.
 - O dia do microciclo (`monMd(d)`, usado também no cartão do painel e no KPI "Microciclo") conta-se a partir de **hoje**: primeiro pelo próximo jogo do calendário da app (até 7 dias), senão pelo `md` do resumo acertado pelos dias passados desde `d.hoje`. Resumo que não é de hoje → o relatório sai com aviso "não foi atualizada hoje".

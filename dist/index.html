@@ -474,6 +474,9 @@ dialog.wide{width:min(980px,calc(100vw - 20px))}
 .tile{position:relative}
 .tb.mon td{vertical-align:middle}
 .tb.mon td.hot{color:var(--r5);font-weight:800}
+.tb.resp td{white-space:nowrap}
+.tb.resp td small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.rv{display:inline-grid;place-items:center;min-width:28px;height:24px;padding:0 5px;border-radius:7px;font-family:var(--fc);font-weight:800;font-size:15px;color:#2a1a08}
 .monmap{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line);font-size:14px}
 .monmap select{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:5px 8px;color:var(--text)}
 .list.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
@@ -803,7 +806,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "27/09/2026 11:33";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 08:25";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -3514,6 +3517,8 @@ const A = {
   monCfg: () => monCfgForm(),
   monRefresh: () => monFetch(true),
   monF: el => { S.monF=el.dataset.k; render(); },
+  monV: el => { S.monV=el.dataset.k; render(); },
+  monDia: el => { S.monDia=el.dataset.d; render(); },
   monSort: el => { const k=el.dataset.k; if(S.monSort===k) S.monDir=-(S.monDir||1); else { S.monSort=k; S.monDir=["prio","carga7","acwr","monotonia","z"].includes(k)?-1:1; } render(); },
   oppCrestUp: el => { photoTarget="opp:"+el.dataset.id; pickFile("fileIn"); },
   oppDel: el => askConfirm("Eliminar esta ficha de adversário?","Eliminar",true).then(ok=>{ if(ok){ del("opponents",el.dataset.id); back(); } }),
@@ -4621,6 +4626,8 @@ function vMon(){
     ${MON.err?`<div class="alert bad" style="cursor:default"><i></i><span class="main"><b>${esc(MON.err)}</b><small>${d?"A mostrar os últimos dados recebidos.":"Confirma o endereço e a chave em “Ligação ao Sheets”."}</small></span></div>`:""}`;
   if(!c.url) return head+`<div class="empty"><b>Sem ligação ao painel de monitorização</b>Os questionários de bem-estar e de PSE são tratados no Google Sheets "Estrela B - Painel". Liga-o aqui para veres a prontidão, o bem-estar e a carga de cada atleta na app.</div>`;
   if(!d) return head+`<div class="empty"><b>${MON.loading?"A ler o Google Sheets…":"Ainda sem dados"}</b></div>`;
+  const sub=`<div class="seg" style="margin:0 0 14px">${[["","Prontidão e carga"],["resp","Respostas do dia"]].map(([k2,l])=>`<button data-a="monV" data-k="${k2}" class="${(S.monV||"")===k2?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.monV==="resp") return head+sub+monResp(d);
   const {map,miss}=monMatch();
   const js=d.jogadores.slice(), com=js.filter(j=>j.prontidao!=null);
   const flt=S.monF||"";
@@ -4632,7 +4639,7 @@ function vMon(){
   const cnt=x=>js.filter(j=>j.estadoBem===x).length, med=com.length?Math.round(avg(com.map(j=>j.prontidao))):null;
   const nm=j=>{ const p=map[j.nome]?P(map[j.nome]):null; return p?`<button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button>`:`<div class="pin"><span class="ph g-X">${esc(initials(j.nome))}</span><b>${esc(j.nome)}</b></div>`; };
   const md=monMd(d);
-  return head+`
+  return head+sub+`
   <div class="kpis" style="margin-bottom:14px">
     <div class="kpi"><span>Microciclo</span><b>${esc(md.etiqueta||"–")}<small> ${md.falta===0?"jogo hoje":md.falta===1?"jogo amanhã":md.falta!=null?"jogo daqui a "+md.falta+" dias":""}${md.folga?" — folga":""}</small></b></div>
     <div class="kpi"><span>Prontidão média</span><b>${med==null?"–":med}<small> ${com.filter(j=>j.prontidao>=65).length} acima de 65</small></b></div>
@@ -4656,6 +4663,51 @@ function vMon(){
     <td class="small" style="min-width:260px;text-align:left;white-space:normal">${esc(j.leitura)}${j.folga?`<br><span class="muted">${esc(j.folga)}</span>`:""}</td></tr>`).join("")}
   </tbody></table></div></section>
   <p class="note">Dados calculados no Google Sheets "Estrela B - Painel" (bem-estar de 1 a 5, carga = duração × PSE). Prontidão e condição de 0 a 100: 80+ excelente, 65+ bom, 50+ aceitável, 35+ baixo. Passa o dedo/rato pela prontidão, condição e confiança para veres o porquê. Toca num cabeçalho para ordenar.</p>`;
+}
+
+/* ---- respostas do dia (bem-estar e PSE tal como foram dadas nos formulários) ---- */
+// Estado igual ao da folha de respostas: total (4-20) até 12 = risco, 13-16 = atenção, 17+ = OK.
+const monHooper = t => t==null?null : t<=12?{l:"Risco",c:"bad"} : t<=16?{l:"Atenção",c:"warn"} : {l:"OK",c:"ok"};
+const monRv = v => v==null?"var(--surface-2)":monCol((v-1)/4*100);
+function monRespDias(r){ const s=new Set(); (r.bem||[]).forEach(x=>s.add(x.d)); (r.pse||[]).forEach(x=>s.add(x.d)); return [...s].sort().reverse(); }
+function monResp(d){
+  const r=d.respostas;
+  if(!r) return `<div class="empty"><b>O script do Sheets ainda não envia as respostas</b>Cola a versão nova do <b>monitorizacao_completo.gs</b> no Apps Script do "Estrela B - Painel" e corre “Atualizar agora” no menu ⚽ Monitorização. Depois carrega em Atualizar aqui.</div>`;
+  const dias=monRespDias(r);
+  if(!dias.length) return `<div class="empty"><b>Sem respostas nos últimos 7 dias</b></div>`;
+  const dia=dias.includes(S.monDia)?S.monDia:dias[0], t=todayISO();
+  const dl=x=>x===t?"Hoje":x===addDays(t,-1)?"Ontem":cap1(fmtD(x,{weekday:"short",day:"numeric",month:"numeric"}).replace(".",""));
+  const {map}=monMatch(), nm=n=>{ const p=map[n]?P(map[n]):null; return p?p.name:n; };
+  const who=n=>{ const p=map[n]?P(map[n]):null; return p?`<button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button>`:`<div class="pin"><span class="ph g-X">${esc(initials(n))}</span><b>${esc(n)}</b></div>`; };
+  const bem=(r.bem||[]).filter(x=>x.d===dia), pse=(r.pse||[]).filter(x=>x.d===dia);
+  const tot=x=>(x.i||[]).every(v=>typeof v==="number")?x.i.reduce((a,b)=>a+b,0):null;
+  const tots=bem.map(tot).filter(v=>v!=null), cnt=c=>tots.filter(v=>monHooper(v).l===c).length;
+  const disp=d.jogadores.filter(j=>!j.estado||j.estado==="Disponível"||j.estado==="Condicionado").map(j=>j.nome);
+  const falta=l=>disp.filter(n=>!l.some(x=>x.n===n)).map(nm).sort((a,b)=>a.localeCompare(b));
+  const fB=falta(bem), fP=falta(pse), pr=pse.filter(x=>typeof x.rpe==="number"), pc=pse.filter(x=>typeof x.c==="number");
+  const lbl=(x,k)=>{ const v=(x.i||[])[k], s=String((x.t||[])[k]||"").replace(/^\s*\d+\s*[-–—.]\s*/,""); return `<td><span class="rv" style="background:${monRv(v)}">${v==null?"–":esc(v)}</span>${s?`<small>${esc(s)}</small>`:""}</td>`; };
+  const nb=x=>x.nb&&x.nb!==x.n&&nameKey(x.nb)!==nameKey(nm(x.n))?`<div class="small muted">escreveu “${esc(x.nb)}”</div>`:"";
+  const n1=v=>String(Math.round(v*10)/10).replace(".",",");
+  return `<div class="chips" style="margin-bottom:12px">${dias.map(x=>`<button class="chip ${x===dia?"on":""}" data-a="monDia" data-d="${x}">${esc(dl(x))}</button>`).join("")}</div>
+  <div class="kpis" style="margin-bottom:14px">
+    <div class="kpi"><span>Bem-estar</span><b>${bem.length}<small> respostas${disp.length?" de "+disp.length:""}</small></b></div>
+    <div class="kpi"><span>Média do total</span><b>${tots.length?n1(avg(tots)):"–"}<small> de 20</small></b></div>
+    <div class="kpi"><span>Risco / atenção / OK</span><b${cnt("Risco")?' style="color:var(--r5)"':""}>${cnt("Risco")} / ${cnt("Atenção")} / ${cnt("OK")}</b></div>
+    <div class="kpi"><span>PSE</span><b>${pse.length}<small> registos</small></b></div>
+    <div class="kpi"><span>PSE médio</span><b>${pr.length?n1(avg(pr.map(x=>x.rpe))):"–"}<small> de 10</small></b></div>
+    <div class="kpi"><span>Carga média</span><b>${pc.length?Math.round(avg(pc.map(x=>x.c))):"–"}<small> UA</small></b></div>
+  </div>
+  <section class="card"><div class="card-h"><h3>Bem-estar — ${esc(dl(dia).toLowerCase()==="hoje"?"hoje":dl(dia))}</h3><span class="sub">${bem.length} respostas</span></div>
+    ${bem.length?`<div class="tscroll"><table class="tb mon resp"><thead><tr><th>Hora</th><th class="l stk">Jogador</th><th>Sono</th><th>Fadiga</th><th>Dor muscular</th><th>Stress</th><th>Total</th><th>Estado</th></tr></thead><tbody>
+    ${bem.map(x=>{ const v=tot(x), h=monHooper(v); return `<tr><td class="num">${esc(x.h||"")}</td><td class="l stk">${who(x.n)}${nb(x)}</td>${[0,1,2,3].map(k=>lbl(x,k)).join("")}<td class="num"><b>${v==null?"–":v}</b></td><td>${h?`<span class="tag ${h.c}">${h.l}</span>`:""}</td></tr>`; }).join("")}
+    </tbody></table></div>`:`<div class="empty"><b>Sem respostas de bem-estar neste dia</b></div>`}
+    ${fB.length&&bem.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem resposta: ${fB.map(esc).join(", ")}</p>`:""}</section>
+  <section class="card"><div class="card-h"><h3>PSE — ${esc(dl(dia).toLowerCase()==="hoje"?"hoje":dl(dia))}</h3><span class="sub">${pse.length} registos</span></div>
+    ${pse.length?`<div class="tscroll"><table class="tb mon resp"><thead><tr><th>Hora</th><th class="l stk">Jogador</th><th>Sessão</th><th>Duração</th><th>PSE</th><th>Carga</th><th class="l">Sensação</th></tr></thead><tbody>
+    ${pse.map(x=>`<tr><td class="num">${esc(x.h||"")}</td><td class="l stk">${who(x.n)}${nb(x)}</td><td class="small">${esc(x.tipo||"–")}</td><td class="num">${x.dur==null?"–":esc(x.dur)+"'"}</td><td><span class="rv" style="background:${x.rpe==null?"var(--surface-2)":monCol(100-(x.rpe-1)/9*100)}">${x.rpe==null?"–":esc(x.rpe)}</span></td><td class="num">${x.c==null?"–":Math.round(x.c)}</td><td class="small" style="text-align:left">${esc(x.sen||"")}</td></tr>`).join("")}
+    </tbody></table></div>`:`<div class="empty"><b>Sem registos de PSE neste dia</b>${dia===t?"O PSE é preenchido depois do treino.":""}</div>`}
+    ${fP.length&&pse.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem PSE: ${fP.map(esc).join(", ")}</p>`:""}</section>
+  <p class="note">Respostas tal como foram dadas nos formulários (últimos 7 dias), lidas no último cálculo do Sheets — ${esc(monAge())}. Total do bem-estar = sono + fadiga + dor + stress (4 a 20): até 12 risco, 13-16 atenção, 17+ OK, como na folha de respostas. Carga = duração × PSE.</p>`;
 }
 
 /* ---- ficha do atleta ---- */

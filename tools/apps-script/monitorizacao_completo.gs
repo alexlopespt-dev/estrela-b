@@ -148,10 +148,11 @@ function removerTriggers() {
 
 // ============================================================ 4. UTILITÁRIOS
 /** Chave de comparação: sem acentos, sem pontuação, sem maiúsculas.
- *  É isto que faz "Manuel P", "Manuel P." e "manuel P." contarem como a mesma pessoa. */
+ *  É isto que faz "Manuel P", "Manuel P." e "manuel P." contarem como a mesma pessoa.
+ *  A pontuação separa palavras: "Luís.A." = "Luís A." (antes ficava "luisa"). */
 function chaveNome_(s) {
   s = String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /** Quantas palavras começam por maiúscula — serve para escolher a grafia melhor escrita. */
@@ -229,8 +230,33 @@ function minutos_(v) {
 }
 
 function dia_(d) {
-  if (!(d instanceof Date)) return null;
+  d = quando_(d);
+  if (!d) return null;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+/**
+ * Carimbo de data/hora em qualquer formato que o Sheets devolva: data, número de
+ * série (quando a coluna fica com formato de número, ex. 46292,44449 = 27/09/2026
+ * 10:40) ou texto ("2026/09/28 12:26:52", "28/09/2026 12:26"). Sem isto as linhas
+ * com o carimbo em número eram ignoradas.
+ */
+function quando_(v) {
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  if (typeof v === 'number') {
+    if (v < 20000 || v > 80000) return null;          // não é uma data (1954-2119)
+    var dias = Math.floor(v), min = Math.round((v - dias) * 1440);
+    return new Date(1899, 11, 30 + dias, Math.floor(min / 60), min % 60);
+  }
+  var t = String(v || '').trim(), m;
+  if ((m = t.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/)))
+    return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0));
+  if ((m = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:[ ,]+(\d{1,2}):(\d{2}))?/)))
+    return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0));
+  return null;
+}
+function hora_(v) {
+  var d = quando_(v);
+  return d ? Utilities.formatDate(d, TZ, 'HH:mm') : '';
 }
 function chave_(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
 function somaDias_(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
@@ -395,7 +421,8 @@ function lerBemEstar_() {
     var itens = [s, fa, dr, st].filter(function (x) { return x !== null; });
     if (itens.length < 4) continue;
     out.push({
-      data: d, chave: chave_(d), nomeBruto: nome, jogador: nome,
+      data: d, chave: chave_(d), nomeBruto: nome, jogador: nome, hora: hora_(dados[r][iT]),
+      txt: [dados[r][iS], dados[r][iF], dados[r][iD], dados[r][iE]].map(function (x) { return String(x === null ? '' : x).trim(); }),
       sono: s, fadiga: fa, dor: dr, stress: st,
       hooper: s + fa + dr + st, bemEstar: (s + fa + dr + st) / 4
     });
@@ -428,7 +455,7 @@ function lerPSE_() {
     var dur = minutos_(dados[r][iDur]);
     var rpe = num_(dados[r][iR]);
     out.push({
-      data: d, chave: chave_(d), nomeBruto: nome, jogador: nome,
+      data: d, chave: chave_(d), nomeBruto: nome, jogador: nome, hora: hora_(dados[r][iT]),
       tipo: iTipo >= 0 ? String(dados[r][iTipo] || '').trim() : '',
       duracao: dur, rpe: rpe,
       sRPE: (dur !== null && rpe !== null) ? dur * rpe : null,
@@ -1957,7 +1984,8 @@ function atualizar_() {
 // ============================================================ 10. LIGAÇÃO À APP DA EQUIPA TÉCNICA
 /*
  * Guarda um resumo dos cálculos (prontidão, bem-estar, carga, alertas) a cada atualização
- * e entrega-o à app quando ela o pede. A app nunca lê as respostas em bruto.
+ * e entrega-o à app quando ela o pede. Das respostas em bruto só vão as dos últimos
+ * DIAS_RESP dias (Monitorização → "Respostas do dia" na app).
  *
  * Depois de colares este ficheiro (uma vez):
  *  1. Menu ⚽ Monitorização → Atualizar agora (grava o primeiro resumo).
@@ -1973,6 +2001,23 @@ function atualizar_() {
  */
 var CHAVE_APP = 'BbcqfGe2wAsSXYXG8r8Cnbfa';
 var DIAS_APP = 14;          // dias de histórico enviados para os mini-gráficos
+var DIAS_RESP = 7;          // dias de respostas em bruto (bem-estar e PSE) enviados para a app
+
+/** Respostas dos formulários dos últimos DIAS_RESP dias, tal como foram dadas. */
+function respostasApp_(res) {
+  var desde = chave_(somaDias_(res.agora || dia_(new Date()), -(DIAS_RESP - 1)));
+  var ord = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : (a.h < b.h ? -1 : a.h > b.h ? 1 : 0); };
+  return {
+    bem: (res.bem || []).filter(function (x) { return x.chave >= desde; }).map(function (x) {
+      return { d: x.chave, h: x.hora || '', n: x.jogador, nb: x.nomeBruto,
+               i: [x.sono, x.fadiga, x.dor, x.stress], t: x.txt || [] };
+    }).sort(ord),
+    pse: (res.pse || []).filter(function (x) { return x.chave >= desde; }).map(function (x) {
+      return { d: x.chave, h: x.hora || '', n: x.jogador, nb: x.nomeBruto, tipo: x.tipo || '',
+               dur: x.duracao, rpe: x.rpe, c: x.sRPE, sen: x.sensacao || '' };
+    }).sort(ord)
+  };
+}
 
 function r2_(x) { return (x === null || x === undefined || typeof x !== 'number' || isNaN(x)) ? null : Math.round(x * 100) / 100; }
 
@@ -1988,6 +2033,7 @@ function escreverApp_(res) {
     limiarCarga: res.limiarCarga, preEpoca: !!res.preEpoca, acwrFiavel: !!res.acwrFiavel,
     diasHist: res.diasHist, p80Carga: r2_(res.p80Carga),
     dias: res.chaves.slice(-N), folga: res.folgaDia.slice(-N),
+    respostas: respostasApp_(res),
     jogadores: res.jogadores.map(function (j) {
       return {
         nome: j.nome, posicao: j.posicao, estado: j.estado, estadoNota: j.estadoNota || '',

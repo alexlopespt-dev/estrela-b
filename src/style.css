@@ -460,6 +460,9 @@ dialog.wide{width:min(980px,calc(100vw - 20px))}
 .tile{position:relative}
 .tb.mon td{vertical-align:middle}
 .tb.mon td.hot{color:var(--r5);font-weight:800}
+.tb.resp td{white-space:nowrap}
+.tb.resp td small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.rv{display:inline-grid;place-items:center;min-width:28px;height:24px;padding:0 5px;border-radius:7px;font-family:var(--fc);font-weight:800;font-size:15px;color:#2a1a08}
 .monmap{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line);font-size:14px}
 .monmap select{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:5px 8px;color:var(--text)}
 .list.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}

@@ -49,5 +49,19 @@ for r in rows.split("\n"):
 d={"v":1,"atualizado":"2026-09-23T08:15:00","hoje":"2026-09-23","diasAtraso":0,"md":{"etiqueta":"MD-4","falta":4,"desdeJogo":3,"folga":False},
    "limiarCarga":1500,"preEpoca":False,"acwrFiavel":True,"diasHist":36,"p80Carga":2340,
    "dias":[f"2026-09-{x:02d}" for x in range(10,24)],"folga":[i%7 in (0,5) for i in range(14)],"jogadores":js}
+# respostas em bruto dos últimos dias (Monitorização → Respostas do dia)
+TX=[["1 - Muito Mau","2 - Mau","3 - Normal","4 - Bom","5 - Excelente"],["1 - Exausto","2 - Cansado","3 - Normal","4 - Bem","5 - Muito Fresco"],
+    ["1 - Muita Dor","2 - Dor moderada","3 - Alguma Dor","4 - Pouca Dor","5 - Sem Dor"],["1 - Muito Stressado","2 - Stressado","3 - Normal","4 - Tranquilo","5 - Muito Tranquilo"]]
+bem=[]; pse=[]
+for di,dia in enumerate(["2026-09-21","2026-09-22","2026-09-23"]):
+    for k,j in enumerate(js):
+        if j["estado"]!="Disponível" or (k+di)%6==0: continue
+        it=[random.randint(2,5) for _ in range(4)]
+        nb="Luís.A." if j["nome"]=="Luís A." else j["nome"]
+        bem.append({"d":dia,"h":f"07:{(k*2)%60:02d}","n":j["nome"],"nb":nb,"i":it,"t":[TX[q][v-1] for q,v in enumerate(it)]})
+        if dia!="2026-09-21" and (k+di)%5:
+            dur=random.choice([75,80,90]); rpe=random.randint(4,9)
+            pse.append({"d":dia,"h":f"20:{(k*2)%60:02d}","n":j["nome"],"nb":j["nome"],"tipo":"Treino","dur":dur,"rpe":rpe,"c":dur*rpe,"sen":random.choice(["Bem","Cansado","Normal"])})
+d["respostas"]={"bem":bem,"pse":pse}
 json.dump(d,open(os.path.join(ROOT,"tests","monitorizacao_exemplo.json"),"w"),ensure_ascii=False)
 print(len(js),"jogadores")
