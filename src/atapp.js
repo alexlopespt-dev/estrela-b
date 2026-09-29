@@ -5,8 +5,21 @@
    O script da partilha (dados_app.gs, secção "APP DO ATLETA") só aceita estes códigos e só devolve dados desse atleta.
    Gerar um link novo invalida o anterior. A convocatória só aparece na app do atleta depois de publicada (events.convPub). */
 const atOn = () => EDITION==="estrela";
-const atSite = () => String(cfg().atletaUrl||"").trim().replace(/[#?].*$/,"").replace(/\/+$/,"");
+const atSite = () => { const v=String(cfg().atletaUrl||"").trim().replace(/[#?].*$/,"").replace(/\/+$/,""); return v&&!/^https?:\/\//i.test(v)?"https://"+v:v; };
 const atLink = p => p && p.atk && SYNC.cfg && atSite() ? `${atSite()}/#s=${encodeURIComponent(SYNC.cfg.url)}&t=${p.atk}` : "";
+/* endereço escrito à mão: aceita sem https:// e sem barra final; recusa o próprio site da equipa técnica */
+function atNormSite(v){
+  v=String(v||"").trim().replace(/\s+/g,""); if(!v) return {v:""};
+  if(!/^https?:\/\//i.test(v)) v="https://"+v;
+  v=v.replace(/^http:\/\//i,"https://").replace(/[#?].*$/,"").replace(/\/+$/,"");
+  let u; try{ u=new URL(v); }catch(e){ return {err:"Endereço inválido. Exemplo: estrela-b-atleta.netlify.app"}; }
+  if(!/\./.test(u.hostname)) return {err:"Endereço inválido. Exemplo: estrela-b-atleta.netlify.app"};
+  if(/^https?:$/.test(location.protocol) && u.host===location.host && (u.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/(index\.html)?$/,"").replace(/\/+$/,"")))
+    return {err:"Esse é o endereço desta app (da equipa técnica). A app do atleta tem de ser um site Netlify à parte: cria um site novo e arrasta lá a pasta atleta."};
+  return {v:u.origin+u.pathname.replace(/\/+$/,"")};
+}
+function atSaveSite(raw){ const r=atNormSite(raw); if(r.err){ toast(r.err); return false; }
+  put("meta","cfg",{...clone(cfg()),atletaUrl:r.v}); toast(r.v?"Endereço guardado — os links estão prontos":"Endereço apagado"); return true; }
 function atToken(){ const b=new Uint8Array(18); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 const atMsg = (p,link) => `Olá ${firstName(p.name)}! Este é o teu link pessoal para a app do atleta do ${meta().team||"Estrela B"}: bem-estar de manhã, PSE depois do treino, agenda e convocatórias. Abre-o no teu telemóvel e adiciona ao ecrã principal. É só teu — não partilhes. ${link}`;
 function atMissing(){
@@ -32,7 +45,7 @@ function atCard(pid){
 function atLinksForm(){
   const pls=players(), miss=atMissing(), sem=pls.filter(p=>!p.atk).length;
   modal({title:"App do atleta",sub:"Links pessoais — um por atleta, enviados em privado",big:true,body:`
-    <div class="form"><label class="fld full">Endereço do site da app do atleta<input name="site" value="${esc(atSite())}" placeholder="https://estrela-b-atleta.netlify.app"></label></div>
+    <div class="form"><label class="fld full">Endereço do site da app do atleta<input name="site" value="${esc(atSite())}" placeholder="estrela-b-atleta.netlify.app"></label></div>
     ${miss&&SYNC.cfg?"":miss?`<div style="margin:10px 0">${miss}</div>`:""}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button class="btn sm" data-a="atGenAll" ${sem?"":"disabled"}>Criar os links em falta (${sem})</button></div>
     <div class="list">${pls.map(p=>{ const l=atLink(p); return `<div class="li"><span class="main"><b>${esc(p.name)}</b><small>${p.atk?(l?"Link criado":"Link criado — falta o endereço do site"):"Sem link"}</small></span>
@@ -40,12 +53,13 @@ function atLinksForm(){
         :p.atk?"":`<button class="btn sm" data-a="atGen" data-id="${esc(p.id)}">Criar</button>`}</div>`; }).join("")}</div>
     <p class="note">Nunca envies os links num grupo: cada um é a identidade do atleta na app. As respostas vão para as mesmas folhas dos formulários, por isso a monitorização continua igual (e os formulários continuam a funcionar).</p>`,
     foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="mSave">Guardar endereço</button></span>`,
-    ctx:{save:()=>{ const v=fv("site"); if(v&&!/^https:\/\/[^\s/]+\.[^\s]+/.test(v)) return toast("O endereço tem de começar por https://"); put("meta","cfg",{...clone(cfg()),atletaUrl:v}); toast("Endereço guardado"); atLinksForm(); }}});
+    ctx:{save:()=>{ if(atSaveSite(fv("site"))) atLinksForm(); }}});
+  const inp=$("#dlg input[name=site]"); if(inp) inp.addEventListener("change",()=>{ if(atNormSite(inp.value).v!==atSite() && atSaveSite(inp.value)) atLinksForm(); });
 }
 function atSiteForm(){
   modal({title:"Site da app do atleta",body:`<p class="small muted" style="margin:0 0 10px">O endereço do site Netlify onde publicaste a pasta <b>dist/atleta</b>.</p>
-    <div class="form"><label class="fld full">Endereço<input name="site" value="${esc(atSite())}" placeholder="https://estrela-b-atleta.netlify.app"></label></div>`,foot:footSave(),
-    ctx:{save:()=>{ const v=fv("site"); if(!/^https:\/\/[^\s/]+\.[^\s]+/.test(v)) return toast("O endereço tem de começar por https://"); put("meta","cfg",{...clone(cfg()),atletaUrl:v}); closeModal(); toast("Endereço guardado"); }}});
+    <div class="form"><label class="fld full">Endereço<input name="site" value="${esc(atSite())}" placeholder="estrela-b-atleta.netlify.app"></label></div>`,foot:footSave(),
+    ctx:{save:()=>{ if(!fv("site")) return toast("Escreve o endereço do site."); if(atSaveSite(fv("site"))) closeModal(); }}});
 }
 /* ---- Jogos → Convocatória: publicar na app ---- */
 function atConvCard(g){

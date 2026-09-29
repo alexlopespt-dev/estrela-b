@@ -170,6 +170,14 @@ try:
     t=pa.inner_text("#dlg"); print("lista:", t.count("Sem link"), "sem link")
     pa.click('#dlg [data-a="atGenAll"]'); pa.wait_for_timeout(2500)
     if "Sem link" in pa.inner_text("#dlg"): errs.append("criar links em falta")
+    # endereço escrito sem https:// (como na captura do utilizador) → aceite e os links aparecem
+    pa.fill('#dlg [name=site]',"estrelab-atleta.netlify.app"); pa.click('#dlg [data-a="mSave"]'); pa.wait_for_timeout(400)
+    t=pa.inner_text("#dlg"); v=pa.input_value('#dlg [name=site]'); print("sem https:", v, "| copiar:", pa.locator('#dlg [data-a="atCopy"]').count())
+    if v!="https://estrelab-atleta.netlify.app" or "falta o endereço" in t or pa.locator('#dlg [data-a="atCopy"]').count()<3: errs.append("endereço sem https não aceite")
+    # o endereço desta app (equipa técnica) é recusado
+    pa.fill('#dlg [name=site]',"estrela.test"); pa.click('#dlg [data-a="mSave"]'); pa.wait_for_timeout(300)
+    if "endereço desta app" not in pa.inner_text("#toast") or "estrelab-atleta" not in pa.evaluate("JSON.parse(localStorage.getItem('estrela-tecnico-v1')).meta.cfg.atletaUrl"): errs.append("aceitou o endereço da própria app")
+    pa.fill('#dlg [name=site]',"https://atleta.test/"); pa.click('#dlg [data-a="mSave"]'); pa.wait_for_timeout(300)
     pa.click('#dlg [data-a="mClose"]')
     # convocatória: publicar
     pa.click('nav [data-t="jogos"]'); pa.click('[data-a="jsub"][data-k="conv"]'); pa.wait_for_timeout(400)
