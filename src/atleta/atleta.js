@@ -5,6 +5,8 @@
    funções "APP DO ATLETA"), que devolve a agenda, a convocatória publicada, os números do atleta e as suas respostas,
    e grava o bem-estar e o PSE nas mesmas folhas dos formulários (a monitorização continua igual).
    Sem rede: as respostas ficam guardadas no telemóvel e são enviadas quando houver ligação. */
+// nunca dentro de outra página (o _headers faz o mesmo com frame-ancestors, mas pode não estar no Netlify)
+if(window.top!==window.self){ try{ window.top.location=window.location.href; }catch(e){} document.documentElement.innerHTML=""; throw new Error("framed"); }
 const CREST = "__CREST__";
 const LSK = "estrela-atleta-v1";
 const $ = s => document.querySelector(s);

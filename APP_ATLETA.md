@@ -17,7 +17,7 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 ## Pôr a funcionar (uma vez)
 1. **Script da partilha** (projeto "Estrela B — Dados da app"): cola o `tools/apps-script/dados_app.gs` novo por cima → Guardar → **Implementar → Gerir implementações → lápis → Versão: Nova versão → Implementar**. (O URL mantém-se.) Na primeira resposta o Google pode pedir autorização para abrir os ficheiros dos formulários — aceita.
 2. **Script da monitorização** (Painel): cola o `tools/apps-script/monitorizacao_completo.gs` novo → Guardar → menu **⚽ Monitorização → Instalar automatismos** (acrescenta a verificação de 10 em 10 minutos).
-3. **Netlify:** novo site → arrasta a **pasta** `dist/atleta` (leva o `_headers` de segurança). Ex.: `estrela-b-atleta.netlify.app`.
+3. **Netlify:** novo site → arrasta a **pasta** `dist/atleta` (leva o `_headers` de segurança). Ex.: `estrela-b-atleta.netlify.app`. Se o Netlify ou o Mac não deixarem carregar o `_headers` (ficheiro sem extensão), basta o `index.html`: as regras principais já vão dentro da página.
 4. **App da equipa técnica:** Plantel → **App do atleta** → cola o endereço do site → Guardar → **Criar os links em falta**.
 5. Envia a cada atleta **o seu** link, em privado (botão WhatsApp em cada linha). Nunca num grupo: o link é a identidade dele.
 6. Jogos → Convocatória → **Publicar na app dos atletas** quando a convocatória estiver fechada.
