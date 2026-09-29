@@ -24,6 +24,15 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 6. Jogos → Convocatória → **Publicar na app dos atletas** quando a convocatória estiver fechada. Os convocados que ligaram os avisos recebem "Estás convocado!" (entre as 8h e as 22h30; publicada à noite, o aviso sai às 8h).
 7. **Avisos:** no editor do script da partilha, escolhe a função **instalarAvisos** → Executar → aceita as autorizações (agora pede também "ligar a serviços externos", para enviar os avisos). Depois **Implementar → Gerir implementações → Nova versão** outra vez.
 
+## Publicar a pasta inteira sem arrastar (recomendado)
+O Netlify às vezes só aceita o `index.html` quando se arrasta (Safari, ou arrastar para o sítio errado). Os avisos precisam também do `sw.js` e do `manifest.webmanifest`. Solução definitiva: ligar o site ao GitHub — a pasta `dist/atleta` já está no repositório e cada atualização passa a ser publicada sozinha.
+1. Netlify → abre o site da app do atleta → **Site configuration → Build & deploy → Continuous deployment → Link repository** (ou "Link site to Git").
+2. **GitHub** → autoriza → escolhe **alexlopespt-dev/estrela-b**.
+3. **Branch to deploy:** `claude/app-dev-continuation-4le60b` · **Base directory:** vazio · **Build command:** vazio · **Publish directory:** `dist/atleta`.
+4. **Deploy**. O endereço do site mantém-se.
+Alternativa: no **Chrome** (não no Safari), Netlify → site → **Deploys** → arrastar a pasta `atleta` descompactada para a caixa "Drag and drop your site output folder here".
+Só com o `index.html` a app funciona toda, menos os avisos (em Eu aparece "falta o ficheiro sw.js").
+
 ## Avisos no telemóvel
 - **Bem-estar** às 8h30 a quem ainda não respondeu (só em dias com treino ou jogo na app; até às 13h). **PSE** 20 min depois do fim do treino/jogo (hora + duração da sessão na app) a quem ainda não registou (quem teve falta, lesão ou dispensa no treino não recebe). **Convocatória** quando é publicada, só aos convocados.
 - Cada atleta liga os avisos na app (cartão "Avisos no telemóvel" no Hoje, ou em Eu). **iPhone:** só funciona com a app no ecrã principal (Safari → Partilhar → "Adicionar ao ecrã principal" → abrir pelo ícone → Ativar avisos), iOS 16.4 ou mais recente. **Android:** funciona no Chrome direto.

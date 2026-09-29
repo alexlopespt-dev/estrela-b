@@ -153,6 +153,11 @@ def build_atleta():
     csp = headers_atleta().split("Content-Security-Policy: ",1)[1].split("\n",1)[0].replace(" frame-ancestors 'none';", "")
     h = h.replace('<meta name="robots"', f'<meta http-equiv="Content-Security-Policy" content="{csp}">\n<meta name="referrer" content="no-referrer">\n<meta name="robots"', 1)
     out = os.path.join(DIST, "atleta"); os.makedirs(out, exist_ok=True)
+    atleta_icons(crest, out)
+    # ícone do iPhone dentro da página (funciona mesmo que só se publique o index.html)
+    import base64
+    ic = "data:image/png;base64," + base64.b64encode(open(os.path.join(out, "icon-180.png"), "rb").read()).decode()
+    h = h.replace('<link rel="apple-touch-icon" href="icon-180.png">', f'<link rel="apple-touch-icon" href="{ic}">', 1)
     open(os.path.join(out, "index.html"), "w").write(h)
     open(os.path.join(out, "_headers"), "w").write(headers_atleta())
     # avisos (push): service worker, manifesto e ícones do ecrã principal
@@ -161,7 +166,6 @@ def build_atleta():
         "name": "Estrela B — Atleta", "short_name": "Estrela B", "display": "standalone",
         "background_color": "#3d0914", "theme_color": "#3d0914", "lang": "pt-PT",
         "icons": [{"src": f"icon-{n}.png", "sizes": f"{n}x{n}", "type": "image/png", "purpose": "any"} for n in (192, 512)]}, ensure_ascii=False, indent=1))
-    atleta_icons(crest, out)
     print(f"atleta/index.html: {len(h)//1024} KB")
 
 if __name__ == "__main__":

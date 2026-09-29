@@ -171,8 +171,10 @@ try:
         rq_=route.request; u=rq_.url.replace(SURL,BASE_U+"/exec")
         r=urllib.request.urlopen(urllib.request.Request(u,data=rq_.post_data_buffer if rq_.method=="POST" else None,method=rq_.method))
         route.fulfill(status=r.status,body=r.read(),headers={"Content-Type":r.headers.get("Content-Type"),"Access-Control-Allow-Origin":"*"})
+    SO_INDEX={"on":False}
     def site(route):
         pth=urllib.parse.urlparse(route.request.url).path.lstrip("/") or "index.html"; f=os.path.join(ATD,pth)
+        if SO_INDEX["on"] and pth!="index.html": return route.fulfill(status=404,body="Not found",headers={"Content-Type":"text/html"})
         if not os.path.isfile(f): return route.fulfill(status=404,body="")
         ct={"html":"text/html","js":"text/javascript","webmanifest":"application/manifest+json","png":"image/png"}[pth.rsplit(".",1)[1]]
         route.fulfill(status=200,body=open(f,"rb").read(),headers={"Content-Type":ct})
@@ -216,6 +218,16 @@ try:
         ok("Adicionar ao ecrã principal" in t and pi.locator('#pushCard [data-a="pushOn"]').count()==0,"iPhone no Safari: explica o ecrã principal")
         pi.screenshot(path=os.path.join(CAP,"t40_iphone.png"))
         ok(pi.get_attribute("header.top .me-ph","src")==FOTO,"foto do atleta ao lado do 'Boa tarde'")
+        # só o index.html publicado: a app funciona, sem cartão de avisos no Hoje; em Eu explica o que falta
+        SO_INDEX["on"]=True; cs=b.new_context(viewport={"width":390,"height":844}); cs.add_init_script(STUB); ps=cs.new_page()
+        ps.on("pageerror",lambda e:errs.append("PAGEERR só index "+str(e)))
+        ps.route("https://script.google.com/**",fwd); ps.route("https://atleta.test/**",site)
+        ps.goto("https://atleta.test/#s="+urllib.parse.quote(SURL,safe="")+"&t="+TOK_H); ps.wait_for_timeout(1800)
+        ok(ps.locator("#pushCard").count()==0 and "bem-estar" in ps.inner_text("#app").lower(),"só index.html: app funciona, sem cartão de avisos no Hoje")
+        ps.click('nav [data-t="eu"]'); ps.wait_for_timeout(300)
+        ok("sw.js" in (ps.inner_text("#pushCard") if ps.locator("#pushCard").count() else ""),"só index.html: Eu explica que falta o sw.js")
+        ok((ps.get_attribute('link[rel="apple-touch-icon"]',"href") or "").startswith("data:image/png"),"ícone do iPhone dentro da página")
+        SO_INDEX["on"]=False
         # manifesto e ícones
         man=json.load(open(os.path.join(ATD,"manifest.webmanifest")))
         ok(man["display"]=="standalone" and "start_url" not in man and all(os.path.isfile(os.path.join(ATD,i["src"])) for i in man["icons"]),"manifesto (sem start_url: o ícone abre com o link pessoal) e ícones")

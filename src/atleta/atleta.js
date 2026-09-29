@@ -108,8 +108,12 @@ const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Noti
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const standalone = () => (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone===true;
 const u8 = b => { b=String(b).replace(/-/g,"+").replace(/_/g,"/"); b+="=".repeat((4-b.length%4)%4); return Uint8Array.from(atob(b),c=>c.charCodeAt(0)); };
+// o site tem o sw.js? (quem só publicou o index.html não tem avisos — a app funciona na mesma)
+S.swOk=null;
+if(location.protocol==="https:") fetch("sw.js",{method:"HEAD",cache:"no-store"}).then(r=>{ S.swOk=r.ok&&/javascript/i.test(r.headers.get("content-type")||""); if(!S.swOk) render(); }).catch(()=>{ S.swOk=false; render(); });
 function pushState(){
   if(!(S.data&&S.data.push&&S.data.push.key)) return "none";
+  if(S.swOk===false) return "nofile";
   if(IOS&&!standalone()) return "ios";
   if(!PUSH_OK) return "none";
   if(Notification.permission==="denied") return "denied";
@@ -118,7 +122,8 @@ function pushState(){
 async function swCfg(){ try{ const c=await caches.open("estrela-atleta"); await c.put(new URL("__cfg",location.href).href,new Response(JSON.stringify(S.cfg),{headers:{"Content-Type":"application/json"}})); }catch(e){} }
 function pushCard(onde){
   const st=pushState(); if(st==="none") return "";
-  if(onde==="hoje"&&(st==="on"||ls.get(":pushdepois",0)>Date.now())) return "";
+  if(onde==="hoje"&&(st==="on"||st==="nofile"||ls.get(":pushdepois",0)>Date.now())) return "";
+  if(st==="nofile") return `<section class="card" id="pushCard"><p class="k">Avisos no telemóvel</p><p class="sub">Ainda não disponíveis: o site da app tem de ter também o ficheiro <b>sw.js</b>. Avisa a equipa técnica.</p></section>`;
   const bell='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
   const h=`<div class="task-h"><span class="ico" style="--c:#b8860b">${bell}</span><div><p class="k">Avisos no telemóvel</p><h2>${st==="on"?"Ligados ✓":st==="denied"?"Bloqueados":"Recebe lembretes"}</h2></div></div>`;
   let b="";
