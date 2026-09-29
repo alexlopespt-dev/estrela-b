@@ -35,6 +35,18 @@ const TAC_ZC = {gk:"#6f5a4c",dc:"#4a73b0",lat:"#4a73b0",wb:"#4a73b0",dm:"#6c7384
 // posições do plantel que servem melhor cada zona (para "Preencher vazios")
 const TAC_FIT = {gk:["GR"],dc:["DC"],lat:["LAT"],wb:["LAT","EXT"],dm:["MDF","MC"],mc:["MC","MDF"],wm:["EXT","MC"],am:["MC","EXT","EXT/PL"],wing:["EXT","EXT/PL"],st:["PL","EXT/PL"]};
 const TW=680, TH=940;
+// equipamento principal 2026/27: riscas verticais grená e verde com filete branco, gola polo branca, mangas grená com punho verde/branco
+// (desenhado em coordenadas locais, centro da camisola em 0,0; reutilizado com <use>)
+const TAC_SH = "M-8 -25 L-18 -21 L-29 -9 L-23 -1 L-18 -5 L-18 22 L18 22 L18 -5 L23 -1 L29 -9 L18 -21 L8 -25 Q0 -20 -8 -25 Z";
+const TAC_KIT = `<defs><clipPath id="tacBody"><path d="M-8 -25 L-18 -21 L-18 22 L18 22 L18 -21 L8 -25 Q0 -20 -8 -25 Z"/></clipPath>
+  <g id="tacKit"><path d="${TAC_SH}" fill="#6e1428"/>
+    <g clip-path="url(#tacBody)">${[-18,-12,-6,0,6,12].map((x,i)=>`<rect x="${x}" y="-26" width="6" height="49" fill="${i%2?"#1f6b3a":"#6e1428"}"/>`).join("")}${[-12,-6,0,6,12].map(x=>`<line x1="${x}" x2="${x}" y1="-26" y2="23" stroke="#fff" stroke-width=".7"/>`).join("")}</g>
+    <path d="M-29 -9 L-23 -1" stroke="#1f6b3a" stroke-width="3.2"/><path d="M29 -9 L23 -1" stroke="#1f6b3a" stroke-width="3.2"/>
+    <path d="M-27.6 -7 L-21.6 1" stroke="#fff" stroke-width=".9"/><path d="M27.6 -7 L21.6 1" stroke="#fff" stroke-width=".9"/>
+    <path d="M-8 -25 Q0 -20 8 -25 L10 -22 Q0 -15 -10 -22 Z" fill="#fff"/><path d="M0 -19 V-13" stroke="#fff" stroke-width="1.6"/>
+    <image href="${CREST}" x="6.5" y="-15" width="7" height="8"/>
+    <path d="${TAC_SH}" fill="none" stroke="#2a0a12" stroke-width="1.3" stroke-linejoin="round"/></g>
+  <g id="tacGk"><path d="${TAC_SH}" fill="#8fe36f" stroke="#3d7a2a" stroke-width="1.3" stroke-linejoin="round"/><path d="M-8 -25 Q0 -20 8 -25 L10 -22 Q0 -15 -10 -22 Z" fill="#fff" opacity=".85"/></g></defs>`;
 const tactics = () => Object.entries(D.tactics||{}).map(([id,x])=>({id,...x})).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt"));
 const tacZone = k => (TAC_POS[k]||["","mc"])[1];
 const tacRole = r => TAC_ROLES.find(x=>x[0]===r);
@@ -64,8 +76,8 @@ function tacSVG(t,{png=false,move=false,sel=""}={}){
   const nome=p=>tacShort(p.name);
   const slot=k=>{ const s=t.sl[k]||{}, z=tacZone(k), [cx,cy0]=tacPx(tacXY(t,k)), cy=cy0+hd, p=s.p?P(s.p):null, du=TAC_DUT[s.d]||TAC_DUT.apo, ro=s.r||TAC_DEF[z][0];
     const av=p?avail(p.id):"ok", nm=p?nome(p):"—", cw=132, top=cy+16, gk=z==="gk";
-    const shirt=`<path transform="translate(${cx} ${cy}) scale(1.15) translate(${-cx} ${-cy})" d="M${cx-19} ${cy-19} l9 -6 h7 a4 4 0 0 0 6 0 h7 l9 6 l7 12 l-9 5 v22 h-35 v-22 l-9 -5 z" fill="${gk?"#8fe36f":"#8a1c33"}" stroke="${gk?"#3d7a2a":"#4a0b18"}" stroke-width="1.5"/>
-      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="21" font-weight="800" fill="${gk?"#1d3d12":"#fff"}" font-family="Barlow Condensed,Arial Narrow,sans-serif">${p&&p.n!=null?esc(p.n):""}</text>`;
+    const shirt=`<use href="#${gk?"tacGk":"tacKit"}" transform="translate(${cx} ${cy-6}) scale(1.2)"/>
+      <text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="21" font-weight="800" fill="${gk?"#1d3d12":"#fff"}"${gk?"":` stroke="#2a0a12" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke"`} font-family="Barlow Condensed,Arial Narrow,sans-serif">${p&&p.n!=null?esc(p.n):""}</text>`;
     const warn=av!=="ok"?`<circle cx="${cx+24}" cy="${cy-20}" r="8" fill="${av==="les"?"#d93636":"#f2bd4b"}" stroke="#fff" stroke-width="1.5"/>`:"";
     const long=nm.length>11;
     return `<g class="ts${sel===k?" on":""}" data-k="${k}"${move||png?"":` data-a="tacSlot" role="button" tabindex="0" aria-label="${esc(TAC_POS[k][0])}: ${esc(p?p.name:"sem atleta")}"`}>
@@ -78,7 +90,7 @@ function tacSVG(t,{png=false,move=false,sel=""}={}){
     <text x="88" y="38" font-size="26" font-weight="800" fill="#fff" font-family="Barlow,Arial,sans-serif">${esc(t.name||"Esquema tático")}</text>
     <text x="88" y="62" font-size="17" font-weight="600" fill="#f2bd4b" font-family="Barlow,Arial,sans-serif">${esc(t.form||"")}${meta().team?" · "+esc(meta().team):""}</text>`:"";
   return `<svg class="tac${move?" move":""}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Esquema ${esc(t.form||"")}">
-    ${head}<rect y="${hd}" width="${W}" height="${TH}" fill="#43824f"/>${stripes}${lines}${Object.keys(TAC_FORMS[t.form]||{}).map(slot).join("")}</svg>`;
+    ${TAC_KIT}${head}<rect y="${hd}" width="${W}" height="${TH}" fill="#43824f"/>${stripes}${lines}${Object.keys(TAC_FORMS[t.form]||{}).map(slot).join("")}</svg>`;
 }
 
 /* ---- separador ---- */
