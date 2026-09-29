@@ -118,13 +118,27 @@ def headers_atleta():
            f"script-src 'self' 'unsafe-inline' {google}; "
            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
            f"img-src 'self' data:; connect-src 'self' {google}; "
-           "frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests")
+           "worker-src 'self'; manifest-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests")
     return ("/*\n"
             f"  Content-Security-Policy: {csp}\n"
             "  Strict-Transport-Security: max-age=63072000; includeSubDomains\n"
             "  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n"
             "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()\n"
             "  X-Robots-Tag: noindex, nofollow\n  Cache-Control: no-cache\n")
+
+def atleta_icons(crest, out):
+    """Ícones do ecrã principal: emblema ao centro num quadrado grená (180 = iPhone, 192/512 = Android)."""
+    import base64, io
+    from PIL import Image, ImageDraw
+    em = Image.open(io.BytesIO(base64.b64decode(crest.split(",", 1)[1]))).convert("RGBA")
+    for n in (180, 192, 512):
+        bg = Image.new("RGBA", (n, n))
+        dr = ImageDraw.Draw(bg)
+        for y in range(n):   # gradiente #6a1030 -> #34061a
+            t = y / (n - 1); dr.line([(0, y), (n, y)], fill=(int(0x6a + (0x34 - 0x6a) * t), int(0x10 + (0x06 - 0x10) * t), int(0x30 + (0x1a - 0x30) * t), 255))
+        e = em.copy(); e.thumbnail((int(n * .68), int(n * .68)), Image.LANCZOS)
+        bg.alpha_composite(e, ((n - e.width) // 2, (n - e.height) // 2))
+        bg.convert("RGB").save(os.path.join(out, f"icon-{n}.png"), optimize=True)
 
 def build_atleta():
     """App do atleta (Estrela B): página própria, pequena, pensada para o telemóvel. O link pessoal traz o endereço do
@@ -141,6 +155,13 @@ def build_atleta():
     out = os.path.join(DIST, "atleta"); os.makedirs(out, exist_ok=True)
     open(os.path.join(out, "index.html"), "w").write(h)
     open(os.path.join(out, "_headers"), "w").write(headers_atleta())
+    # avisos (push): service worker, manifesto e ícones do ecrã principal
+    open(os.path.join(out, "sw.js"), "w").write(open(os.path.join(d, "sw.js")).read())
+    open(os.path.join(out, "manifest.webmanifest"), "w").write(json.dumps({
+        "name": "Estrela B — Atleta", "short_name": "Estrela B", "display": "standalone",
+        "background_color": "#3d0914", "theme_color": "#3d0914", "lang": "pt-PT",
+        "icons": [{"src": f"icon-{n}.png", "sizes": f"{n}x{n}", "type": "image/png", "purpose": "any"} for n in (192, 512)]}, ensure_ascii=False, indent=1))
+    atleta_icons(crest, out)
     print(f"atleta/index.html: {len(h)//1024} KB")
 
 if __name__ == "__main__":

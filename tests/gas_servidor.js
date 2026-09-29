@@ -34,9 +34,14 @@ function SS(name,id){ this.id=id||uid("ss"); this.name=name; this.sheets=[new Sh
 SS.prototype = { getId(){ return this.id; }, getUrl(){ return "https://docs.google.com/spreadsheets/d/"+this.id; }, getSheets(){ return this.sheets; },
   getSheetByName(n){ return this.sheets.find(s=>s.name===n)||null; }, insertSheet(n){ const s=new Sheet(n); this.sheets.push(s); return s; }, toast(){} };
 const SSS = {};
-const props = {}, cache = {}, files = [], triggers = [], copies = [];
+const props = {}, cache = {}, files = [], triggers = [], copies = [], pedidos = [];
+const crypto = require("crypto");
+const sb = a => Array.from(a, x => (x & 255) > 127 ? (x & 255) - 256 : (x & 255));          // bytes com sinal, como no Java
+const ub = a => Buffer.from(Array.from(a, x => x & 255));
+let OFFSET = 0; const RD = Date;                                                              // relógio simulado (/__agora)
+class FD extends RD { constructor(...a){ if(a.length) super(...a); else super(RD.now()+OFFSET); } static now(){ return RD.now()+OFFSET; } }
 const ctx = {
-  console, JSON, Math, Date, String, Number, Object, Array, RegExp, isNaN, parseInt, parseFloat, Error,
+  console, JSON, Math, Date: FD, String, Number, Object, Array, RegExp, isNaN, parseInt, parseFloat, Error,
   Logger: { log(){ } },
   SpreadsheetApp: { create(n){ const s=new SS(n); SSS[s.id]=s; return s; },
     openById(id){ if(!SSS[id]){ if(/^ss\d+$/.test(id)) throw new Error("não existe"); SSS[id]=new SS("destino",id); } return SSS[id]; },   // ficheiros "verdadeiros" (ID_DESTINO) existem sempre
@@ -51,14 +56,24 @@ const ctx = {
         folder.kids.push(cp); copies.push(cp); return cp; } }; },
     getFolderById(id){ if(!ctx.__folders[id]) throw new Error("não existe"); return ctx.__folders[id]; } },
   __folders: {},
+  UrlFetchApp: { fetch(url,o){ const code = /gone/.test(url) ? 410 : 201; pedidos.push({url, o, code, em: new FD().toISOString()}); return { getResponseCode(){ return code; }, getContentText(){ return ""; } }; } },
   PropertiesService: { getScriptProperties(){ return {
+    getProperties(){ return Object.assign({}, props); },
     getProperty(k){ return k in props ? props[k] : null; }, setProperty(k,v){ props[k]=String(v); return this; },
     setProperties(o){ Object.entries(o).forEach(([k,v])=>props[k]=String(v)); return this; }, deleteProperty(k){ delete props[k]; return this; } }; } },
-  CacheService: { getScriptCache(){ return { get(k){ return k in cache ? cache[k] : null; }, put(k,v){ cache[k]=String(v); }, remove(k){ delete cache[k]; } }; } },
+  CacheService: { getScriptCache(){ return {   // com validade (segundos, pelo relógio simulado), como no Google
+    get(k){ const c=cache[k]; if(!c) return null; if(c.ate&&FD.now()>c.ate){ delete cache[k]; return null; } return c.v; },
+    put(k,v,s){ cache[k]={v:String(v),ate:s?FD.now()+s*1000:0}; }, remove(k){ delete cache[k]; } }; } },
   LockService: { getScriptLock(){ return { waitLock(){}, releaseLock(){} }; } },
   ContentService: { MimeType:{JSON:"application/json",JAVASCRIPT:"application/javascript"},
     createTextOutput(s){ return { s, m:"text/plain", setMimeType(m){ this.m=m; return this; } }; } },
-  Utilities: { base64Decode(s){ return Array.from(Buffer.from(s,"base64")); }, newBlob(bytes,type,name){ return {bytes,type,name}; },
+  Utilities: { base64Decode(s){ return Array.from(Buffer.from(s,"base64")); },
+    newBlob(bytes,type,name){ return {bytes,type,name, getBytes(){ return typeof bytes==="string" ? sb(Buffer.from(bytes,"utf8")) : bytes; }}; },
+    DigestAlgorithm:{SHA_256:"sha256"}, Charset:{UTF_8:"utf8"},
+    computeDigest(alg,v){ return sb(crypto.createHash(alg).update(typeof v==="string"?Buffer.from(v,"utf8"):ub(v)).digest()); },
+    computeHmacSha256Signature(v,k){ return sb(crypto.createHmac("sha256",typeof k==="string"?Buffer.from(k,"utf8"):ub(k)).update(typeof v==="string"?Buffer.from(v,"utf8"):ub(v)).digest()); },
+    base64EncodeWebSafe(b){ return ub(b).toString("base64").replace(/\+/g,"-").replace(/\//g,"_"); },
+    getUuid(){ return crypto.randomUUID(); },
     formatDate(d,tz,f){ d=new Date(d); if(!f) return d.toISOString().replace(/[-:T]/g,"").slice(0,15);
       const p=n=>String(n).padStart(2,"0");
       return f.replace("yyyy",d.getFullYear()).replace("MM",p(d.getMonth()+1)).replace("dd",p(d.getDate())).replace("HH",p(d.getHours())).replace("mm",p(d.getMinutes())).replace("ss",p(d.getSeconds())); } },
@@ -80,8 +95,12 @@ http.createServer((req,res)=>{
       atletas: (dest&&dest.getSheetByName("· App atletas")) ? dest.getSheetByName("· App atletas").cells : null,
       copias: copies.filter(c=>!c.trashed).map(c=>({name:c.name,rows:c.rows.length}))})});
   }
+  if(u.pathname==="/__agora"){   // relógio simulado: ?t=ISO (vazio = hora real); devolve e limpa os pedidos externos feitos
+    const t=u.searchParams.get("t"); if(t!==null) OFFSET = t ? new RD(t).getTime()-RD.now() : 0;
+    const out=pedidos.splice(0); return send({m:"application/json",s:JSON.stringify({agora:new FD().toString(),pedidos:out})});
+  }
   if(u.pathname==="/__run"){   // corre uma função do script (ex.: prepararDadosApp, copiaDiaria)
-    try{ ctx[u.searchParams.get("f")](); send({m:"application/json",s:'"ok"'}); }catch(e){ send({m:"text/plain",s:"ERRO "+e.message},500); }
+    try{ const r=ctx[u.searchParams.get("f")](); send({m:"application/json",s:JSON.stringify(r===undefined?"ok":r)}); }catch(e){ send({m:"text/plain",s:"ERRO "+e.message},500); }
     return;
   }
   if(u.pathname==="/__triggers"){   // corre os acionadores agendados (como o Google faria passado o tempo)

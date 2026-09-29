@@ -17,9 +17,21 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 ## Pôr a funcionar (uma vez)
 1. **Script da partilha** (projeto "Estrela B — Dados da app"): cola o `tools/apps-script/dados_app.gs` novo por cima → Guardar → **Implementar → Gerir implementações → lápis → Versão: Nova versão → Implementar**. (O URL mantém-se.) Na primeira resposta o Google pode pedir autorização para abrir os ficheiros dos formulários — aceita.
 2. **Script da monitorização** (Painel): cola o `tools/apps-script/monitorizacao_completo.gs` novo → Guardar → menu **⚽ Monitorização → Instalar automatismos** (acrescenta a verificação de 10 em 10 minutos).
-3. **Netlify:** novo site → arrasta a **pasta** `dist/atleta` (leva o `_headers` de segurança). Ex.: `estrela-b-atleta.netlify.app`. Se o Netlify ou o Mac não deixarem carregar o `_headers` (ficheiro sem extensão), basta o `index.html`: as regras principais já vão dentro da página.
+3. **Netlify:** novo site → arrasta a **pasta** `dist/atleta` — tem de levar o `index.html`, o `sw.js`, o `manifest.webmanifest` e os `icon-*.png` (são precisos para os avisos e para o ícone no ecrã principal) e o `_headers` de segurança. Ex.: `estrela-b-atleta.netlify.app`. Se o Netlify ou o Mac não deixarem carregar o `_headers` (ficheiro sem extensão), basta o `index.html`: as regras principais já vão dentro da página.
 4. **App da equipa técnica:** Plantel → **App do atleta** → cola o endereço do site → Guardar → **Criar os links em falta**.
 5. Envia a cada atleta **o seu** link, em privado (botão WhatsApp em cada linha). Nunca num grupo: o link é a identidade dele.
-6. Jogos → Convocatória → **Publicar na app dos atletas** quando a convocatória estiver fechada.
+6. Jogos → Convocatória → **Publicar na app dos atletas** quando a convocatória estiver fechada. Os convocados que ligaram os avisos recebem "Estás convocado!" (entre as 8h e as 22h30; publicada à noite, o aviso sai às 8h).
+7. **Avisos:** no editor do script da partilha, escolhe a função **instalarAvisos** → Executar → aceita as autorizações (agora pede também "ligar a serviços externos", para enviar os avisos). Depois **Implementar → Gerir implementações → Nova versão** outra vez.
+
+## Avisos no telemóvel
+- **Bem-estar** às 9h a quem ainda não respondeu (só em dias com treino ou jogo na app; até às 13h). **PSE** 20 min depois do fim do treino/jogo (hora + duração da sessão na app) a quem ainda não registou (quem teve falta, lesão ou dispensa no treino não recebe). **Convocatória** quando é publicada, só aos convocados.
+- Cada atleta liga os avisos na app (cartão "Avisos no telemóvel" no Hoje, ou em Eu). **iPhone:** só funciona com a app no ecrã principal (Safari → Partilhar → "Adicionar ao ecrã principal" → abrir pelo ícone → Ativar avisos), iOS 16.4 ou mais recente. **Android:** funciona no Chrome direto.
+- Ao ligar, chega um aviso de teste. Em Eu há "Enviar um aviso de teste" e "Desligar neste telemóvel".
+- O link pessoal fica no endereço da página de propósito: o iPhone usa o endereço atual ao adicionar ao ecrã principal, e a app do ecrã principal não vê o que ficou guardado no Safari.
+
+## Quem falta responder (app da equipa técnica)
+- Painel → cartão "Precisa de atenção hoje": "Bem-estar hoje 18 de 21 · Faltam 3 · Lembrar" (e o PSE depois do fim da sessão do dia). Também em Monitorização → Respostas do dia → "Lembrar".
+- A lista tem um botão WhatsApp por atleta (mensagem com o link pessoal da app; vai direto para o número se estiver na ficha — Plantel → atleta → Editar → Telemóvel) e uma mensagem para o grupo só com os nomes.
+- Vem das respostas lidas do Sheets: quem respondeu há pouco pode ainda não aparecer — Atualizar no painel.
 
 Telemóvel perdido ou link partilhado: ficha do atleta → App do atleta → **Novo link** (o anterior deixa de funcionar).

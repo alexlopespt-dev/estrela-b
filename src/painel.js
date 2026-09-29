@@ -78,7 +78,7 @@ function monPanel(){
       <div class="card-b"><div class="mp-big">${m7==null?"–":Math.round(m7).toLocaleString("pt-PT")}<small> UA</small></div>${bars}
       <div class="small muted">${dif==null?"Últimos 7 dias (PSE × minutos).":`${dif>=0?"+":""}${dif}% face à média das 4 semanas`}</div></div></section>`;
   const att=`<section class="card mp-att"><div class="card-h"><h3>Precisa de atenção hoje</h3><span style="display:flex;gap:6px"><button class="btn sm" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button><button class="btn sm" data-a="tab" data-t="mon">Ver tudo</button></span></div>
-    <div class="list">${need.length?need.map(j=>{ const a=monAttn(j), pid=map[j.nome], p=pid?P(pid):null;
+    ${monFaltaStrip()}<div class="list">${need.length?need.map(j=>{ const a=monAttn(j), pid=map[j.nome], p=pid?P(pid):null;
       return `<button class="li" ${p?`data-a="page" data-p="atleta" data-id="${esc(p.id)}"`:`data-a="tab" data-t="mon"`}>${p?avatar(p):`<span class="ph g-X">${esc(initials(j.nome))}</span>`}<span class="main"><b>${esc(nm(j))}</b><small>${esc(a.t)}</small></span><span class="tag ${a.c}">${a.l}</span></button>`; }).join("")
       :`<div class="empty"><b>Ninguém a precisar de atenção</b>${esc(monAge())}</div>`}</div></section>`;
   return {top,att};

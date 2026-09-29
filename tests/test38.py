@@ -76,7 +76,7 @@ try:
     pg.goto("https://atleta.test/#s="+urllib.parse.quote(URL,safe="")+"&t="+TOK); pg.wait_for_timeout(1500)
     t=pg.inner_text("#app"); print("hoje:", t.replace("\n"," | ")[:160])
     if "Luís" not in t or "Como estás hoje?" not in t: errs.append("ecrã de hoje")
-    if "#" in pg.url.split("atleta.test/")[1]: errs.append("link ficou no endereço")
+    if "t="+TOK not in pg.url: errs.append("o link tem de ficar no endereço (iPhone: adicionar ao ecrã principal)")
     ov=pg.evaluate("document.documentElement.scrollWidth-document.documentElement.clientWidth")
     if ov>1: errs.append("overflow no telemóvel")
     pg.screenshot(path=os.path.join(CAP,"t38_hoje.png"),full_page=True)

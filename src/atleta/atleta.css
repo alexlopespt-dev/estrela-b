@@ -208,3 +208,4 @@ svg[aria-hidden]{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:rou
 details.cfg summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
 details.cfg summary::after{content:"›";transform:rotate(90deg);color:var(--muted)}details.cfg[open] summary::after{transform:rotate(-90deg)}
 details.cfg summary::-webkit-details-marker{display:none}
+.steps{margin:6px 0 4px;padding-left:22px;font-size:15px;line-height:1.45}.steps li{margin:4px 0}

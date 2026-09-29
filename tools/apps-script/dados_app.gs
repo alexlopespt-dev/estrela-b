@@ -34,6 +34,7 @@ function destino_() { return SpreadsheetApp.openById(ID_DESTINO); }
 function doGet(e) {
   var prm = (e && e.parameter) || {}, body;
   if (prm.a === 'atleta') body = JSON.stringify(atResposta_(function () { return atleta_(prm.t); }));   // app do atleta (link pessoal)
+  else if (prm.a === 'aviso') body = JSON.stringify(atResposta_(function () { return atAviso_(prm.t); }));   // o telemóvel recebeu um aviso
   else if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
   else if (prm.a === 'pull' || prm.a === 'lixo') {
     try { body = JSON.stringify(prm.a === 'lixo' ? dadosLixo_() : dadosPull_(Number(prm.since || 0))); }
@@ -55,6 +56,7 @@ var DADOS_MAX = 49000;        // limite de caracteres de uma célula do Sheets (
 function prepararDadosApp() {
   var ss = dadosSS_(), pasta = dadosPasta_();
   instalarCopiaDiaria_(); copiaDiaria();          // cópia de segurança todos os dias às 3h (e uma já agora)
+  try { instalarAvisos(); } catch (e) { Logger.log('Avisos: ' + e.message); }   // lembretes da app do atleta (de 15 em 15 min)
   var msg = 'Pronto. Dados: ' + ss.getUrl() + '\nFotos: ' + pasta.getUrl() + '\nCópia de segurança diária (3h) na pasta "Estrela B — Cópias da app".' +
             '\n\nAgora: Implementar → Nova implementação (Aplicação Web) e cola o URL na app.';
   Logger.log(msg);
@@ -240,6 +242,7 @@ function doPost(e) {
   try {
     var p = JSON.parse(e && e.postData ? e.postData.contents : '{}');
     if (p.a === 'atleta_bem' || p.a === 'atleta_pse') out = atResposta_(function () { return atResponder_(p); });   // app do atleta
+    else if (p.a === 'atleta_push' || p.a === 'atleta_push_teste') out = atResposta_(function () { return atPush_(p); });   // avisos no telemóvel
     else if (String(p.k || '') !== CHAVE_APP) out = { erro: 'chave' };
     else if (p.a === 'push') out = dadosPush_(p.ops || []);
     else if (p.a === 'img') out = dadosImg_(p);
@@ -607,6 +610,7 @@ function atleta_(tok) {
     me: { id: pid, name: A.p.name, full: A.p.full || '', n: A.p.n || '', pos: A.p.pos || '',
           foto: /^data:image\//.test(String(A.p.photoData || '')) && String(A.p.photoData).length < 60000 ? A.p.photoData : '' },
     resultados: resultados.slice(0, 8), epoca: epoca, rank: rank, presencas: pres.slice(0, 20),
+    push: (function () { try { return { key: avChaves_().pub }; } catch (e) { return null; } })(),
     equipa: { nome: tm.full || tm.team || '', curto: tm.team || '' },
     agenda: agenda, conv: conv, numeros: numeros, jogos: jogos.slice(0, 10),
     respostas: { bem: hojeBem, pse: hojePse, hist: Object.keys(hist).sort().map(function (k) { return { d: k, t: hist[k] }; }) },
@@ -692,4 +696,213 @@ function atResposta_(fn) {
     var m = String(err && err.message || err);
     return m === 'link' ? { erro: 'link', msg: 'Este link já não é válido. Pede um novo à equipa técnica.' } : { erro: m };
   }
+}
+
+// ============================================================ AVISOS NO TELEMÓVEL (APP DO ATLETA)
+/*
+ * Notificações "push" da app do atleta, enviadas por este script (sem servidor extra):
+ *  - bem-estar: às 9h, a quem ainda não respondeu, nos dias com treino ou jogo;
+ *  - PSE: 20 min depois do fim do treino/jogo do dia (hora + duração), a quem ainda não registou;
+ *  - convocatória: quando a equipa técnica a publica, a cada convocado (entre as 8h e as 22h30).
+ * O acionador "avisosAtletas" corre de 15 em 15 minutos (instalado por instalarAvisos — corre-a uma vez no editor).
+ * O aviso vai vazio (sem texto): o telemóvel pergunta a este script (?a=aviso&t=código) o que mostrar, por isso não é
+ * preciso cifrar o conteúdo. A assinatura VAPID (ES256, curva P-256) é feita aqui em JavaScript; as chaves são
+ * criadas na primeira vez e ficam nas propriedades do script (av_vapid). No iPhone os avisos só funcionam com a app
+ * adicionada ao ecrã principal (iOS 16.4 ou mais recente).
+ */
+var AV_BEM_HORA = 9 * 60;       // 09:00
+var AV_BEM_ATE = 13 * 60;       // depois das 13h já não lembra
+var AV_PSE_DEPOIS = 20;         // minutos depois do fim da sessão
+var AV_CONV = [8 * 60, 22 * 60 + 30];
+var AV_HOSTS = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+(\.[a-z0-9-]+)*\.push\.apple\.com|[a-z0-9-]+(\.[a-z0-9-]+)*\.notify\.windows\.com)\//;
+
+/** Corre uma vez no editor: instala o acionador dos avisos (e pede a autorização para enviar pedidos externos). */
+function instalarAvisos() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'avisosAtletas') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('avisosAtletas').timeBased().everyMinutes(15).create();
+  avChaves_();
+  Logger.log('Avisos ligados: o script verifica de 15 em 15 minutos quem precisa de lembrete.');
+  try { SpreadsheetApp.getUi().alert('Avisos da app do atleta', 'Ligados: de 15 em 15 minutos o script vê quem precisa de lembrete (bem-estar às 9h, PSE depois do treino, convocatória publicada).', SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
+}
+
+// ---- bytes, base64 e SHA-256 (o Apps Script usa bytes com sinal, -128..127)
+function avU_(b) { return b.map(function (x) { return x & 255; }); }
+function avS_(b) { return b.map(function (x) { x = x & 255; return x > 127 ? x - 256 : x; }); }
+function avB64_(b) { return Utilities.base64EncodeWebSafe(avS_(b)).replace(/=+$/, ''); }
+function avUtf8_(s) { return avU_(Utilities.newBlob(String(s)).getBytes()); }
+function avSha_(b) { return avU_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, avS_(b))); }
+function avHmac_(v, k) { return avU_(Utilities.computeHmacSha256Signature(avS_(v), avS_(k))); }
+function avHex_(b) { return b.map(function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }
+
+// ---- curva P-256 (BigInt; sem literais "123n" para o ficheiro abrir mesmo num editor antigo)
+var AV_EC = null;
+function avEc_() {
+  if (AV_EC) return AV_EC;
+  AV_EC = { p: BigInt('0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff'),
+            n: BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551'),
+            G: [BigInt('0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296'), BigInt('0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5')],
+            Z: BigInt(0), U: BigInt(1), D: BigInt(2), T: BigInt(3) };
+  return AV_EC;
+}
+function avMod_(a, m) { var r = a % m; return r < avEc_().Z ? r + m : r; }
+function avInv_(a, m) {
+  var E = avEc_(), t = E.Z, nt = E.U, r = m, nr = avMod_(a, m);
+  while (nr !== E.Z) { var q = r / nr, x = t - q * nt; t = nt; nt = x; x = r - q * nr; r = nr; nr = x; }
+  return avMod_(t, m);
+}
+function avAdd_(P, Q) {
+  if (!P) return Q; if (!Q) return P;
+  var E = avEc_(), p = E.p, l;
+  if (P[0] === Q[0]) {
+    if (avMod_(P[1] + Q[1], p) === E.Z) return null;
+    l = avMod_(E.T * P[0] * P[0] - E.T, p) * avInv_(E.D * P[1], p) % p;
+  } else l = avMod_(Q[1] - P[1], p) * avInv_(Q[0] - P[0], p) % p;
+  var x = avMod_(l * l - P[0] - Q[0], p);
+  return [x, avMod_(l * (P[0] - x) - P[1], p)];
+}
+function avMul_(k, P) { var E = avEc_(), R = null, A = P; while (k > E.Z) { if ((k & E.U) === E.U) R = avAdd_(R, A); A = avAdd_(A, A); k = k >> E.U; } return R; }
+function avBig_(b) { return BigInt('0x' + (avHex_(b) || '0')); }
+function avBytes_(n, len) { var h = n.toString(16); while (h.length < len * 2) h = '0' + h; var o = []; for (var i = 0; i < len; i++) o.push(parseInt(h.substr(i * 2, 2), 16)); return o; }
+
+/** Chaves VAPID deste script (criadas na primeira vez). pub = ponto não comprimido (65 bytes) em base64url. */
+function avChaves_() {
+  var pr = PropertiesService.getScriptProperties(), v = pr.getProperty('av_vapid');
+  if (v) return JSON.parse(v);
+  var E = avEc_(), seed = avSha_(avUtf8_(Utilities.getUuid() + Utilities.getUuid() + Date.now() + Math.random()));
+  var d = avMod_(avBig_(seed), E.n - E.U) + E.U, Q = avMul_(d, E.G);
+  var k = { d: avHex_(avBytes_(d, 32)), pub: avB64_([4].concat(avBytes_(Q[0], 32), avBytes_(Q[1], 32))) };
+  pr.setProperty('av_vapid', JSON.stringify(k));
+  return k;
+}
+/** Assinatura ES256 (r||s, 64 bytes) de uma mensagem; k determinístico (HMAC da chave e do resumo). */
+function avAssina_(msg, dHex) {
+  var E = avEc_(), h = avSha_(msg), e = avBig_(h), dB = [], i;
+  for (i = 0; i < 64; i += 2) dB.push(parseInt(dHex.substr(i, 2), 16));
+  var d = avBig_(dB);
+  for (var c = 0; c < 50; c++) {
+    var k = avMod_(avBig_(avHmac_(h.concat([c]), dB)), E.n); if (k === E.Z) continue;
+    var r = avMod_(avMul_(k, E.G)[0], E.n); if (r === E.Z) continue;
+    var s = avMod_(avInv_(k, E.n) * (e + r * d), E.n); if (s === E.Z) continue;
+    return avBytes_(r, 32).concat(avBytes_(s, 32));
+  }
+  throw new Error('assinatura');
+}
+function avJwt_(aud) {
+  var cache = CacheService.getScriptCache(), ck = 'av_jwt_' + aud, j = cache.get(ck);
+  if (j) return j;
+  var K = avChaves_(), site = '';
+  try { site = String(((dadosTodos_(['meta']).meta || {}).cfg || {}).atletaUrl || ''); } catch (e) {}
+  var sub = /^https:\/\/[^\s]+$/.test(site) ? site.replace(/\/+$/, '') : 'https://estrela-b-atleta.netlify.app';
+  var enc = function (o) { return avB64_(avUtf8_(JSON.stringify(o))); };
+  var ini = enc({ typ: 'JWT', alg: 'ES256' }) + '.' + enc({ aud: aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: sub });
+  j = ini + '.' + avB64_(avAssina_(avUtf8_(ini), K.d));
+  cache.put(ck, j, 6 * 3600);
+  return j;
+}
+/** Envia um aviso vazio para uma subscrição. Devolve o código HTTP (404/410 = já não existe). */
+function avEnvia_(endpoint) {
+  var aud = String(endpoint).match(/^https:\/\/[^\/]+/)[0];
+  var r = UrlFetchApp.fetch(endpoint, { method: 'post', payload: '', muteHttpExceptions: true,
+    headers: { TTL: '43200', Urgency: 'high', Authorization: 'vapid t=' + avJwt_(aud) + ', k=' + avChaves_().pub } });
+  return r.getResponseCode();
+}
+
+// ---- estado por atleta (propriedade av_<id>): subscrições, avisos já dados e mensagens por mostrar
+function avLe_(pid) { var v = PropertiesService.getScriptProperties().getProperty('av_' + pid); return v ? JSON.parse(v) : { subs: [], sent: {}, pend: [] }; }
+function avGrava_(pid, st) { PropertiesService.getScriptProperties().setProperty('av_' + pid, JSON.stringify(st)); }
+/** Junta mensagens e envia um aviso a cada telemóvel do atleta; tira as subscrições que já não existem. */
+function avAvisa_(pid, st, msgs) {
+  var agora = new Date().toISOString();
+  msgs.forEach(function (m) { m.em = agora; st.pend = (st.pend || []).filter(function (x) { return x.id !== m.id; }).concat([m]).slice(-5); st.ult = m; });
+  var ok = 0;
+  st.subs = (st.subs || []).filter(function (s) {
+    var c; try { c = avEnvia_(s.e); } catch (e) { return true; }
+    if (c === 404 || c === 410) return false;
+    if (c >= 200 && c < 300) ok++;
+    return true;
+  });
+  avGrava_(pid, st);
+  return ok;
+}
+
+/** Pedidos da app: ligar/desligar avisos neste telemóvel e aviso de teste. */
+function atPush_(p) {
+  var A = atAtleta_(p.t), sub = p.sub || {}, e = String(sub.endpoint || '');
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var st = avLe_(A.pid);
+    if (p.a === 'atleta_push_teste') {
+      var cache = CacheService.getScriptCache(); if (cache.get('av_teste_' + A.pid)) return { erro: 'Espera um minuto antes de outro teste.' };
+      cache.put('av_teste_' + A.pid, '1', 60);
+      if (!st.subs.length) return { erro: 'Avisos ainda não ligados neste telemóvel.' };
+      var n = avAvisa_(A.pid, st, [{ id: 'teste', t: 'Avisos ligados ✓', b: 'Vais receber aqui os lembretes do bem-estar, do PSE e a convocatória.', tab: 'hoje' }]);
+      return { ok: true, enviados: n };
+    }
+    if (!AV_HOSTS.test(e)) return { erro: 'Endereço de avisos desconhecido.' };
+    st.subs = (st.subs || []).filter(function (s) { return s.e !== e; });
+    if (p.on !== false) st.subs = st.subs.concat([{ e: e, em: new Date().toISOString() }]).slice(-3);
+    avGrava_(A.pid, st);
+    return { ok: true, n: st.subs.length };
+  } finally { lock.releaseLock(); }
+}
+/** O telemóvel recebeu um aviso: que mensagens mostrar? (as por mostrar; senão a última, se for recente) */
+function atAviso_(tok) {
+  var A = atAtleta_(tok), lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var st = avLe_(A.pid), out = st.pend || [];
+    if (!out.length && st.ult && Date.now() - new Date(st.ult.em).getTime() < 15 * 60000) out = [st.ult];
+    st.pend = []; avGrava_(A.pid, st);
+    return { ok: true, pend: out };
+  } finally { lock.releaseLock(); }
+}
+
+/** Acionador de 15 em 15 minutos: quem precisa de lembrete agora? */
+function avisosAtletas() {
+  var pr = PropertiesService.getScriptProperties(), all = pr.getProperties(), ids = Object.keys(all).filter(function (k) { return /^av_/.test(k) && k !== 'av_vapid'; });
+  if (!ids.length) return 0;
+  var agora = new Date(), hoje = atKey_(agora), hm = atHora_(agora).split(':'), min = Number(hm[0]) * 60 + Number(hm[1]);
+  var reg = dadosTodos_(['players', 'events', 'meta']), ev = reg.events, pl = reg.players, cfg = reg.meta.cfg || {};
+  // nome de cada atleta na monitorização (o mesmo que o atleta escreve / que a app grava)
+  var nomeDe = {};
+  try { var map = ligacoesNomes_(nomesMonitorizacao_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
+  var resp = function (id, chave) {   // chaves dos nomes que já responderam hoje (null se não deu para ler a folha)
+    try { var F = atFolha_(id, chave), s = {}; atLinhas_(F).forEach(function (l) { if (atKey_(l.d) === hoje) s[atChave_(l.v[F.c.n])] = 1; }); return s; } catch (e) { return null; }
+  };
+  var sess = Object.keys(ev).map(function (id) { var e = ev[id]; return e && e.date === hoje && (e.type === 'treino' || e.type === 'jogo') ? { id: id, e: e } : null; }).filter(Boolean);
+  var bem = null, pse = null, enviados = 0;
+  var respondeu = function (s, pid) { if (!s) return true; var p = pl[pid] || {}; return !!(s[atChave_(nomeDe[pid] || '')] || s[atChave_(p.name)]); };
+  // próximo jogo com convocatória publicada (até 7 dias)
+  var ate = atKey_(new Date(agora.getTime() + 7 * 864e5)), jogo = null;
+  Object.keys(ev).forEach(function (id) { var e = ev[id]; if (e && e.type === 'jogo' && e.convPub && e.date >= hoje && e.date <= ate && (!jogo || e.date < jogo.e.date)) jogo = { id: id, e: e }; });
+  ids.forEach(function (k) {
+    var pid = k.slice(3), p = pl[pid]; if (!p || p.archived) return;
+    var lock = LockService.getScriptLock(); try { lock.waitLock(20000); } catch (e) { return; }   // lido de novo: pode ter ligado/desligado entretanto
+    try {
+    var st = avLe_(pid), antes = JSON.stringify(st); st.sent = st.sent || {};
+    if (!(st.subs || []).length) return;
+    var msgs = [], nome = String(p.name || '').split(/\s+/)[0];
+    if (sess.length && min >= AV_BEM_HORA && min < AV_BEM_ATE && st.sent.bem !== hoje) {
+      if (bem === null) bem = resp(ID_BEMESTAR, ['sono']) || false;
+      if (!respondeu(bem || null, pid)) msgs.push({ id: 'bem-' + hoje, t: 'Bom dia, ' + nome + '!', b: 'Responde ao bem-estar de hoje — são 4 perguntas.', tab: 'hoje' });
+      st.sent.bem = hoje;
+    }
+    sess.forEach(function (s) {
+      var t = String(s.e.time || '').split(':'); if (t.length < 2) return;
+      var fim = Number(t[0]) * 60 + Number(t[1]) + (Number(s.e.dur) || 90);
+      if (min < fim + AV_PSE_DEPOIS || min > fim + 240 || st.sent.pse === s.id) return;
+      if (s.e.type === 'treino' && s.e.att && s.e.att[pid] && /^(FJ|FI|L|D)$/.test(s.e.att[pid].s || '')) { st.sent.pse = s.id; return; }   // não treinou
+      if (pse === null) pse = resp(ID_PSE, ['intens', 'sessão', 'sessao']) || false;
+      if (!respondeu(pse || null, pid)) msgs.push({ id: 'pse-' + s.id, t: s.e.type === 'jogo' ? 'Como correu o jogo?' : 'Como correu o treino?', b: 'Regista o esforço (PSE) de hoje, de 0 a 10.', tab: 'hoje' });
+      st.sent.pse = s.id;
+    });
+    if (jogo && (jogo.e.call || []).indexOf(pid) !== -1 && st.sent.conv !== jogo.id && min >= AV_CONV[0] && min <= AV_CONV[1]) {
+      var g = jogo.e, dia = Utilities.formatDate(new Date(g.date + 'T12:00:00'), TZ, 'dd/MM');
+      msgs.push({ id: 'conv-' + jogo.id, t: 'Estás convocado!', b: (g.venue === 'F' ? '@ ' : 'vs ') + (g.opp || '') + ' · ' + dia + (g.time ? ' às ' + g.time : '') + (g.meetT ? ' · concentração ' + g.meetT : ''), tab: 'jogo' });
+      st.sent.conv = jogo.id;
+    }
+    if (msgs.length) { avAvisa_(pid, st, msgs); enviados += msgs.length; }
+    else if (JSON.stringify(st) !== antes) avGrava_(pid, st);
+    } finally { lock.releaseLock(); }
+  });
+  return enviados;
 }

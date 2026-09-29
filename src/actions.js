@@ -297,10 +297,11 @@ function playerForm(id){
     <label class="fld">Pé${sel("foot",FEET,p.foot,"","—")}</label>
     <label class="fld">Data de nascimento<input type="date" name="birth" value="${esc(p.birth||"")}"></label>
     <label class="fld">Altura (cm)<input name="height" inputmode="numeric" value="${esc(p.height??"")}"></label>
-    <label class="fld">Peso (kg)<input name="weight" inputmode="decimal" value="${esc(p.weight??"")}"></label></div>`;
+    <label class="fld">Peso (kg)<input name="weight" inputmode="decimal" value="${esc(p.weight??"")}"></label>
+    <label class="fld">Telemóvel<input name="tel" type="tel" inputmode="tel" value="${esc(p.tel||"")}" placeholder="9xx xxx xxx"></label></div>`;
   modal({title:id?"Editar atleta":"Novo atleta",body,foot:id?`<button class="btn ghost" data-a="mDel">${p.archived?"Repor no plantel":"Marcar como saído"}</button><span class="right"><button class="btn" data-a="mClose">Cancelar</button><button class="btn primary" data-a="mSave">Guardar</button></span>`:footSave("Adicionar"),ctx:{
     save:()=>{ const name=fv("name"); if(!name){ toast("Indica o nome do atleta."); return; }
-      const o={...(id?clone(D.players[id]):{photo:null}),n:parseNum(fv("n")),name,full:fv("full"),pos:fv("pos"),foot:fv("foot"),birth:fv("birth"),height:parseNum(fv("height")),weight:parseNum(fv("weight"))};
+      const o={...(id?clone(D.players[id]):{photo:null}),n:parseNum(fv("n")),name,full:fv("full"),pos:fv("pos"),foot:fv("foot"),birth:fv("birth"),height:parseNum(fv("height")),weight:parseNum(fv("weight")),tel:fv("tel")};
       const nid=id||uid("p_"); put("players",nid,o); closeModal(); toast(id?"Dados guardados":"Atleta adicionado"); if(!id) openPage("atleta",nid); },
     del:()=>{ const o=clone(D.players[id]); o.archived=!o.archived; put("players",id,o); closeModal(); toast(o.archived?"Marcado como saído. O historial mantém-se.":"Reposto no plantel"); }
   }});

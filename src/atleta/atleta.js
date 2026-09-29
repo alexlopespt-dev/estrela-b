@@ -35,10 +35,13 @@ const S = { cfg:ls.get(":cfg",null), data:ls.get(":dados",null), at:ls.get(":dad
     if(!S.cfg||S.cfg.t!==cfg.t){ S.data=null; ls.del(":dados"); }
     S.cfg=cfg; ls.set(":cfg",cfg);
   }
-  if(location.hash) try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  if(["hoje","agenda","jogo","eu"].includes(h.get("tab"))) S.tab=h.get("tab");
+  // o link pessoal fica no endereço: no iPhone, "Adicionar ao ecrã principal" usa o endereço atual e a app do ecrã
+  // principal não vê o que ficou guardado no Safari. Só o #tab= (vindo de um aviso) é tirado.
+  if(h.get("tab")&&!h.get("t")) try{ history.replaceState(null,"",location.pathname+location.search+(S.cfg?`#s=${encodeURIComponent(S.cfg.s)}&t=${S.cfg.t}`:"")); }catch(e){}
 })();
 document.documentElement.style.setProperty("--wm",`url("${CREST}")`);
-(()=>{ const l=document.createElement("link"); l.rel="apple-touch-icon"; l.href=CREST; document.head.appendChild(l); })();
+
 
 /* ---- pedidos ao script (fetch; se o browser bloquear, JSONP) ---- */
 function jsonp(u){
@@ -91,6 +94,34 @@ async function flush(){
 }
 window.addEventListener("online",()=>{ flush(); load(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ flush(); load(); } });
+
+/* ---- avisos no telemóvel (push) ---- */
+const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && location.protocol==="https:";
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const standalone = () => (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone===true;
+const u8 = b => { b=String(b).replace(/-/g,"+").replace(/_/g,"/"); b+="=".repeat((4-b.length%4)%4); return Uint8Array.from(atob(b),c=>c.charCodeAt(0)); };
+function pushState(){
+  if(!(S.data&&S.data.push&&S.data.push.key)) return "none";
+  if(IOS&&!standalone()) return "ios";
+  if(!PUSH_OK) return "none";
+  if(Notification.permission==="denied") return "denied";
+  return ls.get(":push",null)&&Notification.permission==="granted" ? "on" : "off";
+}
+async function swCfg(){ try{ const c=await caches.open("estrela-atleta"); await c.put(new URL("__cfg",location.href).href,new Response(JSON.stringify(S.cfg),{headers:{"Content-Type":"application/json"}})); }catch(e){} }
+function pushCard(onde){
+  const st=pushState(); if(st==="none") return "";
+  if(onde==="hoje"&&(st==="on"||ls.get(":pushdepois",0)>Date.now())) return "";
+  const bell='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+  const h=`<div class="task-h"><span class="ico" style="--c:#b8860b">${bell}</span><div><p class="k">Avisos no telemóvel</p><h2>${st==="on"?"Ligados ✓":st==="denied"?"Bloqueados":"Recebe lembretes"}</h2></div></div>`;
+  let b="";
+  if(st==="ios") b=`<p class="sub">No iPhone, os avisos só funcionam com a app no ecrã principal:</p><ol class="steps"><li>Toca em <b>Partilhar</b> (o quadrado com a seta, em baixo no Safari).</li><li>Escolhe <b>"Adicionar ao ecrã principal"</b>.</li><li>Abre a app pelo ícone novo e toca em <b>Ativar avisos</b>.</li></ol><p class="note">Precisa do iOS 16.4 ou mais recente.</p>`;
+  else if(st==="denied") b=`<p class="sub">Os avisos estão bloqueados neste telemóvel. ${IOS?"Vai a Definições → Notificações → Estrela B e ativa.":"Toca no cadeado ao lado do endereço (ou Definições do Chrome → Notificações) e permite."}</p>`;
+  else if(st==="off") b=`<p class="sub">Um lembrete de manhã para o bem-estar, outro depois do treino para o PSE e um aviso quando fores convocado.</p><button class="cta" data-a="pushOn">Ativar avisos</button>${onde==="hoje"?`<button class="cta sec" data-a="pushDepois">Agora não</button>`:""}`;
+  else b=`<p class="sub">Bem-estar às 9h (dias de treino ou jogo), PSE depois do treino e convocatória.</p><button class="cta sec" data-a="pushTeste">Enviar um aviso de teste</button><button class="cta sec" data-a="pushOff">Desligar neste telemóvel</button>`;
+  return `<section class="card task" id="pushCard">${h}${b}</section>`;
+}
+if(PUSH_OK&&ls.get(":push",null)){ navigator.serviceWorker.register("sw.js").catch(()=>{}); swCfg(); }
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message",e=>{ const t=e.data&&e.data.tab; if(["hoje","agenda","jogo","eu"].includes(t)){ S.tab=t; S.view=null; render(); load(); } });
 
 /* ---- escalas ---- */
 const BEM_Q = [["sono","Como dormiste esta noite?","Qualidade do sono"],["fadiga","Como te sentes fisicamente?","Fadiga geral"],
@@ -175,7 +206,7 @@ function vHoje(){
       foot:`<span>${esc(quando(conv.date))}</span>${conv.meetT?`<span>${I.bus}Concentração ${esc(conv.meetT)}</span>`:""}`})}</button>`;
   else if(prox&&diasAte(prox.date)<=7) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""})}</button>`;
   const seg=((d&&d.agenda)||[]).filter(a=>a.date>=t).slice(0,3);
-  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}
+  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}${pushCard("hoje")}
     <h3 class="sec-t">A seguir</h3>${seg.length?seg.map(a=>`<div class="ag-day">${esc(dayName(a.date))}</div>${evCard(a)}`).join(""):`<div class="card empty"><b>Sem treinos nem jogos marcados</b></div>`}</main>`;
 }
 function vAgenda(){
@@ -258,7 +289,7 @@ function vEu(){
     <div class="bars-x">${days.map((x,i)=>`<span>${i%2?"":toD(x).getDate()}</span>`).join("")}</div>`;
   const cBem=`<h3 class="sec-t">O meu bem-estar · 14 dias</h3><section class="card">${med!=null?`<p class="sub" style="margin-bottom:4px">Média <b>${med.toFixed(1)}</b>/20 · ${vals.length} resposta${vals.length>1?"s":""}</p>`:""}${bars}
     <div class="lg"><span><i style="background:var(--ok)"></i>OK 17+</span><span><i style="background:var(--warn)"></i>Atenção 13-16</span><span><i style="background:var(--bad)"></i>Risco ≤12</span></div></section>`;
-  return top("A minha época")+`<main>${offline()}${card}${cPres}${cJogos}${cBem}
+  return top("A minha época")+`<main>${offline()}${card}${cPres}${cJogos}${cBem}${pushCard("eu")?`<h3 class="sec-t">Avisos</h3>${pushCard("eu")}`:""}
     <details class="card cfg"><summary>Este telemóvel</summary><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
       <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></details></main>`;
 }
@@ -306,6 +337,27 @@ function render(){
 }
 /* ---- ações ---- */
 const A={
+  pushOn:async()=>{
+    const bt=$("#pushCard .cta"); if(bt){ bt.disabled=true; bt.textContent="A ligar…"; }
+    try{
+      const perm=await Notification.requestPermission();
+      if(perm!=="granted"){ toast(perm==="denied"?"Avisos bloqueados — vê como os permitir.":"Sem autorização para avisos."); render(); return; }
+      const reg=await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+      const key=u8(S.data.push.key); let sub=await reg.pushManager.getSubscription();
+      if(sub){ const k=sub.options&&sub.options.applicationServerKey; if(k&&btoa(String.fromCharCode(...new Uint8Array(k)))!==btoa(String.fromCharCode(...key))){ await sub.unsubscribe(); sub=null; } }
+      if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      await swCfg();
+      await apiPost({a:"atleta_push",sub:sub.toJSON?sub.toJSON():{endpoint:sub.endpoint}});
+      ls.set(":push",sub.endpoint); toast("Avisos ligados ✓ — vais receber um aviso de teste");
+      apiPost({a:"atleta_push_teste"}).catch(()=>{});
+    }catch(e){ toast("Não foi possível ligar os avisos"+(e&&e.message?": "+e.message:"")); }
+    render(); },
+  pushOff:async()=>{
+    try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg&&await reg.pushManager.getSubscription();
+      if(sub){ await apiPost({a:"atleta_push",sub:{endpoint:sub.endpoint},on:false}).catch(()=>{}); await sub.unsubscribe().catch(()=>{}); } }catch(e){}
+    ls.del(":push"); toast("Avisos desligados neste telemóvel"); render(); },
+  pushTeste:async()=>{ try{ const r=await apiPost({a:"atleta_push_teste"}); toast(r.enviados?"Aviso de teste enviado — deve chegar em segundos":"O aviso não chegou a sair. Desliga e volta a ligar."); }catch(e){ toast(e.message||"Sem ligação."); } },
+  pushDepois:()=>{ ls.set(":pushdepois",Date.now()+7*864e5); render(); },
   tab:el=>{ S.tab=el.dataset.t; S.view=null; window.scrollTo(0,0); render(); },
   refresh:()=>{ flush(); load(true); },
   sair:()=>{ if(!window.confirm||window.confirm("Desligar a app deste telemóvel? Vais precisar do link outra vez.")){ ls.del(":cfg"); ls.del(":dados"); ls.del(":fila"); S.cfg=null; S.data=null; render(); } },

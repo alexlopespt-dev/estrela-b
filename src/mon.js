@@ -194,12 +194,12 @@ function monResp(d){
     ${bem.length?`<div class="tscroll"><table class="tb mon resp"><thead><tr><th>Hora</th><th class="l stk">Jogador</th><th>Sono</th><th>Fadiga</th><th>Dor muscular</th><th>Stress</th><th>Total</th><th>Estado</th></tr></thead><tbody>
     ${bem.map(x=>{ const v=tot(x), h=monHooper(v); return `<tr><td class="num">${esc(x.h||"")}</td><td class="l stk">${who(x.n)}${nb(x)}</td>${[0,1,2,3].map(k=>lbl(x,k)).join("")}<td class="num"><b>${v==null?"–":v}</b></td><td>${h?`<span class="tag ${h.c}">${h.l}</span>`:""}</td></tr>`; }).join("")}
     </tbody></table></div>`:`<div class="empty"><b>Sem respostas de bem-estar neste dia</b></div>`}
-    ${fB.length&&bem.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem resposta: ${fB.map(esc).join(", ")}</p>`:""}</section>
+    ${fB.length&&bem.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem resposta: ${fB.map(esc).join(", ")}${dia===t?` <button class="btn sm" data-a="faltaOpen" data-k="bem">Lembrar</button>`:""}</p>`:""}</section>
   <section class="card"><div class="card-h"><h3>PSE — ${esc(dl(dia).toLowerCase()==="hoje"?"hoje":dl(dia))}</h3><span class="sub">${pse.length} registos</span></div>
     ${pse.length?`<div class="tscroll"><table class="tb mon resp"><thead><tr><th>Hora</th><th class="l stk">Jogador</th><th>Sessão</th><th>Duração</th><th>PSE</th><th>Carga</th><th class="l">Sensação</th></tr></thead><tbody>
     ${pse.map(x=>`<tr><td class="num">${esc(x.h||"")}</td><td class="l stk">${who(x.n)}${nb(x)}</td><td class="small">${esc(x.tipo||"–")}</td><td class="num">${x.dur==null?"–":esc(x.dur)+"'"}</td><td><span class="rv" style="background:${x.rpe==null?"var(--surface-2)":monCol(100-(x.rpe-1)/9*100)}">${x.rpe==null?"–":esc(x.rpe)}</span></td><td class="num">${x.c==null?"–":Math.round(x.c)}</td><td class="small" style="text-align:left">${esc(x.sen||"")}</td></tr>`).join("")}
     </tbody></table></div>`:`<div class="empty"><b>Sem registos de PSE neste dia</b>${dia===t?"O PSE é preenchido depois do treino.":""}</div>`}
-    ${fP.length&&pse.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem PSE: ${fP.map(esc).join(", ")}</p>`:""}</section>
+    ${fP.length&&pse.length?`<p class="small muted" style="margin:0;padding:10px 14px">Sem PSE: ${fP.map(esc).join(", ")}${dia===t?` <button class="btn sm" data-a="faltaOpen" data-k="pse">Lembrar</button>`:""}</p>`:""}</section>
   <p class="note">Respostas tal como foram dadas nos formulários (últimos 7 dias), lidas no último cálculo do Sheets — ${esc(monAge())}. Total do bem-estar = sono + fadiga + dor + stress (4 a 20): até 12 risco, 13-16 atenção, 17+ OK, como na folha de respostas. Carga = duração × PSE.</p>`;
 }
 
@@ -240,3 +240,49 @@ function monCfgForm(){
       put("meta","cfg",{...clone(cfg()),mon:{}}); MON.data=null; MON.at=null; MON.err=""; try{ localStorage.removeItem(MON_LS); }catch(e){} closeModal(); })
   }});
 }
+
+/* ---- quem ainda não respondeu hoje (bem-estar de manhã; PSE depois de acabar a sessão do dia) ----
+   Esperados = disponíveis e condicionados da monitorização. Botão WhatsApp por atleta (para o número dele, se estiver na ficha,
+   com o link pessoal da app do atleta quando existe) e uma lista só com nomes para o grupo. */
+function monFalta(){
+  const d=MON.data; if(!d||!d.respostas) return null;
+  const t=todayISO(), r=d.respostas, {map}=monMatch();
+  const disp=d.jogadores.filter(j=>!j.estado||j.estado==="Disponível"||j.estado==="Condicionado").map(j=>j.nome);
+  const who=n=>({n,p:map[n]?P(map[n]):null});
+  const bem=(r.bem||[]).filter(x=>x.d===t), pse=(r.pse||[]).filter(x=>x.d===t);
+  // a sessão de hoje já acabou? (hora + duração do treino/jogo da app)
+  const sess=events().filter(e=>e.date===t&&(e.type==="treino"||e.type==="jogo")&&e.time).map(e=>{ const [h,m]=e.time.split(":").map(Number); return {e,end:h*60+m+(+e.dur||90)}; });
+  const now=new Date(), nm=now.getHours()*60+now.getMinutes(), ended=sess.filter(s=>s.end<=nm);
+  const byName=(a,b)=>(a.p?a.p.name:a.n).localeCompare(b.p?b.p.name:b.n);
+  return {disp:disp.length, bemN:bem.length, pseN:pse.length, sess:sess.length, ended:ended.length, fim:sess.length?Math.max(...sess.map(s=>s.end)):null,
+    bem:disp.filter(n=>!bem.some(x=>x.n===n)).map(who).sort(byName), pse:ended.length?disp.filter(n=>!pse.some(x=>x.n===n)).map(who).sort(byName):[]};
+}
+function monFaltaStrip(){
+  const f=monFalta(); if(!f||!f.disp) return "";
+  const row=(k,lbl,n,miss,extra)=>`<div class="fl-r"><span class="fl-k">${lbl}</span><span class="fl-v"><b>${n}</b> de ${f.disp}${extra||""}</span>${miss.length?`<button class="btn sm" data-a="faltaOpen" data-k="${k}">Faltam ${miss.length} · Lembrar</button>`:`<span class="tag ok">Todos</span>`}</div>`;
+  return `<div class="fl">${row("bem","Bem-estar hoje",f.bemN,f.bem)}${f.ended?row("pse","PSE hoje",f.pseN,f.pse):f.sess?`<div class="fl-r"><span class="fl-k">PSE hoje</span><span class="fl-v small muted">depois da sessão (${pad(Math.floor(f.fim/60))}:${pad(f.fim%60)})</span></div>`:""}</div>`;
+}
+const telWa = t => { let d=String(t||"").replace(/\D/g,""); if(!d) return ""; if(d.startsWith("00")) d=d.slice(2); if(d.length===9) d="351"+d; return d; };
+function faltaMsg(k,p){
+  const nome=p?firstName(p.name):"", link=p&&typeof atLink==="function"&&atOn()?atLink(p):"";
+  return k==="bem" ? `Bom dia${nome?" "+nome:""}! Ainda não respondeste ao bem-estar de hoje. ${link?"Responde na app: "+link:"Responde assim que puderes, é rápido."}`
+    : `Olá${nome?" "+nome:""}! Falta o teu PSE do treino de hoje (esforço de 0 a 10). ${link?"Regista na app: "+link:"Regista assim que puderes."}`;
+}
+function faltaForm(k){
+  const f=monFalta(); if(!f) return toast("Sem dados da monitorização. Carrega em Atualizar.");
+  const miss=f[k]||[], what=k==="bem"?"ao bem-estar":"ao PSE";
+  const grp=`${k==="bem"?"Bom dia! Ainda faltam responder ao bem-estar":"Ainda falta o PSE do treino de hoje"}: ${miss.map(x=>x.p?x.p.name:x.n).join(", ").replace(/\.$/,"")}. Obrigado!`;
+  modal({title:`Falta responder ${what}`,sub:`${miss.length} de ${f.disp} · ${esc(monAge())}`,body:`
+    ${miss.length?`<div class="list">${miss.map(x=>{ const p=x.p, tel=p?telWa(p.tel):"", msg=faltaMsg(k,p);
+      return `<div class="li">${p?avatar(p):`<span class="ph g-X">${esc(initials(x.n))}</span>`}<span class="main"><b>${esc(p?p.name:x.n)}</b><small>${tel?"+"+esc(tel):p?"Sem telemóvel na ficha — escolhes o contacto no WhatsApp":"Não ligado a um atleta da app"}</small></span>
+        <a class="btn sm primary" href="https://wa.me/${tel}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">WhatsApp</a></div>`; }).join("")}</div>
+    <div class="card" style="margin-top:12px;padding:12px"><p class="small muted" style="margin:0 0 8px">Mensagem para o grupo (só nomes, sem links):</p><p style="margin:0 0 10px" id="faltaGrp">${esc(grp)}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="faltaCopy">Copiar</button><a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(grp)}" target="_blank" rel="noopener">Enviar no WhatsApp</a></div></div>`
+    :`<div class="empty"><b>Já responderam todos</b></div>`}
+    <p class="note">Lista feita com as respostas lidas do Sheets (${esc(monAge())}). Quem respondeu há pouco pode ainda não aparecer: carrega em Atualizar no painel. O número de telemóvel põe-se na ficha do atleta (Editar).</p>`,
+    foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
+}
+Object.assign(A,{
+  faltaOpen: el => faltaForm(el.dataset.k),
+  faltaCopy: async () => { const t=($("#faltaGrp")||{}).textContent||""; try{ await navigator.clipboard.writeText(t); toast("Mensagem copiada"); }catch(e){ toast("Seleciona o texto e copia."); } }
+});

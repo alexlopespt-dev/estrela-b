@@ -83,6 +83,7 @@ nav.tabs button .dot{display:inline-block;min-width:17px;height:17px;border-radi
 .btn{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 13px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--grena);border-color:var(--grena);color:#fff}
+a.btn{text-decoration:none;color:var(--text)}a.btn.primary{color:#fff}
 .btn.gold{background:var(--ouro);border-color:var(--ouro);color:var(--accent-ink)}
 .btn.danger{background:var(--r5);border-color:var(--r5);color:#fff}
 .btn.ghost{background:transparent}
@@ -729,3 +730,8 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .dvimp-i b{font-size:13px;line-height:1.2}.dvimp-i small{color:var(--muted);font-size:12px}
 .dvimp-t svg{width:100%;height:auto;display:block}
 .bpdlg .dlg-b{position:relative}
+/* quem falta responder (painel) */
+.fl{display:grid;gap:6px;padding:0 14px 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.fl-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fl-k{font-weight:700;font-size:14px;min-width:120px}
+.fl-v{flex:1;font-size:14px;color:var(--muted)}.fl-v b{color:var(--text);font-size:16px}
