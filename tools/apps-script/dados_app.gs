@@ -36,6 +36,7 @@ function doGet(e) {
   if (prm.a === 'atleta') body = JSON.stringify(atResposta_(function () { return atleta_(prm.t); }));   // app do atleta (link pessoal)
   else if (prm.a === 'aviso') body = JSON.stringify(atResposta_(function () { return atAviso_(prm.t); }));   // o telemóvel recebeu um aviso
   else if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
+  else if (prm.a === 'atletas_diag') body = JSON.stringify(atResposta_(function () { return atDiagTodos_(); }));   // app técnica: respostas por atleta
   else if (prm.a === 'pull' || prm.a === 'lixo') {
     try { body = JSON.stringify(prm.a === 'lixo' ? dadosLixo_() : dadosPull_(Number(prm.since || 0))); }
     catch (err) { body = JSON.stringify({ erro: String(err && err.message || err) }); }
@@ -510,7 +511,7 @@ function atAtleta_(tok) {
     var map = ligacoesNomes_(nomesMonitorizacao_(), reg.players, (cfg.mon && cfg.mon.map) || {});
     Object.keys(map).forEach(function (n) { if (map[n] === pid) nome = n; });
   } catch (e) {}
-  return { pid: pid, p: p, reg: reg, nome: nome };
+  return { pid: pid, p: p, reg: reg, nome: nome, man: atManual_(cfg) };
 }
 // o mesmo atleta? (sem acentos nem maiúsculas; a pontuação separa palavras: "Luís.A." = "Luís A.")
 function atChave_(s) {
@@ -531,8 +532,11 @@ function atAliases_() {
   } catch (e) {}
   return AT_ALIAS;
 }
-/** Esta linha da folha é deste atleta? (nome como escrito, pela equivalência da monitorização, ou o nome da app) */
+/** Ligações feitas à mão na app técnica ("Verificar o que os atletas veem"): nome como escrito na folha -> id do atleta. */
+function atManual_(cfg) { var m = {}, o = (cfg && cfg.atNomes) || {}; Object.keys(o).forEach(function (k) { if (o[k]) m[atChave_(k)] = o[k]; }); return m; }
+/** Esta linha da folha é deste atleta? (ligação à mão, nome como escrito, equivalência da monitorização, ou o nome da app) */
 function atEle_(bruto, A) {
+  var m = A.man && A.man[atChave_(bruto)]; if (m) return m === A.pid;
   var al = atAliases_()[atChave_(bruto)];
   return atMesmo_(bruto, A.nome) || atMesmo_(bruto, A.p.name) || (!!al && (atMesmo_(al, A.nome) || atMesmo_(al, A.p.name)));
 }
@@ -897,7 +901,9 @@ function avisosAtletas() {
   };
   var sess = Object.keys(ev).map(function (id) { var e = ev[id]; return e && e.date === hoje && (e.type === 'treino' || e.type === 'jogo') ? { id: id, e: e } : null; }).filter(Boolean);
   var bem = null, pse = null, enviados = 0;
-  var respondeu = function (s, pid) { if (!s) return true; var p = pl[pid] || {}; return !!(s[atChave_(nomeDe[pid] || '')] || s[atChave_(p.name)]); };
+  var man = atManual_(cfg);
+  var respondeu = function (s, pid) { if (!s) return true; var p = pl[pid] || {};
+    return !!(s[atChave_(nomeDe[pid] || '')] || s[atChave_(p.name)] || Object.keys(man).some(function (k) { return man[k] === pid && s[k]; })); };
   // próximo jogo com convocatória publicada (até 7 dias)
   var ate = atKey_(new Date(agora.getTime() + 7 * 864e5)), jogo = null;
   Object.keys(ev).forEach(function (id) { var e = ev[id]; if (e && e.type === 'jogo' && e.convPub && e.date >= hoje && e.date <= ate && (!jogo || e.date < jogo.e.date)) jogo = { id: id, e: e }; });
@@ -932,4 +938,26 @@ function avisosAtletas() {
     } finally { lock.releaseLock(); }
   });
   return enviados;
+}
+
+/** App técnica ("Verificar o que os atletas veem"): respostas de bem-estar e PSE dos últimos 14 dias por atleta, com a
+ *  mesma regra de nomes da app do atleta, e os nomes escritos nas folhas que não correspondem a nenhum atleta. */
+function atDiagTodos_() {
+  var reg = dadosTodos_(['players', 'meta']), pl = reg.players, cfg = reg.meta.cfg || {}, man = atManual_(cfg), nomeDe = {};
+  try { var map = ligacoesNomes_(nomesMonitorizacao_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
+  var ids = Object.keys(pl).filter(function (id) { return pl[id] && !pl[id].archived; }), out = {}, sem = {}, erros = [];
+  var As = ids.map(function (id) { out[id] = { nome: nomeDe[id] || pl[id].name, bem: 0, pse: 0, ult: '' }; return { pid: id, p: pl[id], nome: nomeDe[id] || pl[id].name, man: man }; });
+  var desde = atKey_(new Date(Date.now() - 13 * 864e5));
+  [['bem', ID_BEMESTAR, ['sono']], ['pse', ID_PSE, ['intens', 'sessão', 'sessao']]].forEach(function (x) {
+    try {
+      var F = atFolha_(x[1], x[2]);
+      atLinhas_(F).forEach(function (l) {
+        var k = atKey_(l.d); if (k < desde) return;
+        var b = l.v[F.c.n], A = As.filter(function (a) { return atEle_(b, a); })[0];
+        if (A) { out[A.pid][x[0]]++; if (k > out[A.pid].ult) out[A.pid].ult = k; }
+        else { b = String(b || '').trim(); if (b) sem[b] = (sem[b] || 0) + 1; }
+      });
+    } catch (e) { erros.push(x[0] + ': ' + e.message); }
+  });
+  return { ok: true, atletas: out, semAtleta: sem, erros: erros };
 }

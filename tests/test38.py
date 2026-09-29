@@ -38,6 +38,7 @@ try:
     {"id":ID_BEM,"nome":"respostas","linhas":[H_BEM,
       [ontem+" 07:10:00","Luís.A.","4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo",16,"Atenção"],
       [ontem+" 07:20:00","Rui","2 - Mau","2 - Cansado","3 - Alguma Dor","3 - Normal",10,"Risco"],
+      [iso(T-datetime.timedelta(days=3)).replace("-","/")+" 08:10:00","Zé Ninguém","4 - Bom","4 - Bem","4 - Pouca Dor","4 - Tranquilo",16,"Atenção"],
       [iso(T-datetime.timedelta(days=2)).replace("-","/")+" 08:00:00","Luisinho","3 - Normal","3 - Normal","3 - Alguma Dor","3 - Normal",12,"Risco"],
       [hoje.replace("-","/")+" 06:31:43","Hugo R.","2 - Mau","3 - Normal","3 - Alguma Dor","4 - Tranquilo",12,"Risco"]]},
     {"id":ID_PSE,"nome":"respostas","linhas":[H_PSE,[ontem+" 21:00:00","Rui","Treino","01:30:00","7 - Muito difícil","Cansado"],[ontem+" 21:05:00","Hugo R.","Recuperação","00:40:00","3 - Moderado","Bem"]]}]})
@@ -95,13 +96,13 @@ try:
     t=pg.inner_text(".sheet"); print("enviado:", t.replace("\n"," | "))
     if "Obrigado" not in t or "16/20" not in t: errs.append("confirmação do bem-estar")
     rows=estado()["resp"][ID_BEM]; nova=rows[-1]; print("linha nova:", nova)
-    if len(rows)!=6 or nova[1]!="Luís A." or nova[2:6]!=["4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo"] or (len(nova)>6 and nova[6] not in ("",None)): errs.append("linha do bem-estar")
+    if len(rows)!=7 or nova[1]!="Luís A." or nova[2:6]!=["4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo"] or (len(nova)>6 and nova[6] not in ("",None)): errs.append("linha do bem-estar")
     pg.click('.sheet [data-a="fechar"]'); pg.wait_for_timeout(900)
     if "Respondido às" not in pg.inner_text("#app"): errs.append("hoje não mostra respondido")
     # uma resposta por dia: sem botão para responder outra vez e o script recusa
     if pg.locator('[data-a="bem"]').count() or "Voltas a responder amanhã" not in pg.inner_text("#app"): errs.append("bem-estar: deixa responder outra vez")
     r=post({"a":"atleta_bem","t":TOK,"i":[2,2,2,2]}); rows=estado()["resp"][ID_BEM]; print("segunda resposta:", r.get("erro"), len(rows), rows[-1][2])
-    if r.get("erro")!="ja" or "amanhã" not in r.get("msg","") or len(rows)!=6 or rows[-1][2]!="4 - Bom": errs.append("segunda resposta do bem-estar aceite")
+    if r.get("erro")!="ja" or "amanhã" not in r.get("msg","") or len(rows)!=7 or rows[-1][2]!="4 - Bom": errs.append("segunda resposta do bem-estar aceite")
     # Hugo respondeu pelo formulário do Google: a app dele não deixa responder outra vez
     r=post({"a":"atleta_bem","t":TOK_H,"i":[3,3,3,3]}); print("Hugo (já respondeu no formulário):", r.get("erro"))
     if r.get("erro")!="ja": errs.append("resposta dada no formulário não conta")
@@ -211,7 +212,26 @@ try:
     pa.click('#dlg [data-a="atDiagSend"]'); pa.wait_for_timeout(3500)
     ag=[a["id"] for a in get({"a":"atleta","t":TOK})["agenda"]]
     if "tr_sopartilha" not in ag: errs.append("verificar: envio para a partilha")
-    if "Está tudo igual" not in pa.inner_text("#dlg"): errs.append("verificar: depois de enviar")
+    if "tudo igual" not in pa.inner_text("#dlg"): errs.append("verificar: depois de enviar")
+    # respostas por atleta: nome na folha sem atleta → ligar à mão
+    t=pa.inner_text("#dlg")
+    if "Zé Ninguém" not in t or "Bem-estar e PSE nos últimos 14 dias" not in t: errs.append("verificar: nomes da folha sem atleta")
+    pa.select_option('#dlg select[data-c="atNome"][data-n="Zé Ninguém"]',"ta3"); pa.wait_for_timeout(4500)
+    rd=get({"a":"atletas_diag","k":KEY}); print("diag Rui:", rd["atletas"].get("ta3"), "sem atleta:", rd.get("semAtleta"))
+    if "Zé Ninguém" in rd.get("semAtleta",{}) or rd["atletas"]["ta3"]["bem"]<2: errs.append("ligar nome da folha ao atleta")
+    if "Zé Ninguém" in pa.inner_text("#dlg"): errs.append("verificar: nome ligado continua na lista")
+    # jogo passado que só está aqui (minutos/golos) → conta para as estatísticas do atleta depois de enviado
+    pa.click('#dlg [data-a="mClose"]')
+    pa.evaluate("""(d)=>{const s=JSON.parse(localStorage.getItem('estrela-tecnico-v1')); s.events.j_so_aqui={type:'jogo',date:d,time:'15:00',opp:'Talaíde',venue:'C',dur:90,call:['ta1'],xi:['ta1'],ev:[{t:'golo',min:10,pid:'ta1'}],ga:0,closed:true}; localStorage.setItem('estrela-tecnico-v1',JSON.stringify(s));}""",d(-5))
+    pa.reload(); pa.wait_for_timeout(2500)
+    pa.click('nav [data-t="plantel"]'); pa.click('#main [data-a="atLinks"]'); pa.wait_for_timeout(300)
+    pa.click('#dlg [data-a="atDiag"]'); pa.wait_for_timeout(3500)
+    t=pa.inner_text("#dlg")
+    if "já passados" not in t or "Talaíde" not in t: errs.append("verificar: jogo passado em falta")
+    antes=get({"a":"atleta","t":TOK})["numeros"]["jogos"]
+    pa.click('#dlg [data-a="atDiagSend"]'); pa.wait_for_timeout(4000)
+    depois=get({"a":"atleta","t":TOK})["numeros"]["jogos"]; print("jogos do Luís:", antes, "->", depois)
+    if depois!=antes+1: errs.append("jogo passado enviado não conta nas estatísticas")
     pa.click('#dlg [data-a="mClose"]')
     # convocatória: publicar
     pa.click('nav [data-t="jogos"]'); pa.click('[data-a="jsub"][data-k="conv"]'); pa.wait_for_timeout(400)

@@ -84,29 +84,58 @@ async function atFetchAtleta(tok){
 }
 async function atDiagForm(){
   const p=players().find(x=>x.atk); if(!p||!SYNC.cfg) return toast("Precisa da partilha ligada e de pelo menos um link criado.");
-  modal({title:"O que os atletas veem",sub:"A comparar com o script da partilha…",body:`<div class="empty"><b>A perguntar ao Google…</b></div>`,foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
-  let d, srvP={}; try{ await atFresh(); const all=await syncGet({a:"pull",since:0}); (all.docs||[]).forEach(x=>{ if(x&&x.c==="players"&&!x.x&&x.d) srvP[x.i]=x.d; }); d=await atFetchAtleta((players().find(x=>x.atk&&srvP[x.id]&&srvP[x.id].atk===x.atk)||p).atk); }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
-  const t=todayISO(), ate=addDays(t,14);
+  modal({title:"O que os atletas veem",sub:"A comparar com o script da partilha…",body:`<div class="empty"><b>A perguntar ao Google…</b>Pode demorar uns segundos.</div>`,foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
+  const srvP={}, srvE={}, srvDel=new Set(); let d, rd=null;
+  try{
+    await atFresh();
+    const all=await syncGet({a:"pull",since:0});
+    (all.docs||[]).forEach(x=>{ if(!x) return; if(x.c==="events"){ if(x.x) srvDel.add(x.i); else if(x.d) srvE[x.i]=x.d; } if(x.c==="players"&&!x.x&&x.d) srvP[x.i]=x.d; });
+    d=await atFetchAtleta((players().find(x=>x.atk&&srvP[x.id]&&srvP[x.id].atk===x.atk)||p).atk);
+    try{ rd=await syncGet({a:"atletas_diag"}); }catch(e){ rd={erro:e.message}; }
+  }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
+  const t=todayISO(), ate=addDays(t,14), J=o=>JSON.stringify(o);
   const loc=events().filter(e=>(e.type==="treino"||e.type==="jogo")&&e.date>=t&&e.date<=ate).sort(byDT);
-  const locG=events().filter(e=>e.type==="jogo"&&e.date>=t&&!e.closed).sort(byDT).slice(0,6);
-  const srv=new Set([...(d.agenda||[]).map(a=>a.id),...(d.proximos||[]).map(a=>a.id)]);
-  const falta=[...loc,...locG.filter(g=>!loc.includes(g))].filter(e=>!srv.has(e.id));
+  // todos os treinos e jogos (também os passados: minutos, golos, presenças) que aqui estão diferentes ou não existem na partilha
+  const falta=events().filter(e=>{ if(srvDel.has(e.id)) return false; const l=D.events[e.id], v=srvE[e.id]; if(!v) return true; if(J(l)===J(v)) return false;
+    const la=l._at||"", sa=v._at||""; return la||sa ? la>sa : J(l).length>J(v).length; }).sort(byDT);
+  const fut=falta.filter(e=>e.date>=t), pas=falta.filter(e=>e.date<t);
   const n=syncN(), online=MODE!=="local";
   const lk=players().filter(x=>x.atk), lkMal=lk.filter(x=>!srvP[x.id]||srvP[x.id].atk!==x.atk);
-  const row=e=>`<div class="li"><span class="main"><b>${e.type==="jogo"?"Jogo "+esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"")):"Treino"+(e.theme?" · "+esc(e.theme):"")}</b><small>${esc(fmtD(e.date,{weekday:"short",day:"numeric",month:"short"}))}${e.time?" · "+esc(e.time):""}</small></span><span class="tag bad">Não chegou</span></div>`;
+  const row=e=>`<div class="li"><span class="main"><b>${e.type==="jogo"?"Jogo "+esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"")):"Treino"+(e.theme?" · "+esc(e.theme):"")}</b><small>${esc(fmtD(e.date,{weekday:"short",day:"numeric",month:"short"}))}${e.time?" · "+esc(e.time):""}</small></span><span class="tag bad">${srvE[e.id]?"Diferente":"Não chegou"}</span></div>`;
+  // respostas por atleta (bem-estar/PSE, 14 dias)
+  let resp="";
+  if(rd&&rd.erro) resp=`<p class="note">Para ver as respostas por atleta, atualiza o script da partilha (dados_app.gs) e faz "Nova versão". (${esc(rd.erro)})</p>`;
+  else if(rd&&rd.atletas){
+    const pls=players().filter(x=>rd.atletas[x.id]).sort((a,b)=>(rd.atletas[a.id].bem-rd.atletas[b.id].bem)||a.name.localeCompare(b.name));
+    const sem=Object.entries(rd.semAtleta||{}).sort((a,b)=>b[1]-a[1]);
+    const opts=`<option value="">— escolhe o atleta —</option>`+players().map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+    resp=`<h3 style="margin:16px 0 6px">Bem-estar e PSE nos últimos 14 dias</h3>
+      ${sem.length?`<div class="card" style="padding:12px;margin:0 0 10px"><p style="margin:0 0 8px"><b>Nomes escritos nas folhas que não correspondem a nenhum atleta</b> — as respostas destes não aparecem na app do atleta. Diz a quem pertencem:</p>
+        ${sem.map(([nm,c])=>`<div class="li" style="gap:8px"><span class="main"><b>${esc(nm)}</b><small>${c} resposta${c>1?"s":""}</small></span><select data-c="atNome" data-n="${esc(nm)}" aria-label="Atleta de ${esc(nm)}">${opts}</select></div>`).join("")}</div>`:""}
+      ${(rd.erros||[]).length?`<p class="note">${rd.erros.map(esc).join(" · ")}</p>`:""}
+      <div class="tscroll"><table class="tb"><thead><tr><th class="l">Atleta</th><th class="l">Nome na folha</th><th>Bem-estar</th><th>PSE</th></tr></thead><tbody>
+      ${pls.map(x=>{ const r=rd.atletas[x.id]; return `<tr><td class="l">${esc(x.name)}</td><td class="l small">${esc(r.nome)}</td><td class="num"${r.bem?"":' style="color:var(--r5);font-weight:700"'}>${r.bem}</td><td class="num">${r.pse}</td></tr>`; }).join("")}
+      </tbody></table></div><p class="small muted">0 no bem-estar = a app do atleta não encontra as respostas dele: o nome na folha é diferente (liga-o acima) ou não tem respondido.</p>`;
+  }
   const body=`<div class="kpis" style="margin-bottom:12px">
       <div class="kpi"><span>Nesta app (15 dias)</span><b>${loc.filter(e=>e.type==="treino").length}<small> treinos</small> · ${loc.filter(e=>e.type==="jogo").length}<small> jogos</small></b></div>
       <div class="kpi"><span>A app do atleta vê</span><b>${(d.agenda||[]).filter(a=>a.tipo==="treino").length}<small> treinos</small> · ${(d.agenda||[]).filter(a=>a.tipo==="jogo").length}<small> jogos</small></b></div>
       <div class="kpi"><span>Por enviar daqui</span><b>${n}</b></div></div>
     <p class="note" style="margin:0 0 10px">${lkMal.length?`<b>${lkMal.length} link(s) desta lista não são os que estão na partilha:</b> ${lkMal.map(x=>esc(x.name)).join(", ")}. Carrega em "Enviar agora" ou volta a abrir esta lista.`:`<b>Links:</b> os ${lk.length} links desta lista são os que funcionam. Um atleta com "link expirado" tem um link antigo (foi criado um novo depois): envia-lhe outra vez o link desta lista.`}</p>
     ${online?`<p class="note" style="margin:0 0 10px"><b>Estás na versão online (no Claude).</b> Esta versão não envia para o Sheets, por isso a app do atleta não vê o que fazes aqui. Cria os treinos e jogos na versão do Netlify com a partilha ligada.</p>`:""}
-    ${falta.length?`<p style="margin:0 0 8px"><b>${falta.length} ${falta.length>1?"registos não chegaram":"registo não chegou"} à partilha</b> — os atletas não os veem:</p><div class="list">${falta.slice(0,30).map(row).join("")}</div>
-      ${online?"":`<p class="small muted">Provavelmente foram criados num dispositivo sem a partilha ligada. Envia-os agora a partir daqui:</p><button class="btn primary" data-a="atDiagSend">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}`
-    :`<div class="empty"><b>Está tudo igual</b>A app do atleta tem os mesmos treinos e jogos. Se o telemóvel mostra outra coisa, carrega no botão de atualizar da app do atleta.</div>`}
-    ${n&&!online?`<p class="small muted">Há ${n} alteraç${n>1?"ões":"ão"} deste dispositivo por enviar. <button class="btn sm" data-a="atDiagPush">Enviar agora</button></p>`:""}`;
+    ${falta.length?`<p style="margin:0 0 8px"><b>${falta.length} ${falta.length>1?"treinos/jogos estão":"treino/jogo está"} diferente${falta.length>1?"s":""} ou em falta na partilha</b> — os atletas não os veem assim${pas.length?` (${pas.length} já passados: resultados, minutos, golos e presenças contam para as estatísticas deles)`:""}:</p>
+      <div class="list">${fut.slice(0,20).map(row).join("")}${pas.slice(-20).reverse().map(row).join("")}</div>
+      ${online?"":`<button class="btn primary" data-a="atDiagSend" style="margin-top:8px">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}`
+    :`<div class="empty"><b>Treinos e jogos: está tudo igual</b>A app do atleta tem os mesmos treinos, jogos e resultados. Se o telemóvel mostra outra coisa, carrega no botão de atualizar da app do atleta.</div>`}
+    ${n&&!online?`<p class="small muted">Há ${n} alteraç${n>1?"ões":"ão"} deste dispositivo por enviar. <button class="btn sm" data-a="atDiagPush">Enviar agora</button></p>`:""}
+    ${resp}`;
   modal({title:"O que os atletas veem",sub:`Pelo link de ${esc(p.name)} · script da partilha`,big:true,body,
     foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`,ctx:{falta:falta.map(e=>e.id)}});
 }
+Object.assign(Cg,{
+  atNome: el => { const pid=el.value, nm=el.dataset.n; if(!pid||!nm) return; const c=clone(cfg());
+    put("meta","cfg",{...c,atNomes:{...(c.atNomes||{}),[nm]:pid}}); toast(`"${nm}" ligado a ${P(pid)?P(pid).name:""} — a app do atleta passa a mostrar estas respostas.`); setTimeout(atDiagForm,1500); }
+});
 Object.assign(A,{
   atDiag: () => atDiagForm(),
   atDiagPush: async () => { toast("A enviar…"); await syncPush(); toast(SYNC.err||"Enviado"); atDiagForm(); },
