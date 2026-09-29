@@ -1,0 +1,27 @@
+# Lembrete mensal de manutenção: abre uma issue com a lista de verificação (dependências, cópias, acessos).
+name: Manutenção mensal
+on:
+  schedule: [{ cron: "0 8 2 * *" }]   # dia 2 de cada mês (depois do restauro mensal)
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  lembrete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const m = new Date().toLocaleDateString("pt-PT", {month: "long", year: "numeric"});
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo,
+              title: `Manutenção mensal — ${m}`,
+              body: [
+                "- [ ] Atualizações do Dependabot revistas e integradas (ações do GitHub, Playwright).",
+                "- [ ] Fluxo **Restauro mensal** deste mês a verde (Actions).",
+                "- [ ] Fluxo **Cópia diária** a verde nos últimos dias.",
+                "- [ ] Supabase → Advisors → Security e Performance sem avisos novos.",
+                "- [ ] Sentry: erros novos revistos.",
+                "- [ ] UptimeRobot: sem quedas por explicar.",
+                "- [ ] Pessoas com acesso em cada clube ainda fazem sentido (quem saiu foi retirado).",
+                "- [ ] Supabase e Netlify: contas com autenticação de dois fatores ligada.",
+                "", "Ver SEGURANCA.md."].join("\n") });

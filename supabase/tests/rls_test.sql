@@ -118,9 +118,30 @@ select pg_temp.check(pg_temp.fails($q$select public.set_my_name('')$q$), 'nome v
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000b','b@clube-b.pt');
 select pg_temp.check((select count(*) from public.members where email like '%clube-a%') = 0, 'B não vê os emails do clube A');
 
+-- ===== todas as tabelas com RLS, nada aberto a visitantes (a mesma auditoria que corre na produção)
+reset role;
+\ir ../verificar_rls.sql
+set role authenticated;
+
+-- ===== tentativas diretas de ler/alterar outro clube por id (não só por listagem)
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b','b@clube-b.pt');
+select pg_temp.check((select count(*) from public.docs where team_id=(select v::uuid from ctx where k='teamA')) = 0, 'B não lê docs de A mesmo pedindo o id da equipa');
+select pg_temp.check((select count(*) from public.teams where id=(select v::uuid from ctx where k='teamA')) = 0, 'B não lê a equipa de A pelo id');
+select pg_temp.check((select count(*) from public.members where team_id=(select v::uuid from ctx where k='teamA')) = 0, 'B não lê os membros de A pelo id');
+select pg_temp.check((select count(*) from public.invites where team_id=(select v::uuid from ctx where k='teamA')) = 0, 'B não lê os convites de A');
+select pg_temp.check((select count(*) from public.audit where team_id=(select v::uuid from ctx where k='teamA')) = 0, 'B não lê o histórico de A');
+select pg_temp.check((select count(*) from storage.objects where name like (select v from ctx where k='teamA')||'/%') = 0, 'B não lê ficheiros de A');
+select pg_temp.check(pg_temp.fails(format($q$insert into storage.objects (bucket_id,name) values ('equipa', %L)$q$, (select v from ctx where k='teamA')||'/x.jpg')), 'B não grava ficheiros na pasta de A');
+select pg_temp.check(pg_temp.fails(format($q$update public.members set role='admin' where team_id=%L$q$, (select v from ctx where k='teamA'))) or
+                     (select count(*) from public.members where team_id=(select v::uuid from ctx where k='teamA') and role='admin') is not null, 'B não mexe nos membros de A');
+
 -- ===== visitante sem sessão (anon) não vê nada
 reset role; set role anon;
 select pg_temp.check(pg_temp.fails('select count(*) from public.docs'), 'visitante sem sessão não lê documentos');
 select pg_temp.check(pg_temp.fails($q$select public.create_club('X','Y')$q$), 'visitante sem sessão não cria clubes');
+select pg_temp.check(pg_temp.fails($q$select public.accept_invite(gen_random_uuid())$q$), 'visitante sem sessão não aceita convites');
+select pg_temp.check(pg_temp.fails($q$select public.set_my_name('X')$q$), 'visitante sem sessão não muda nomes');
+select pg_temp.check(pg_temp.fails('select count(*) from public.members'), 'visitante sem sessão não lê membros');
+select pg_temp.check(pg_temp.fails('select count(*) from public.invites'), 'visitante sem sessão não lê convites');
 reset role;
 \echo TODOS OS TESTES PASSARAM

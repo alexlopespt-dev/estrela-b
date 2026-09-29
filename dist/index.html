@@ -724,6 +724,7 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 @media (max-width:420px){ .sb-2{grid-template-columns:1fr} .sb-card{padding:18px 16px 14px} }
 .nx-empty .empty b{color:#fff}
 .nx-empty .empty .btn{background:var(--ouro);color:#2a0512;border-color:transparent}
+.envpill{position:fixed;left:10px;bottom:10px;z-index:70;background:#f2bd4b;color:#2a0512;font:800 11px/1 var(--fb);letter-spacing:.08em;padding:7px 10px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}
 
 </style>
 </head>
@@ -853,7 +854,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 12:42";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 13:51";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -1212,7 +1213,7 @@ function render(){
   // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
   const full=m.full || m.team || (EDITION==="clubes"?"App da equipa técnica":"Estrela B"), cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
   $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
-  document.title = full + " — Departamento técnico";
+  document.title = (EDITION==="clubes"&&SB_ENV==="testes"?"[TESTES] ":"") + full + " — Departamento técnico";
   $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`
     + `<span class="ts-m">${[n2?esc(n2):"", m.comp?esc(m.comp):"", m.season?"<b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" · ")}</span>`;
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
@@ -1232,7 +1233,7 @@ function render(){
       h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
-    console.error(err);
+    console.error(err); if(typeof errReport==="function") errReport(err,{pagina:S.page?S.page.p||"ficha":S.tab});
     h=`<div class="empty" style="margin-top:20px"><b>Algo correu mal a mostrar esta página.</b>Volta ao painel e tenta de novo.<br><br><button class="btn" data-a="tab" data-t="painel">Ir para o painel</button></div>`;
   }
   main.innerHTML=h;
@@ -3659,12 +3660,12 @@ document.addEventListener("click", e=>{
   if(el.closest("#dlgAsk")) return;
   const fn=A[el.dataset.a]; if(!fn) return;
   if(el.tagName==="A") e.preventDefault();
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Algo correu mal. Tenta de novo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{acao:el.dataset.a}); toast("Algo correu mal. Tenta de novo."); }
 });
 document.addEventListener("change", e=>{
   const el=e.target.closest("[data-c]"); if(!el) return;
   const fn=Cg[el.dataset.c]; if(!fn) return;
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Não foi possível guardar esse campo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{campo:el.dataset.c}); toast("Não foi possível guardar esse campo."); }
 });
 document.addEventListener("input", e=>{
   const el=e.target;

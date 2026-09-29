@@ -1,0 +1,15 @@
+{
+  "_leia": "Configuração pública da versão para clubes. Só vão aqui valores públicos (URL do projeto Supabase, chave 'publishable', DSN do Sentry, endereço do site). NUNCA a service_role/secret, palavras-passe ou ligações à base de dados: essas ficam nos Secrets do GitHub (ver SEGURANCA.md).",
+  "producao": {
+    "sb_url": "https://kgplkrtiobiysubcohii.supabase.co",
+    "sb_key": "sb_publishable_fcmL5GtbiMxlSuWhsqogeg_1BxFZ-4J",
+    "sentry_dsn": "",
+    "site": ""
+  },
+  "testes": {
+    "sb_url": "",
+    "sb_key": "",
+    "sentry_dsn": "",
+    "site": ""
+  }
+}

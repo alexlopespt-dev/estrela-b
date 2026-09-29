@@ -66,7 +66,7 @@ python3 build.py              # gera dist/estrela-tecnico-app.html, dist/index.h
 python3 build.py online       # só a versão para o artifact do Claude (sem dados, usa base de dados online)
 python3 build.py offline      # só dist/index.html (com dados e fotos, guarda no browser) — para Netlify
 python3 build.py clubes       # só dist/clubes/index.html (versão para outros clubes, com login; outro site Netlify)
-./tests/correr_testes.sh      # build de teste + todos os testes
+./tests/correr_testes.sh      # build de teste + todos os testes + verificação de chaves (sai com erro se falhar)
 ```
 Requisitos dos testes: `pip install playwright && python3 -m playwright install chromium` (no Claude Code na web, ver nota abaixo).
 O aviso "403" nos testes vem das Google Fonts bloqueadas sem rede — é esperado.
@@ -87,6 +87,16 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - Ecrã de entrada `#sbGate` (fora do `#main`): entrar, criar conta (confirmação por email; links com `#access_token…&type=signup|recovery`), recuperar palavra-passe, criar clube (nome, equipa, época, competição) ou colar convite, escolher equipa. Sessão em `LS+":sessao"`, equipa em `:equipa`, convite pendente em `:convite`. `meLabel()` = nome da conta (`sbName`).
 - Plantel → "Conta e acessos" (`sbAccount`): nome, função, mudar nome, trocar de equipa, sair; admin vê pessoas (muda função/retira) e convites, e convida (email + função → link `#convite=token`, copiar/WhatsApp/email).
 - Base de dados: `supabase/migrations` (1.º base, 2.º membros — nome/email), testes RLS em `supabase/tests` (Postgres local: `PGHOST=/tmp PGPORT=55432 sh supabase/tests/correr.sh`, cluster em `/var/tmp/pgx`, arrancar com `su postgres -s /bin/bash -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pgx/data -l /var/tmp/pgx/pg2.log -o '-p 55432 -k /tmp' start"`). Guia: `supabase/LEIA-ME.md`. Daqui não há rede para a Supabase: os testes usam `tests/sb_falso.py` (`page.route("https://sb.teste/**")`); a versão de teste `dist/app_clubes.html` expõe `window.__t`.
+
+## Segurança e operação (SEGURANCA.md, test37)
+- Ambientes em `config/ambientes.json` (só valores públicos: URL Supabase, chave publishable, DSN Sentry, site): `producao` → `python3 build.py clubes` → `dist/clubes/`; `testes` (2.º projeto Supabase) → `build.py clubes-testes` → `dist/clubes-testes/` (faixa "AMBIENTE DE TESTES", título `[TESTES]`, botão "Criar dados fictícios" → `sbFakeData`, ids `fk_*`). `SB_ENV`/`SENTRY_DSN` (`__AMBIENTE__`/`__SENTRY__`). Os testes usam `ENV_TESTE` (Supabase e Sentry simulados).
+- Cada pasta de clubes leva `_headers` (`headers_for` no build.py): CSP (script 'unsafe-inline' por ser um ficheiro único e pelas janelas de impressão; connect só Supabase/Sentry/Google Sheets/Fonts; frame-ancestors none), HSTS 2 anos, nosniff, X-Frame-Options, Referrer/Permissions-Policy, noindex. **No Netlify arrasta-se a pasta inteira.** test37 serve a app com estes cabeçalhos e falha se a CSP bloquear algo.
+- Erros → Sentry sem biblioteca (`errReport` em clubes.js, envelope por fetch; `window.error`/`unhandledrejection` + catch das ações/campos/render com `typeof errReport` porque só existe na versão para clubes); sem email/nomes; máx. 20, sem repetidos.
+- Entrada: 5 falhas no mesmo dispositivo em 15 min → espera 1, 2, 4… até 15 min (`sbTry*`, `LS+":tentativas"`); o limite a sério é o da Supabase (Rate Limits).
+- `tools/seguranca/verificar_chaves.py` (também dentro de `correr_testes.sh`, que agora sai com erro se algo falhar): falha com sb_secret_, JWT com role≠anon, ligação postgres com palavra-passe, chaves privadas, tokens.
+- RLS: `supabase/verificar_rls.sql` (todas as tabelas com RLS, nada para anon, bucket privado) corre nos testes e todos os dias contra a produção; `rls_test.sql` tem 56 verificações (inclui ler/gravar noutro clube pelo id).
+- Cópias: `tools/copias/copia.sh` (pg_dump dados com gatilhos desligados + esquema + contas + lista de fotos + `contagens.json` com md5 dos docs), `ficheiros.py` (fotos, com a service key), `restauro.sh` (repõe numa base VAZIA de teste, recusa URLs da Supabase, compara contagens/md5, corre a auditoria).
+- GitHub (`.github/`): `testes.yml` (RLS + cópia/restauro com Postgres 17 + chaves em cada push; testes da app em PR/main), `copia-diaria.yml` (02:30 UTC, cifrada AES-256, 35 dias; Secrets SUPABASE_DB_URL + BACKUP_PASSPHRASE), `restauro-mensal.yml` (dia 1), `vigia.yml` (de hora a hora: site, HSTS/CSP, Supabase), `manutencao-mensal.yml` (issue com a lista), `dependabot.yml` (mensal). Os agendados só correm a partir da `main`.
 
 ## Carga e relatório semanal
 - Treinos → Planeamento, cartão "Carga planeada vs. real" (`vCarga`, microciclo escolhido em "O que temos trabalhado" ou a semana atual): planeada = `INT_RPE[int]` (Baixa 3, Média 5, Alta 7, Muito alta 9) × minutos do plano (ou duração); real = RPE médio dos presentes × duração. Alerta se real (ou planeada) > 120% da média real dos até 4 microciclos anteriores (`cargaHabitual`). Jogos marcados no dia, fora das contas.

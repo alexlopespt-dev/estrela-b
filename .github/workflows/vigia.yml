@@ -1,0 +1,28 @@
+# Vigia: de hora a hora confirma que o site dos clubes abre e que a Supabase responde. Se falhar, o GitHub envia
+# um email (falha de fluxo agendado). É um complemento: o alerta principal deve ser o UptimeRobot (de 5 em 5 min).
+name: Vigia do site
+on:
+  schedule: [{ cron: "17 * * * *" }]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Site e Supabase
+        run: |
+          SITE=$(python3 -c "import json;print(json.load(open('config/ambientes.json'))['producao'].get('site',''))")
+          SB=$(python3 -c "import json;print(json.load(open('config/ambientes.json'))['producao']['sb_url'])")
+          KEY=$(python3 -c "import json;print(json.load(open('config/ambientes.json'))['producao']['sb_key'])")
+          if [ -n "$SITE" ]; then
+            curl -fsS --max-time 20 -o site.html "$SITE" || { echo "::error::O site $SITE não abre."; exit 1; }
+            grep -q "App da equipa técnica" site.html || { echo "::error::O site abre mas não é a app."; exit 1; }
+            H=$(curl -fsSI --max-time 20 "$SITE")
+            echo "$H" | grep -qi "strict-transport-security" || { echo "::error::Falta o cabeçalho HSTS no site."; exit 1; }
+            echo "$H" | grep -qi "content-security-policy" || { echo "::error::Falta o cabeçalho CSP no site."; exit 1; }
+          else echo "::notice::Ainda sem endereço do site em config/ambientes.json (producao.site)."; fi
+          curl -fsS --max-time 20 -H "apikey: $KEY" "$SB/auth/v1/health" >/dev/null || { echo "::error::A Supabase não responde."; exit 1; }
+          echo "Tudo a responder."

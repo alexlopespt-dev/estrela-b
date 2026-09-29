@@ -1,0 +1,51 @@
+# Cópia de segurança diária da base de dados da versão para clubes (Supabase de PRODUÇÃO), cifrada (AES-256),
+# guardada 35 dias nos artefactos do GitHub, + auditoria das regras de acesso na produção.
+# Precisa dos Secrets (Settings → Secrets and variables → Actions): SUPABASE_DB_URL e BACKUP_PASSPHRASE.
+# Opcional: SUPABASE_URL + SUPABASE_SERVICE_KEY para copiar também as fotos. Ver SEGURANCA.md.
+name: Cópia diária
+on:
+  schedule: [{ cron: "30 2 * * *" }]   # 02:30 UTC (03:30 em Lisboa no verão)
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  copia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirmar configuração
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Faltam os Secrets SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE (ver SEGURANCA.md)."; exit 1; fi
+      - name: Cliente Postgres 17
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Auditoria das regras de acesso na produção (só leitura)
+        run: psql "$DB_URL" -q -v ON_ERROR_STOP=1 -f supabase/verificar_rls.sql
+      - name: Cópia da base de dados
+        run: OUT=copia sh tools/copias/copia.sh
+      - name: Cópia das fotos (se houver chave de serviço)
+        if: env.SUPABASE_SERVICE_KEY != ''
+        run: python3 tools/copias/ficheiros.py copia
+      - name: Cifrar
+        run: |
+          D=$(date -u +%Y-%m-%d)
+          tar czf - copia | gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 -o "copia-$D.tar.gz.gpg"
+          rm -rf copia
+          echo "NOME=copia-$D" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NOME }}
+          path: copia-*.tar.gz.gpg
+          retention-days: 35
+          if-no-files-found: error

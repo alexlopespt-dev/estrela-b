@@ -1,0 +1,57 @@
+# Testes automáticos: regras de acesso da base de dados (tentar ler outro clube tem de falhar), cópia+restauro,
+# chaves secretas e, nos pedidos de integração (PR) e na main, todos os testes da app no Chromium.
+name: Testes
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  base-de-dados:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env: { PGHOST: localhost, PGPORT: "5432" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cliente Postgres 17
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Regras de acesso (RLS) — clubes separados, funções, convites, visitantes
+        run: sh supabase/tests/correr.sh
+      - name: Cópia de segurança e restauro (com os dados dos testes)
+        run: |
+          psql -U postgres -qc "create database restauro_teste"
+          DB_URL="postgresql://postgres@localhost:5432/rls_teste" OUT=copia sh tools/copias/copia.sh
+          RESTORE_URL="postgresql://postgres@localhost:5432/restauro_teste" DIR=copia sh tools/copias/restauro.sh
+  chaves:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/seguranca/verificar_chaves.py
+  app:
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Playwright e Chromium
+        run: |
+          pip install -q -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+      - name: Todos os testes da app
+        run: ./tests/correr_testes.sh

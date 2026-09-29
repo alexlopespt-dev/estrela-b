@@ -807,12 +807,12 @@ document.addEventListener("click", e=>{
   if(el.closest("#dlgAsk")) return;
   const fn=A[el.dataset.a]; if(!fn) return;
   if(el.tagName==="A") e.preventDefault();
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Algo correu mal. Tenta de novo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{acao:el.dataset.a}); toast("Algo correu mal. Tenta de novo."); }
 });
 document.addEventListener("change", e=>{
   const el=e.target.closest("[data-c]"); if(!el) return;
   const fn=Cg[el.dataset.c]; if(!fn) return;
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Não foi possível guardar esse campo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{campo:el.dataset.c}); toast("Não foi possível guardar esse campo."); }
 });
 document.addEventListener("input", e=>{
   const el=e.target;

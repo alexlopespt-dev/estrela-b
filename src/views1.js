@@ -18,7 +18,7 @@ function render(){
   // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
   const full=m.full || m.team || (EDITION==="clubes"?"App da equipa técnica":"Estrela B"), cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
   $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
-  document.title = full + " — Departamento técnico";
+  document.title = (EDITION==="clubes"&&SB_ENV==="testes"?"[TESTES] ":"") + full + " — Departamento técnico";
   $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`
     + `<span class="ts-m">${[n2?esc(n2):"", m.comp?esc(m.comp):"", m.season?"<b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" · ")}</span>`;
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
@@ -38,7 +38,7 @@ function render(){
       h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
-    console.error(err);
+    console.error(err); if(typeof errReport==="function") errReport(err,{pagina:S.page?S.page.p||"ficha":S.tab});
     h=`<div class="empty" style="margin-top:20px"><b>Algo correu mal a mostrar esta página.</b>Volta ao painel e tenta de novo.<br><br><button class="btn" data-a="tab" data-t="painel">Ir para o painel</button></div>`;
   }
   main.innerHTML=h;

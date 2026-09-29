@@ -724,6 +724,7 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 @media (max-width:420px){ .sb-2{grid-template-columns:1fr} .sb-card{padding:18px 16px 14px} }
 .nx-empty .empty b{color:#fff}
 .nx-empty .empty .btn{background:var(--ouro);color:#2a0512;border-color:transparent}
+.envpill{position:fixed;left:10px;bottom:10px;z-index:70;background:#f2bd4b;color:#2a0512;font:800 11px/1 var(--fb);letter-spacing:.08em;padding:7px 10px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}
 
 </style>
 </head>
@@ -853,7 +854,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 12:42";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 13:51";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -1212,7 +1213,7 @@ function render(){
   // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
   const full=m.full || m.team || (EDITION==="clubes"?"App da equipa técnica":"Estrela B"), cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
   $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
-  document.title = full + " — Departamento técnico";
+  document.title = (EDITION==="clubes"&&SB_ENV==="testes"?"[TESTES] ":"") + full + " — Departamento técnico";
   $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`
     + `<span class="ts-m">${[n2?esc(n2):"", m.comp?esc(m.comp):"", m.season?"<b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" · ")}</span>`;
   const nAl = alerts().filter(a=>a.cls!=="info").length, nInj = injuries().filter(i=>i.status!=="alta").length;
@@ -1232,7 +1233,7 @@ function render(){
       h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
     }
   }catch(err){
-    console.error(err);
+    console.error(err); if(typeof errReport==="function") errReport(err,{pagina:S.page?S.page.p||"ficha":S.tab});
     h=`<div class="empty" style="margin-top:20px"><b>Algo correu mal a mostrar esta página.</b>Volta ao painel e tenta de novo.<br><br><button class="btn" data-a="tab" data-t="painel">Ir para o painel</button></div>`;
   }
   main.innerHTML=h;
@@ -3659,12 +3660,12 @@ document.addEventListener("click", e=>{
   if(el.closest("#dlgAsk")) return;
   const fn=A[el.dataset.a]; if(!fn) return;
   if(el.tagName==="A") e.preventDefault();
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Algo correu mal. Tenta de novo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{acao:el.dataset.a}); toast("Algo correu mal. Tenta de novo."); }
 });
 document.addEventListener("change", e=>{
   const el=e.target.closest("[data-c]"); if(!el) return;
   const fn=Cg[el.dataset.c]; if(!fn) return;
-  try{ fn(el,e); }catch(err){ console.error(err); toast("Não foi possível guardar esse campo."); }
+  try{ fn(el,e); }catch(err){ console.error(err); if(typeof errReport==="function") errReport(err,{campo:el.dataset.c}); toast("Não foi possível guardar esse campo."); }
 });
 document.addEventListener("input", e=>{
   const el=e.target;
@@ -4649,6 +4650,8 @@ Object.assign(Cg,{
 // Um clube novo começa vazio (sem jogadores inventados): só a configuração base (estatísticas de jogo, categorias).
 const MIGR = [];   // sem atualizações próprias (as do Estrela estão em estrela.js)
 const SB_URL = "https://kgplkrtiobiysubcohii.supabase.co", SB_KEY = "sb_publishable_fcmL5GtbiMxlSuWhsqogeg_1BxFZ-4J";
+const SB_ENV = "producao";       // "producao" ou "testes" (config/ambientes.json)
+const SENTRY_DSN = "";     // registo de erros (Sentry, região UE); vazio = desligado
 const SB = { s:null, user:null, teams:[], team:null, role:null, gate:"loading", err:"", info:"", busy:false, started:false, people:null };
 const SB_SES = LS+":sessao", SB_TEAM = LS+":equipa", SB_INV = LS+":convite";
 const ROLE_L = {admin:"Administrador do clube",principal:"Treinador principal",adjunto:"Treinador adjunto",analista:"Analista",
@@ -4864,8 +4867,25 @@ async function sbDo(fn){
   try{ await fn(); }catch(e){ SB.err=sbMsg(e); }
   finally{ SB.busy=false; if(SB.gate) sbGate(); }
 }
+// tentativas falhadas de entrada, por email, neste dispositivo: 5 em 15 min → espera (1 min, depois 2, 4… até 15).
+// O limite a sério é o da Supabase (Authentication → Rate Limits), que vale para todos os dispositivos.
+const SB_TRY = LS+":tentativas";
+function sbTries(){ try{ return JSON.parse(localStorage.getItem(SB_TRY)||"{}"); }catch(e){ return {}; } }
+function sbTryWait(email){ const t=sbTries()[String(email).toLowerCase()]; return t&&t.until>Date.now()?Math.ceil((t.until-Date.now())/1000):0; }
+function sbTryFail(email){
+  const all=sbTries(), k=String(email).toLowerCase(), now=Date.now(), t=all[k]&&now-all[k].first<15*60e3?all[k]:{n:0,first:now,until:0};
+  t.n++; if(t.n>=5) t.until=now+Math.min(15*60e3,60e3*Math.pow(2,t.n-5));
+  all[k]=t; try{ localStorage.setItem(SB_TRY,JSON.stringify(all)); }catch(e){}
+}
+function sbTryOk(email){ const all=sbTries(); delete all[String(email).toLowerCase()]; try{ localStorage.setItem(SB_TRY,JSON.stringify(all)); }catch(e){} }
+const sbWaitTxt = s => s>=90?`${Math.ceil(s/60)} minutos`:`${s} segundos`;
 const SBF = {
-  login:v=>sbDo(async()=>{ SB.email=v.email; const j=await sbAuth("token?grant_type=password",{email:v.email,password:v.pass}); sbSet(j); SB.info=""; await sbAfterLogin(); }),
+  login:v=>sbDo(async()=>{
+    SB.email=v.email; const w=sbTryWait(v.email);
+    if(w) throw new Error(`Demasiadas tentativas falhadas. Espera ${sbWaitTxt(w)} e tenta de novo (ou recupera a palavra-passe).`);
+    let j; try{ j=await sbAuth("token?grant_type=password",{email:v.email,password:v.pass}); }
+    catch(e){ if(/invalid login credentials/i.test(String(e.message))) sbTryFail(v.email); throw e; }
+    sbTryOk(v.email); sbSet(j); SB.info=""; await sbAfterLogin(); }),
   signup:v=>sbDo(async()=>{
     if((v.pass||"").length<8) throw new Error("password at least 8 characters");
     SB.email=v.email;
@@ -4896,6 +4916,51 @@ document.addEventListener("submit",e=>{
   SBF[f.dataset.sbf](v);
 });
 
+/* ---- registo de erros (Sentry, alojado na UE) ----
+   Cliente mínimo, sem biblioteca: envia o erro (tipo, mensagem, linhas do código) para o endereço do DSN.
+   Não envia dados pessoais: só o id da conta e da equipa, a função e o separador. No máximo 20 erros por sessão. */
+const ERRS = {n:0, seen:new Set()};
+function errReport(e,extra){
+  if(!SENTRY_DSN) return;
+  try{
+    const m=SENTRY_DSN.match(/^https:\/\/([0-9a-z]+)@([^/]+)\/(\d+)$/i); if(!m) return;
+    const err=e instanceof Error?e:new Error(String((e&&e.message)||e));
+    const key=err.name+":"+err.message; if(ERRS.seen.has(key)||ERRS.n>=20) return; ERRS.seen.add(key); ERRS.n++;
+    const id=(crypto.randomUUID?crypto.randomUUID():uid("e")+Date.now()).replace(/-/g,"").slice(0,32).padEnd(32,"0"), now=new Date().toISOString();
+    const frames=String(err.stack||"").split("\n").map(l=>{ const x=l.match(/(?:at\s+(?:(.*?)\s+\()?)?(?:(.*?)@)?(\S+?):(\d+):(\d+)\)?\s*$/);
+      return x?{function:x[1]||x[2]||"?",filename:String(x[3]).replace(/[#?].*$/,""),lineno:+x[4],colno:+x[5]}:null; }).filter(Boolean).slice(0,30).reverse();
+    const ev={event_id:id,timestamp:now,platform:"javascript",level:"error",environment:SB_ENV||"producao",release:"app-equipa-tecnica@"+BUILD,
+      exception:{values:[{type:err.name||"Error",value:String(err.message||"").slice(0,500),...(frames.length?{stacktrace:{frames}}:{})}]},
+      request:{url:location.origin+location.pathname,headers:{"User-Agent":navigator.userAgent}},
+      ...(SB.user?{user:{id:SB.user.id}}:{}),
+      tags:{equipa:(SB.team&&SB.team.id)||"",funcao:SB.role||"",separador:S.tab||""}, extra:extra||{}};
+    const body=JSON.stringify({event_id:id,sent_at:now})+"\n"+JSON.stringify({type:"event"})+"\n"+JSON.stringify(ev);
+    fetch(`https://${m[2]}/api/${m[3]}/envelope/?sentry_key=${m[1]}&sentry_version=7`,{method:"POST",body,keepalive:true}).catch(()=>{});
+  }catch(x){}
+}
+window.addEventListener("error",ev=>errReport(ev.error||ev.message,{origem:"janela"}));
+window.addEventListener("unhandledrejection",ev=>errReport(ev.reason,{origem:"promessa"}));
+
+/* ---- ambiente de testes: faixa sempre visível e dados fictícios ---- */
+if(SB_ENV==="testes"){
+  const b=document.createElement("div"); b.className="envpill"; b.textContent="AMBIENTE DE TESTES"; b.title="Dados fictícios — não é a app dos clubes";
+  document.body.appendChild(b); document.documentElement.classList.add("env-testes");
+}
+const FAKE_NOMES = ["Tomás Arruda","Duarte Sepúlveda","Gaspar Linhares","Vicente Tavira","Salvador Quintela","Martim Bragança","Lourenço Faial",
+  "Rodrigo Albufeira","Afonso Caminha","Dinis Sortelha","Henrique Mértola","Simão Valença","Gustavo Lagoa","Miguel Alcobaça","Tiago Montemor",
+  "Diogo Arganil","Guilherme Penela","Rafael Idanha","Bernardo Sabugal","Filipe Pombal","Leonardo Tondela","Samuel Vouzela"];
+const FAKE_POS = ["GR","GR","DC","DC","DC","DC","LAT","LAT","LAT","LAT","MDF","MDF","MC","MC","MC","MC","EXT","EXT","EXT","PL","PL","EXT/PL"];
+function sbFakeData(){
+  const t=todayISO(), mon=mondayOf(t);
+  FAKE_NOMES.forEach((n,i)=>put("players","fk_p"+(i+1),{name:n,full:n,n:i+1,pos:FAKE_POS[i],foot:i%4===3?"E":"D"}));
+  [["Treinador Principal","Treinador principal"],["Treinador Adjunto","Treinador adjunto"],["Analista","Analista"],["Fisioterapeuta","Fisioterapeuta"]]
+    .forEach(([n,r],i)=>put("staff","fk_s"+(i+1),{name:n+" (teste)",role:r}));
+  [[1,"Posse e circulação","Média"],[2,"Organização defensiva","Alta"],[3,"Finalização","Média"],[4,"Ativação pré-jogo","Baixa"]].forEach(([d,th,int])=>
+    put("events","fk_t"+d,{type:"treino",date:addDays(mon,d),time:"19:30",dur:90,theme:th,int,place:"Campo de treino",att:{}}));
+  put("events","fk_j1",{type:"jogo",date:addDays(mon,6),time:"15:00",opp:"Clube Fictício",venue:"C",comp:meta().comp||"Campeonato",call:[],xi:[],ev:[]});
+  toast("Dados fictícios criados: 22 atletas, equipa técnica, 4 treinos e 1 jogo esta semana.");
+}
+
 /* ---- Plantel → conta e acessos ---- */
 async function sbPeople(){
   if(!SB.team) return;
@@ -4914,6 +4979,7 @@ function sbAccount(){
   const roleOpts=Object.entries(ROLE_L).map(([k,l])=>({v:k,l}));
   return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Conta e acessos</h3><span class="sub">${esc(SB.team.club)} — ${esc(SB.team.name)}</span></div><div class="card-b">
     <p style="margin:0 0 10px"><b>${esc(sbName())}</b> <span class="muted">${esc((SB.user&&SB.user.email)||"")}</span> · <span class="tag">${esc(ROLE_L[SB.role]||SB.role)}</span></p>
+    ${SB_ENV==="testes"&&adm?`<p class="note" style="margin:0 0 10px"><b>Ambiente de testes.</b> Aqui podes usar dados fictícios à vontade. <button class="btn sm" data-a="sbFake">Criar dados fictícios</button></p>`:""}
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="sbMyName">Mudar o meu nome</button>${SB.teams.length>1?`<button class="btn sm" data-a="sbSwitch">Trocar de equipa</button>`:""}<button class="btn sm ghost" data-a="sbOut">Sair</button></div>
     <div class="asec" style="margin-top:16px"><span>Pessoas com acesso</span></div>
     ${P0.loading?`<p class="small muted">A carregar…</p>`:P0.err?`<p class="small" style="color:var(--r5)">${esc(P0.err)}</p>`:""}
@@ -4944,6 +5010,7 @@ Object.assign(A,{
   sbOut: () => askConfirm("Terminar a sessão neste dispositivo?","Sair").then(async ok=>{ if(!ok) return;
     try{ await sbReq("/auth/v1/logout",{method:"POST",body:{}}); }catch(e){}
     SB.s=null; sbSave(); try{ localStorage.removeItem(SB_TEAM); }catch(e){} location.reload(); }),
+  sbFake: () => askConfirm("Criar 22 atletas fictícios, equipa técnica, 4 treinos e 1 jogo nesta semana?","Criar").then(ok=>{ if(ok) sbFakeData(); }),
   sbSwitch: () => { try{ localStorage.removeItem(SB_TEAM); }catch(e){} location.reload(); },
   sbMyName: () => modal({title:"O teu nome",sub:"Aparece nas alterações que fazes e na lista de acessos.",body:`<label class="fld full">Nome<input name="nm" value="${esc(sbName())}" maxlength="80"></label>`,foot:footSave(),ctx:{save:async()=>{
     const nm=fv("nm"); if(!nm) return toast("Escreve o teu nome.");

@@ -1,0 +1,42 @@
+# Teste de restauro, uma vez por mês: vai buscar a cópia diária mais recente, decifra-a, repõe-na numa base de
+# dados VAZIA criada só para o teste (nunca na produção) e confirma contagens, conteúdo e regras de acesso.
+name: Restauro mensal
+on:
+  schedule: [{ cron: "0 5 1 * *" }]   # dia 1 de cada mês, 05:00 UTC
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  restauro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cliente Postgres 17
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Última cópia diária
+        run: |
+          RUN=$(gh run list --workflow copia-diaria.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -z "$RUN" ]; then echo "::error::Ainda não há nenhuma cópia diária com sucesso."; exit 1; fi
+          gh run download "$RUN" --dir artefacto
+          F=$(ls artefacto/*/*.gpg | head -1); echo "Cópia: $F"
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" -d "$F" | tar xzf -
+          cat copia/feita_em.txt
+      - name: Repor numa base de testes e verificar
+        run: |
+          psql -h localhost -U postgres -qc "create database restauro"
+          RESTORE_URL="postgresql://postgres@localhost:5432/restauro" DIR=copia sh tools/copias/restauro.sh

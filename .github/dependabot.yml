@@ -1,0 +1,9 @@
+# Atualizações mensais das dependências (a app não usa bibliotecas externas; isto cobre as ações do GitHub e o Playwright dos testes).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: monthly }
+  - package-ecosystem: pip
+    directory: "/"
+    schedule: { interval: monthly }

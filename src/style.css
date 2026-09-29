@@ -710,3 +710,4 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 @media (max-width:420px){ .sb-2{grid-template-columns:1fr} .sb-card{padding:18px 16px 14px} }
 .nx-empty .empty b{color:#fff}
 .nx-empty .empty .btn{background:var(--ouro);color:#2a0512;border-color:transparent}
+.envpill{position:fixed;left:10px;bottom:10px;z-index:70;background:#f2bd4b;color:#2a0512;font:800 11px/1 var(--fb);letter-spacing:.08em;padding:7px 10px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.3);pointer-events:none}
