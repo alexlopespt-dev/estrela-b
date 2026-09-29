@@ -108,79 +108,159 @@ const IC = {
   eu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>'};
 
 /* ---- ecrãs ---- */
+const OPPIMG = "__OPPIMG__";
+const nk = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+function oppSrc(name){ const k=nk(name); if(!k) return null; let best=null;
+  Object.keys(OPPIMG).forEach(n=>{ const m=nk(n); if(m===k||(!best&&(k.includes(m)||m.includes(k)))) best=n; }); return best?OPPIMG[best]:null; }
+const initials = n => String(n||"?").split(/\s+/).filter(w=>/^[A-Za-zÀ-ú]/.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
+const crest = (name,own,sz=44) => { const src=own?CREST:oppSrc(name);
+  return src?`<img class="crest" src="${src}" alt="" style="width:${sz}px;height:${sz}px">`:`<span class="crest ini" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.34)}px">${esc(initials(name))}</span>`; };
+const teamName = () => (S.data&&S.data.equipa&&S.data.equipa.curto)||"Estrela B";
+const diasAte = iso => Math.round((toD(iso)-toD(today()))/864e5);
+const quando = iso => { const n=diasAte(iso); return n===0?"Hoje":n===1?"Amanhã":n<7?`Daqui a ${n} dias`:cap(fmt(iso,{day:"numeric",month:"short"})); };
+const RES_C = {V:"var(--ok)",E:"var(--warn)",D:"var(--bad)"};
+const ST = {P:["Presente","var(--ok)"],AT:["Atraso","var(--warn)"],FJ:["Falta justificada","#8a7a80"],FI:["Falta injustificada","var(--bad)"],L:["Lesionado","#b0306a"],D:["Dispensado","#5a6b8a"],"":["Sem registo","var(--line)"]};
+const I = {
+  clock:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  cup:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M9 20h6M12 14v6"/></svg>',
+  bus:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="13" rx="3"/><path d="M4 11h16M8 20v-3M16 20v-3"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>'};
 function top(sub){
-  const d=S.data, eq=(d&&d.equipa&&d.equipa.curto)||"Estrela B", nm=d&&d.me?first(d.me.name):"";
+  const d=S.data, nm=d&&d.me?first(d.me.name):"";
   const h=new Date().getHours(), ola=h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
-  return `<header class="top"><div class="top-r"><img src="${CREST}" alt=""><div><small>${esc(eq)}</small><h1>${nm?`${ola}, ${esc(nm)}`:"App do atleta"}</h1></div></div>${sub?`<p>${sub}</p>`:""}</header>`;
+  return `<header class="top"><div class="top-r"><img src="${CREST}" alt=""><div><small>${esc(teamName())}</small><h1>${nm?`${ola}, ${esc(nm)}`:"App do atleta"}</h1></div>
+    ${S.cfg&&S.data?`<button class="rf${S.loading?" spin":""}" data-a="refresh" aria-label="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg></button>`:""}</div>${sub?`<p>${sub}</p>`:""}</header>`;
 }
 function vLink(){
   return top()+`<main><div class="card empty"><b>${S.err==="link"?"Este link já não é válido":"Abre o teu link pessoal"}</b>
     ${S.err==="link"?"A equipa técnica gerou um link novo para ti (ou retirou o acesso). Pede-lhes o link atual e abre-o neste telemóvel.":"A equipa técnica envia-te um link só teu (por WhatsApp). Abre-o neste telemóvel uma vez e a app fica pronta."}</div></main>`;
 }
 const agendaDe = iso => ((S.data&&S.data.agenda)||[]).filter(a=>a.date===iso);
-function evLine(a){
-  const d=toD(a.date);
-  const what = a.tipo==="jogo" ? `<b>${a.venue==="F"?"@ ":"vs "}${esc(a.opp)}</b><span>${esc([a.time,a.comp,a.place].filter(Boolean).join(" · "))}</span>`
-    : `<b>Treino${a.time?" · "+esc(a.time):""}</b><span>${esc([a.dur?a.dur+"'":"",a.theme,a.place].filter(Boolean).join(" · "))||"&nbsp;"}</span>`;
-  return `<div class="ev"><div class="d"><b>${d.getDate()}</b><span>${esc(fmt(a.date,{weekday:"short"}).replace(".",""))}</span></div><div class="t">${what}</div>${a.tipo==="jogo"?`<span class="tag jogo">Jogo</span>`:""}</div>`;
+/* cartão de jogo: casa à esquerda; com resultado ou com hora */
+function matchCard(g,o={}){
+  const home=g.venue!=="F", us=teamName(), L=home?[us,1]:[g.opp,0], R=home?[g.opp,0]:[us,1];
+  const mid = g.gf!=null ? `<div class="mc-score">${home?g.gf:g.ga}<i>–</i>${home?g.ga:g.gf}</div>` : `<div class="mc-vs">${esc(g.time||"—")}<small>${esc(cap(fmt(g.date,{weekday:"short",day:"numeric",month:"short"})).replace(/\./g,""))}</small></div>`;
+  return `<section class="mcard${o.cls?" "+o.cls:""}">
+    <div class="mc-top"><span>${esc(g.comp||"Jogo")}</span>${o.chip||""}</div>
+    <div class="mc-row"><div class="mc-t">${crest(L[0],L[1],52)}<b>${esc(L[0])}</b></div>${mid}<div class="mc-t">${crest(R[0],R[1],52)}<b>${esc(R[0])}</b></div></div>
+    ${o.foot?`<div class="mc-foot">${o.foot}</div>`:""}</section>`;
+}
+function evCard(a){
+  if(a.tipo==="jogo") return `<div class="ag jogo"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Jogo</span></div><div class="ag-b">
+    <div class="ag-m">${crest(a.opp,0,30)}<div><b>${a.venue==="F"?"@ ":"vs "}${esc(a.opp)}</b><span class="meta">${a.comp?`${I.cup}${esc(a.comp)}`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div></div></div>`;
+  return `<div class="ag"><div class="ag-h"><b>${esc(a.time||"—")}</b><span>Treino</span></div><div class="ag-b">
+    <b>${esc(a.theme||"Treino")}</b><span class="meta">${a.dur?`${I.clock}${esc(a.dur)} min`:""}${a.place?`${I.pin}${esc(a.place)}`:""}</span></div></div>`;
 }
 function vHoje(){
   const d=S.data, t=today(), r=(d&&d.respostas)||{}, hj=agendaDe(t);
   const pendBem=S.fila.find(x=>x.a==="atleta_bem"&&x.d===t), pendPse=S.fila.filter(x=>x.a==="atleta_pse"&&x.d===t);
-  const bem=r.bem;
-  const tot=bem?bem.i.reduce((s,v)=>s+v,0):null, est=bemEstado(tot);
-  const cBem=`<section class="card"><p class="k">Bem-estar de hoje</p>${bem?`<div class="done"><span class="tick">✓</span><div><b>Respondido às ${esc(bem.h)}</b><div class="sub">Total ${tot}/20 · <span style="color:${est.c};font-weight:700">${est.l}</span></div></div></div>
-      <button class="cta sec" data-a="bem">Corrigir</button>` : pendBem?`<span class="pend">Guardado no telemóvel — envia quando houver rede</span>`
-      : `<h2>Como estás hoje?</h2><p class="sub">4 perguntas rápidas: sono, fadiga, dores e stress.</p><button class="cta" data-a="bem">Responder</button>`}</section>`;
-  const sess=hj.length?hj.map(a=>a.tipo==="jogo"?`jogo às ${a.time||"—"}`:`treino às ${a.time||"—"}`).join(" e "):"";
-  const cPse=`<section class="card"><p class="k">Esforço da sessão (PSE)</p>
-    ${(r.pse||[]).map(p=>`<div class="done"><span class="tick">✓</span><div><b>${esc(p.tipo||"Sessão")} · PSE ${esc(p.rpe)}</b><div class="sub">${p.dur?esc(p.dur)+" min · ":""}às ${esc(p.h)}</div></div></div>`).join("")}
+  const bem=r.bem, tot=bem?bem.i.reduce((s,v)=>s+v,0):null, est=bemEstado(tot);
+  const cBem=`<section class="card task"><div class="task-h"><span class="ico" style="--c:#c2185b">${I.heart}</span><div><p class="k">Bem-estar de hoje</p>${bem?`<h2>Respondido às ${esc(bem.h)}</h2>`:pendBem?`<h2>Guardado no telemóvel</h2>`:`<h2>Como estás hoje?</h2>`}</div></div>
+    ${bem?`<div class="pills">${BEM_Q.map(([k,,t],j)=>`<span style="--c:${BEM_COR[bem.i[j]-1]}"><i>${bem.i[j]}</i>${esc(cap(t.replace("Qualidade do ","").replace(" geral","").replace(" muscular","")))}</span>`).join("")}</div>
+      <p class="sub">Total ${tot}/20 · <b style="color:${est.c}">${est.l}</b></p><button class="cta sec" data-a="bem">Corrigir</button>`
+    : pendBem?`<span class="pend">Guardado no telemóvel — envia quando houver rede</span>`
+    : `<p class="sub">4 perguntas rápidas: sono, fadiga, dores e stress.</p><button class="cta" data-a="bem">Responder</button>`}</section>`;
+  const sess=hj.length?hj.map(a=>a.tipo==="jogo"?`jogo das ${a.time||"—"}`:`treino das ${a.time||"—"}`).join(" e "):"";
+  const cPse=`<section class="card task"><div class="task-h"><span class="ico" style="--c:#e0702a">${I.bolt}</span><div><p class="k">Esforço da sessão (PSE)</p><h2>${(r.pse||[]).length?"Registado":hj.length?`Depois do ${esc(sess)}`:"Sem sessão hoje"}</h2></div></div>
+    ${(r.pse||[]).map(p=>`<div class="done"><span class="tick" style="background:${rpeCor(p.rpe||0)}">${esc(p.rpe)}</span><div><b>${esc(p.tipo||"Sessão")}</b><div class="sub">${p.dur?esc(p.dur)+" min · ":""}às ${esc(p.h)}</div></div></div>`).join("")}
     ${pendPse.map(p=>`<span class="pend">${esc(p.tipo)} guardado no telemóvel — envia quando houver rede</span>`).join("")}
     ${(r.pse||[]).length||pendPse.length ? `<button class="cta sec" data-a="pse">Corrigir ou outra sessão</button>`
-      : hj.length ? `<h2>Depois do ${esc(sess)}</h2><p class="sub">Diz-nos quão intenso foi, de 0 a 10.</p><button class="cta" data-a="pse">Registar esforço</button>`
+      : hj.length ? `<p class="sub">Diz-nos quão intenso foi, de 0 a 10.</p><button class="cta" data-a="pse">Registar esforço</button>`
       : `<p class="sub">Hoje não há treino nem jogo marcado.</p><button class="cta sec" data-a="pse">Registar outra sessão</button>`}</section>`;
-  const conv=d&&d.conv;
-  const cConv=conv?`<button class="card banner" data-a="tab" data-t="jogo" style="width:100%;text-align:left"><span class="tick" style="background:${conv.convocado?"var(--ouro)":"#ffffff33"};color:#2a0512">${conv.convocado?"✓":"–"}</span><div><b>${conv.convocado?"Estás convocado":"Convocatória publicada"}</b><span>${esc(dayName(conv.date))} · ${conv.venue==="F"?"@ ":"vs "}${esc(conv.opp)}${conv.meetT?` · concentração ${esc(conv.meetT)}`:""}</span></div></button>`:"";
-  const prox=((d&&d.agenda)||[]).filter(a=>a.date>t||(a.date===t)).slice(0,3);
-  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cConv}${cBem}${cPse}
-    <section class="card"><p class="k">A seguir</p>${prox.length?prox.map(evLine).join(""):`<p class="sub">Sem treinos nem jogos marcados.</p>`}</section></main>`;
+  const conv=d&&d.conv, prox=((d&&d.agenda)||[]).find(a=>a.tipo==="jogo");
+  let cJogo="";
+  if(conv) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(conv,{chip:`<span class="chip-s ${conv.convocado?"gold":""}">${conv.convocado?"✓ Estás convocado":"Convocatória publicada"}</span>`,
+      foot:`<span>${esc(quando(conv.date))}</span>${conv.meetT?`<span>${I.bus}Concentração ${esc(conv.meetT)}</span>`:""}`})}</button>`;
+  else if(prox&&diasAte(prox.date)<=7) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""})}</button>`;
+  const seg=((d&&d.agenda)||[]).filter(a=>a.date>=t).slice(0,3);
+  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}
+    <h3 class="sec-t">A seguir</h3>${seg.length?seg.map(a=>`<div class="ag-day">${esc(dayName(a.date))}</div>${evCard(a)}`).join(""):`<div class="card empty"><b>Sem treinos nem jogos marcados</b></div>`}</main>`;
 }
 function vAgenda(){
-  const t=today(), days=[...Array(10)].map((_,i)=>addDays(t,i));
-  return top("Treinos e jogos dos próximos dias")+`<main>${offline()}${days.map(iso=>{ const ev=agendaDe(iso);
-    return `<div class="day">${esc(dayName(iso))}${iso!==t&&iso!==addDays(t,1)?"":" · "+esc(fmt(iso,{weekday:"long"}))}, ${esc(fmt(iso,{day:"numeric",month:"short"}))}</div>
-      ${ev.length?`<section class="card" style="padding:6px 14px">${ev.map(evLine).join("")}</section>`:`<div class="folga">Folga</div>`}`; }).join("")}</main>`;
+  const t=today(), days=[...Array(14)].map((_,i)=>addDays(t,i));
+  const strip=`<div class="wk" role="list">${days.map(iso=>{ const ev=agendaDe(iso), j=ev.some(a=>a.tipo==="jogo"), tr=ev.some(a=>a.tipo==="treino");
+    return `<a class="wk-d${iso===t?" on":""}${j?" j":""}" href="#d${iso}" role="listitem"><span>${esc(fmt(iso,{weekday:"short"}).replace(".","").slice(0,3))}</span><b>${toD(iso).getDate()}</b><i class="${j?"dj":tr?"dt":"df"}"></i></a>`; }).join("")}</div>`;
+  let out="", folga=[];
+  const flushF=()=>{ if(!folga.length) return; const a=folga[0], b=folga[folga.length-1];
+    out+=`<div class="folga-r"><span>Folga</span>${esc(a===b?`${dayName(a)}, ${fmt(a,{day:"numeric",month:"short"})}`:`${cap(fmt(a,{weekday:"short",day:"numeric"}))} a ${fmt(b,{weekday:"short",day:"numeric"})}`)}</div>`; folga=[]; };
+  days.forEach((iso,i)=>{
+    if(i===0) out+=`<h3 class="sec-t">Esta semana</h3>`;
+    else if(toD(iso).getDay()===1){ flushF(); out+=`<h3 class="sec-t">${i<7?"Próxima semana":"Daqui a duas semanas"}</h3>`; }
+    const ev=agendaDe(iso);
+    if(!ev.length){ folga.push(iso); return; }
+    flushF();
+    out+=`<div class="ag-day" id="d${iso}">${esc(dayName(iso))}<span>${esc(fmt(iso,{day:"numeric",month:"long"}))}</span></div>${ev.map(evCard).join("")}`;
+  });
+  flushF();
+  return top("Treinos e jogos das próximas duas semanas")+`<main>${offline()}${strip}${out}</main>`;
 }
 function vJogo(){
-  const d=S.data, conv=d&&d.conv, prox=((d&&d.agenda)||[]).find(a=>a.tipo==="jogo");
-  if(!conv) return top("Próximo jogo")+`<main>${offline()}${prox?`<section class="card"><p class="k">${esc(dayName(prox.date))}, ${esc(fmt(prox.date,{day:"numeric",month:"long"}))}</p>
-      <h2>${prox.venue==="F"?"@ ":"vs "}${esc(prox.opp)}</h2><p class="sub">${esc([prox.time,prox.comp,prox.place].filter(Boolean).join(" · "))}</p>
-      <p class="note">A convocatória aparece aqui quando a equipa técnica a publicar.</p></section>`:`<div class="card empty"><b>Sem jogos marcados</b>Quando houver, aparece aqui.</div>`}</main>`;
-  return top("Convocatória")+`<main>${offline()}
-    <section class="card"><p class="k">${esc(dayName(conv.date))}, ${esc(fmt(conv.date,{day:"numeric",month:"long"}))}${conv.time?" · "+esc(conv.time):""}</p>
-      <h2>${conv.venue==="F"?"@ ":"vs "}${esc(conv.opp)}</h2><p class="sub">${esc([conv.comp,conv.place].filter(Boolean).join(" · "))}</p>
-      <div class="done"><span class="tick" style="${conv.convocado?"":"background:var(--muted)"}">${conv.convocado?"✓":"–"}</span><b>${conv.convocado?"Estás convocado":"Não estás convocado para este jogo"}</b></div>
-      ${conv.meetT||conv.meetP?`<p style="margin:12px 0 0"><b>Concentração:</b> ${esc([conv.meetT,conv.meetP].filter(Boolean).join(" — "))}</p>`:""}
-      ${conv.cnote?`<p class="note">${esc(conv.cnote)}</p>`:""}</section>
-    ${conv.sched&&conv.sched.length?`<section class="card"><p class="k">Horário</p><ul class="list">${conv.sched.map(s=>`<li><b style="width:56px">${esc(s.t)}</b><span>${esc(s.l)}</span></li>`).join("")}</ul></section>`:""}
-    <section class="card"><p class="k">Convocados (${conv.lista.length})</p><ul class="list">${conv.lista.map(p=>`<li class="${p.eu?"eu":""}"><span class="num">${esc(p.n)}</span><b>${esc(p.name)}</b></li>`).join("")}</ul></section></main>`;
+  const d=S.data||{}, conv=d.conv, prox=(d.agenda||[]).find(a=>a.tipo==="jogo");
+  let h="";
+  if(conv){
+    h+=matchCard(conv,{chip:`<span class="chip-s">${esc(quando(conv.date))}</span>`,foot:conv.place?`<span>${I.pin}${esc(conv.place)}</span>`:""});
+    h+=`<section class="card conv ${conv.convocado?"yes":"no"}"><span class="tick">${conv.convocado?"✓":"–"}</span><div><b>${conv.convocado?"Estás convocado":"Não estás convocado para este jogo"}</b>
+      ${conv.meetT||conv.meetP?`<span>${I.bus}Concentração: ${esc([conv.meetT,conv.meetP].filter(Boolean).join(" — "))}</span>`:""}</div></section>`;
+    if(conv.cnote) h+=`<p class="note">${esc(conv.cnote)}</p>`;
+    if(conv.sched&&conv.sched.length) h+=`<section class="card"><p class="k">Horário</p><ol class="tl">${conv.sched.map(s=>`<li><b>${esc(s.t)}</b><span>${esc(s.l)}</span></li>`).join("")}</ol></section>`;
+    h+=`<section class="card"><p class="k">Convocados · ${conv.lista.length}</p><div class="squad">${conv.lista.map(p=>`<div class="sq${p.eu?" eu":""}"><span class="num">${esc(p.n)}</span><b>${esc(p.name)}</b></div>`).join("")}</div></section>`;
+  } else if(prox){
+    h+=matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""});
+    h+=`<p class="note center">A convocatória aparece aqui quando a equipa técnica a publicar.</p>`;
+  } else h+=`<div class="card empty"><b>Sem jogos marcados</b>Quando houver, aparece aqui.</div>`;
+  const res=d.resultados||[], ep=d.epoca;
+  if(ep&&ep.j){
+    const form=res.slice(0,5).reverse();
+    h+=`<h3 class="sec-t">A época da equipa</h3><section class="card"><div class="rec">
+      <div><b>${ep.j}</b><span>Jogos</span></div><div style="--c:var(--ok)"><b>${ep.V}</b><span>Vitórias</span></div><div style="--c:var(--warn)"><b>${ep.E}</b><span>Empates</span></div><div style="--c:var(--bad)"><b>${ep.D}</b><span>Derrotas</span></div></div>
+      <div class="rec-bar">${["V","E","D"].map(k=>ep[k]?`<i style="flex:${ep[k]};background:${RES_C[k]}"></i>`:"").join("")}</div>
+      <div class="gls"><span>Golos marcados <b>${ep.gf}</b></span><span>Golos sofridos <b>${ep.ga}</b></span></div>
+      ${form.length?`<div class="form"><span class="small">Últimos jogos</span>${form.map(g=>`<i style="background:${RES_C[g.r]}" title="${esc(g.opp)}">${g.r}</i>`).join("")}</div>`:""}</section>`;
+    h+=`<h3 class="sec-t">Últimos resultados</h3>${res.map(g=>`<div class="res">
+      <div class="res-d"><b>${toD(g.date).getDate()}</b><span>${esc(fmt(g.date,{month:"short"}).replace(".",""))}</span></div>
+      ${crest(g.opp,0,34)}<div class="res-t"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><span>${g.eu?`Tu: ${g.eu.min}'${g.eu.st?" · titular":""}${g.eu.g?` · ⚽ ${g.eu.g}`:""}${g.eu.a?` · 🅰️ ${g.eu.a}`:""}`:esc(g.comp||"")}</span></div>
+      <div class="res-s" style="--c:${RES_C[g.r]}"><b>${g.gf}–${g.ga}</b><i>${g.r}</i></div></div>`).join("")}`;
+  }
+  return top(conv?"Convocatória e resultados":"Próximo jogo e resultados")+`<main>${offline()}${h}</main>`;
 }
+function ring(p,c){ const R=34, L=2*Math.PI*R;
+  return `<svg class="ring" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="${R}" fill="none" stroke="var(--line)" stroke-width="9"/>
+    <circle cx="42" cy="42" r="${R}" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(L*p/100).toFixed(1)} ${L.toFixed(1)}" transform="rotate(-90 42 42)"/></svg>`; }
 function vEu(){
-  const d=S.data||{}, me=d.me||{}, n=d.numeros||{}, r=d.respostas||{}, hist=r.hist||[];
+  const d=S.data||{}, me=d.me||{}, n=d.numeros||{}, r=d.respostas||{}, hist=r.hist||[], rk=d.rank||{};
   const pres=n.treinos?Math.round(n.pres/n.treinos*100):null;
+  const rks=[["min","em minutos"],["g","em golos"],["a","em assistências"]].filter(([k])=>rk[k]&&rk[k]<=3).map(([k,l])=>`<span>${rk[k]}.º ${l}</span>`).join("");
+  const card=`<section class="pcard">
+    <div class="pc-ph">${me.foto?`<img src="${me.foto}" alt="">`:`<span>${esc(initials(me.name))}</span>`}</div>
+    <div class="pc-id"><b class="pc-n">${esc(me.n||"")}</b><span class="pc-pos">${esc(me.pos||"")}</span></div>
+    <h2>${esc(me.full||me.name||"")}</h2>
+    ${rks?`<div class="pc-rk">${rks}</div>`:""}
+    <div class="pc-st"><div><b>${n.jogos||0}</b><span>Jogos</span></div><div><b>${n.min||0}</b><span>Minutos</span></div><div><b>${n.golos||0}</b><span>Golos</span></div><div><b>${n.assist||0}</b><span>Assist.</span></div></div>
+    <div class="pc-st sm"><div><b>${n.titular||0}</b><span>Titular</span></div><div><b>${n.jogos?Math.round((n.min||0)/n.jogos):0}'</b><span>Min./jogo</span></div><div><b>${n.amarelos||0}</b><span>Amarelos</span></div><div><b>${n.vermelhos||0}</b><span>Vermelhos</span></div></div>
+  </section>`;
+  const pl=(d.presencas||[]).slice().reverse(), cnt={}; pl.forEach(p=>cnt[p.s]=(cnt[p.s]||0)+1);
+  const cPres=`<h3 class="sec-t">Presenças nos treinos</h3><section class="card"><div class="pres">
+      <div class="pres-r">${ring(pres||0,pres==null?"var(--line)":pres>=90?"var(--ok)":pres>=75?"var(--warn)":"var(--bad)")}<b>${pres==null?"–":pres+"%"}</b></div>
+      <div class="pres-c"><div><b>${n.pres||0}</b> de ${n.treinos||0} treinos</div>${["AT","FJ","FI","L"].filter(k=>cnt[k]).map(k=>`<div><i style="background:${ST[k][1]}"></i>${cnt[k]} ${esc(ST[k][0].toLowerCase())}${cnt[k]>1&&k!=="L"?"s":""}</div>`).join("")}</div></div>
+    ${pl.length?`<div class="dots">${pl.map(p=>`<i style="background:${ST[p.s]?ST[p.s][1]:"var(--line)"}" title="${esc(fmt(p.date,{day:"numeric",month:"short"}))}: ${esc((ST[p.s]||ST[""])[0])}"></i>`).join("")}</div>
+      <div class="dots-x"><span>${esc(fmt(pl[0].date,{day:"numeric",month:"short"}))}</span><span>Último treino</span></div>`:""}</section>`;
+  const meus=(d.resultados||[]).filter(g=>g.eu);
+  const cJogos=meus.length?`<h3 class="sec-t">Os meus jogos</h3>${meus.map(g=>`<div class="res">
+      ${crest(g.opp,0,34)}<div class="res-t"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><span>${esc(fmt(g.date,{day:"numeric",month:"short"}))}${g.eu.st?" · titular":" · suplente"}</span></div>
+      <div class="me-g"><b>${g.eu.min}'</b>${g.eu.g?`<span>⚽ ${g.eu.g}</span>`:""}${g.eu.a?`<span>🅰️ ${g.eu.a}</span>`:""}</div>
+      <div class="res-s" style="--c:${RES_C[g.r]}"><b>${g.gf}–${g.ga}</b><i>${g.r}</i></div></div>`).join("")}`:"";
   const t=today(), days=[...Array(14)].map((_,i)=>addDays(t,i-13)), by={}; hist.forEach(h=>by[h.d]=h.t);
+  const vals=hist.map(h=>h.t), med=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
   const bars=`<div class="bars" role="img" aria-label="Bem-estar dos últimos 14 dias">${days.map(x=>{ const v=by[x]; const e=bemEstado(v);
-    return `<i title="${esc(fmt(x,{day:"numeric",month:"short"}))}: ${v==null?"sem resposta":v+"/20"}" style="height:${v==null?3:Math.max(8,(v-4)/16*100)}%;background:${v==null?"var(--line)":e.c}"></i>`; }).join("")}</div>
+    return `<i title="${esc(fmt(x,{day:"numeric",month:"short"}))}: ${v==null?"sem resposta":v+"/20"}" style="height:${v==null?4:Math.max(10,(v-4)/16*100)}%;background:${v==null?"var(--line)":e.c}">${v==null?"":`<em>${v}</em>`}</i>`; }).join("")}</div>
     <div class="bars-x">${days.map((x,i)=>`<span>${i%2?"":toD(x).getDate()}</span>`).join("")}</div>`;
-  return top(esc([me.n?"N.º "+me.n:"",me.pos].filter(Boolean).join(" · ")))+`<main>${offline()}
-    <section class="card"><p class="k">A minha época</p><div class="nums">
-      <div><b>${n.jogos||0}</b><span>Jogos</span></div><div><b>${n.min||0}</b><span>Minutos</span></div><div><b>${n.titular||0}</b><span>Titular</span></div>
-      <div><b>${n.golos||0}</b><span>Golos</span></div><div><b>${n.assist||0}</b><span>Assistências</span></div><div><b>${pres==null?"–":pres+"%"}</b><span>Presenças</span></div></div>
-      ${(n.amarelos||n.vermelhos)?`<p class="note">Cartões: ${n.amarelos||0} amarelo(s), ${n.vermelhos||0} vermelho(s).</p>`:""}</section>
-    <section class="card"><p class="k">O meu bem-estar — 14 dias</p>${bars}<p class="note">Total de 4 a 20 (sono + fadiga + dores + stress). Verde OK, amarelo atenção, vermelho risco.</p></section>
-    ${(d.jogos||[]).length?`<section class="card"><p class="k">Últimos jogos</p><ul class="list">${d.jogos.map(g=>`<li><div style="flex:1"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><div class="sub">${esc(fmt(g.date,{day:"numeric",month:"short"}))}${g.st?" · titular":""}</div></div><span>${g.min}'${g.g?` · ⚽ ${g.g}`:""}${g.a?` · 🅰️ ${g.a}`:""}</span></li>`).join("")}</ul></section>`:""}
-    <section class="card"><p class="k">Este telemóvel</p><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
-      <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></section></main>`;
+  const cBem=`<h3 class="sec-t">O meu bem-estar · 14 dias</h3><section class="card">${med!=null?`<p class="sub" style="margin-bottom:4px">Média <b>${med.toFixed(1)}</b>/20 · ${vals.length} resposta${vals.length>1?"s":""}</p>`:""}${bars}
+    <div class="lg"><span><i style="background:var(--ok)"></i>OK 17+</span><span><i style="background:var(--warn)"></i>Atenção 13-16</span><span><i style="background:var(--bad)"></i>Risco ≤12</span></div></section>`;
+  return top("A minha época")+`<main>${offline()}${card}${cPres}${cJogos}${cBem}
+    <details class="card cfg"><summary>Este telemóvel</summary><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
+      <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></details></main>`;
 }
 function offline(){
   if(S.err==="rede"&&S.at) return `<div class="off">Sem ligação — a mostrar os dados de ${esc(new Date(S.at).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}.</div>`;
@@ -218,7 +298,7 @@ function render(){
   if(!S.cfg||S.err==="link"){ app.innerHTML=vLink(); return; }
   if(!S.data){ app.innerHTML=top()+`<main><div class="card empty"><b>${S.err==="rede"?"Sem ligação":"A carregar…"}</b>${S.err==="rede"?"Liga os dados móveis ou o Wi-Fi e tenta de novo.":""}${S.err==="rede"?`<button class="cta" data-a="refresh">Tentar de novo</button>`:""}</div></main>`; return; }
   const v={hoje:vHoje,agenda:vAgenda,jogo:vJogo,eu:vEu}[S.tab]();
-  const nav=`<nav class="tabs" aria-label="Secções">${[["hoje","Hoje"],["agenda","Agenda"],["jogo","Jogo"],["eu","Eu"]].map(([k,l])=>`<button data-a="tab" data-t="${k}" ${S.tab===k?'aria-current="page"':""}>${IC[k]}${l}</button>`).join("")}</nav>`;
+  const nav=`<nav class="tabs" aria-label="Secções">${[["hoje","Hoje"],["agenda","Agenda"],["jogo","Jogos"],["eu","Eu"]].map(([k,l])=>`<button data-a="tab" data-t="${k}" ${S.tab===k?'aria-current="page"':""}>${IC[k]}${l}</button>`).join("")}</nav>`;
   const sheet=S.view==="bem"?vBemForm():S.view==="pse"?vPseForm():S.view&&S.view.t?vObrigado():"";
   app.innerHTML=v+nav+sheet;
   document.documentElement.style.overflow=sheet?"hidden":"";

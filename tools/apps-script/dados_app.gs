@@ -537,6 +537,7 @@ function atleta_(tok) {
   var A = atAtleta_(tok), pid = A.pid, ev = A.reg.events, hoje = atKey_(new Date());
   var ate = atKey_(new Date(Date.now() + 15 * 864e5)), tm = A.reg.meta.team || {};
   var agenda = [], numeros = { jogos: 0, titular: 0, min: 0, golos: 0, assist: 0, amarelos: 0, vermelhos: 0, pres: 0, faltas: 0, treinos: 0 }, jogos = [];
+  var pres = [], resultados = [], epoca = { j: 0, V: 0, E: 0, D: 0, gf: 0, ga: 0 }, tops = {};   // presenças, resultados da equipa, rankings
   Object.keys(ev).forEach(function (id) {
     var e = ev[id]; if (!e || !e.date) return;
     if (e.date >= hoje && e.date <= ate) {
@@ -546,17 +547,35 @@ function atleta_(tok) {
     }
     if (e.date > hoje) return;
     if (e.type === 'jogo') {
+      // resultado da equipa (jogo com golos sofridos preenchidos); golos marcados = eventos "golo", como na app
+      var gaN = atNum_(e.ga), gf = (e.ev || []).filter(function (q) { return q.t === 'golo'; }).length;
+      if (gaN !== null) {
+        var r = gf > gaN ? 'V' : gf < gaN ? 'D' : 'E'; epoca.j++; epoca[r]++; epoca.gf += gf; epoca.ga += gaN;
+        var eu = atJogo_(e, pid);
+        resultados.push({ date: e.date, opp: e.opp || '', venue: e.venue || 'C', comp: e.comp || '', gf: gf, ga: gaN, r: r,
+          eu: eu && (eu.min > 0 || eu.st) ? { min: eu.min, st: eu.st, g: eu.g, a: eu.a } : null });
+      }
+      Object.keys(A.reg.players).forEach(function (q) { var y = atJogo_(e, q); if (!y) return; var t = tops[q] || (tops[q] = { min: 0, g: 0, a: 0 }); t.min += y.min; t.g += y.g; t.a += y.a; });
       var x = atJogo_(e, pid); if (!x) return;
       if (x.min > 0 || x.st) numeros.jogos++; if (x.st) numeros.titular++;
       numeros.min += x.min; numeros.golos += x.g; numeros.assist += x.a; numeros.amarelos += x.y; numeros.vermelhos += x.r;
       if (x.min > 0 || x.st) jogos.push({ date: e.date, opp: e.opp || '', venue: e.venue || 'C', min: x.min, st: x.st, g: x.g, a: x.a });
     } else {
       var s = ((e.att || {})[pid] || {}).s;
+      if (e.att && Object.keys(e.att).length) pres.push({ date: e.date, s: s || '', theme: e.theme || '' });
       if (s === 'P' || s === 'AT') { numeros.pres++; numeros.treinos++; } else if (s === 'FJ' || s === 'FI') { numeros.faltas++; numeros.treinos++; }
     }
   });
   agenda.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
   jogos.sort(function (a, b) { return b.date.localeCompare(a.date); });
+  resultados.sort(function (a, b) { return b.date.localeCompare(a.date); });
+  pres.sort(function (a, b) { return b.date.localeCompare(a.date); });
+  // lugar do atleta no plantel (só entre quem tem mais de 0)
+  var rank = {};
+  ['min', 'g', 'a'].forEach(function (k) {
+    var mine = (tops[pid] || {})[k] || 0; if (!mine) return;
+    rank[k] = 1 + Object.keys(tops).filter(function (q) { return q !== pid && !(A.reg.players[q] || {}).archived && tops[q][k] > mine; }).length;
+  });
   // convocatória: só a do próximo jogo e só se a equipa técnica a tiver publicado
   var conv = null, prox = agenda.filter(function (a) { return a.tipo === 'jogo'; })[0];
   if (prox && ev[prox.id].convPub) {
@@ -585,7 +604,9 @@ function atleta_(tok) {
   });
   return {
     ok: true, hoje: hoje,
-    me: { id: pid, name: A.p.name, full: A.p.full || '', n: A.p.n || '', pos: A.p.pos || '' },
+    me: { id: pid, name: A.p.name, full: A.p.full || '', n: A.p.n || '', pos: A.p.pos || '',
+          foto: /^data:image\//.test(String(A.p.photoData || '')) && String(A.p.photoData).length < 60000 ? A.p.photoData : '' },
+    resultados: resultados.slice(0, 8), epoca: epoca, rank: rank, presencas: pres.slice(0, 20),
     equipa: { nome: tm.full || tm.team || '', curto: tm.team || '' },
     agenda: agenda, conv: conv, numeros: numeros, jogos: jogos.slice(0, 10),
     respostas: { bem: hojeBem, pse: hojePse, hist: Object.keys(hist).sort().map(function (k) { return { d: k, t: hist[k] }; }) },

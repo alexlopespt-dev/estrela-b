@@ -134,6 +134,7 @@ def build_atleta():
     h = open(os.path.join(d, "shell.html")).read()
     h = h.replace("/*CSS*/", open(os.path.join(d, "atleta.css")).read()).replace("/*JS*/", open(os.path.join(d, "atleta.js")).read())
     h = h.replace('"__CREST__"', json.dumps(crest))
+    h = h.replace('"__OPPIMG__"', open(os.path.join(DATA, "emblemas_adversarios.json")).read().strip())   # emblemas dos adversários
     # a página protege-se sozinha (o _headers é um reforço: há quem não consiga carregá-lo no Netlify)
     csp = headers_atleta().split("Content-Security-Policy: ",1)[1].split("\n",1)[0].replace(" frame-ancestors 'none';", "")
     h = h.replace('<meta name="robots"', f'<meta http-equiv="Content-Security-Policy" content="{csp}">\n<meta name="referrer" content="no-referrer">\n<meta name="robots"', 1)
