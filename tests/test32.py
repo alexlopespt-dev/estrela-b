@@ -43,9 +43,14 @@ with sync_playwright() as pw:
     if "MacBook Pro de Alexandre" not in t: errs.append("última alteração na ficha")
     # outro dispositivo (simulado: carimbo vindo da partilha) + lista no Plantel com filtro
     pg.evaluate("""()=>{ const k='estrela-tecnico-v1', d=JSON.parse(localStorage.getItem(k)); const id=Object.keys(d.players)[0];
-      d.players[id]._by='iPad de Tiago'; d.players[id]._at=new Date(Date.now()-3600e3).toISOString(); localStorage.setItem(k,JSON.stringify(d)); }""")
+      d.players[id]._by='iPad de Tiago'; d.players[id]._at=new Date(Date.now()-3600e3).toISOString();
+      Object.keys(d.players).slice(1,8).forEach((j,i)=>{ d.players[j]._by='Portátil de João'; d.players[j]._at=new Date(Date.now()-7200e3-i*60e3).toISOString(); });
+      localStorage.setItem(k,JSON.stringify(d)); }""")
     pg.reload(); pg.wait_for_timeout(2200)
     pg.click('nav [data-t="plantel"]'); pg.wait_for_timeout(300); chk(pg,"plantel")
+    n5=pg.eval_on_selector_all('section:has(h3:text("Últimas alterações")) .list .li',"e=>e.length"); print("antes de ver mais:", n5)
+    if n5>5 or not pg.query_selector('[data-a="whoMore"]'): errs.append("só as 5 mais recentes + ver mais")
+    pg.click('[data-a="whoMore"]'); pg.wait_for_timeout(200)
     items=pg.eval_on_selector_all('section:has(h3:text("Últimas alterações")) .list .li',"e=>e.map(x=>x.innerText.replace(/\\n/g,' | '))")
     print("últimas alterações:", items[:4])
     if len(items)<3 or "MacBook Pro de Alexandre" not in items[0] or not any("iPad de Tiago" in x for x in items): errs.append("lista")

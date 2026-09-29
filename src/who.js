@@ -66,15 +66,17 @@ function whoItems(){
   return out.sort((a,b)=>a.at<b.at?1:-1);
 }
 function vWho(){
-  const all=whoItems(), f=S.whoBy||"", by=[...new Set(all.map(x=>x.by))].filter(Boolean), list=(f?all.filter(x=>x.by===f):all).slice(0,40);
+  const all=whoItems(), f=S.whoBy||"", by=[...new Set(all.map(x=>x.by))].filter(Boolean), full=(f?all.filter(x=>x.by===f):all).slice(0,40), list=S.whoAll?full:full.slice(0,5), mais=full.length-list.length;
   return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Últimas alterações</h3><button class="btn sm" data-a="meCfg">Este dispositivo</button></div>
     <p class="small muted" style="margin:8px 14px 0">As alterações feitas aqui aparecem como <b>${esc(meLabel())}</b>.</p>
     ${by.length>1?`<div class="chips" style="padding:10px 14px 0"><button class="chip ${!f?"on":""}" data-a="whoBy" data-k="">Todos</button>${by.map(b=>`<button class="chip ${f===b?"on":""}" data-a="whoBy" data-k="${esc(b)}">${esc(b)}</button>`).join("")}</div>`:""}
     <div class="list">${list.length?list.map(x=>{ const inner=`<span class="main"><b>${esc(x.what)}</b><small>${esc(x.by||"—")} · ${esc(ago(x.at))}</small></span>`;
       return x.pg&&x.id?`<button class="li" data-a="page" data-p="${x.pg}" data-id="${esc(x.id)}">${inner}</button>`:`<div class="li">${inner}</div>`; }).join("")
-      :`<div class="empty"><b>Ainda sem alterações registadas</b>A partir de agora, cada alteração fica com o nome do dispositivo que a fez.</div>`}</div></section>`;
+      :`<div class="empty"><b>Ainda sem alterações registadas</b>A partir de agora, cada alteração fica com o nome do dispositivo que a fez.</div>`}</div>
+    ${mais>0||(S.whoAll&&full.length>5)?`<button class="whomore" data-a="whoMore" aria-expanded="${S.whoAll?"true":"false"}">${S.whoAll?"Ver menos ▴":`Ver mais ${mais} ▾`}</button>`:""}</section>`;
 }
 Object.assign(A,{
   meCfg: () => meForm(),
-  whoBy: el => { S.whoBy=el.dataset.k; render(); }
+  whoBy: el => { S.whoBy=el.dataset.k; render(); },
+  whoMore: () => { S.whoAll=!S.whoAll; render(); }
 });

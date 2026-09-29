@@ -735,3 +735,7 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .fl-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fl-k{font-weight:700;font-size:14px;min-width:120px}
 .fl-v{flex:1;font-size:14px;color:var(--muted)}.fl-v b{color:var(--text);font-size:16px}
+
+/* Últimas alterações: só as 5 mais recentes, o resto com "Ver mais" */
+.whomore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;color:var(--muted);font-weight:700;font-size:13px;padding:10px;cursor:pointer;border-radius:0 0 18px 18px}
+.whomore:hover{color:var(--text);background:var(--surface-2)}

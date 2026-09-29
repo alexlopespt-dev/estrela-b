@@ -750,6 +750,10 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .fl-k{font-weight:700;font-size:14px;min-width:120px}
 .fl-v{flex:1;font-size:14px;color:var(--muted)}.fl-v b{color:var(--text);font-size:16px}
 
+/* Últimas alterações: só as 5 mais recentes, o resto com "Ver mais" */
+.whomore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;color:var(--muted);font-weight:700;font-size:13px;padding:10px;cursor:pointer;border-radius:0 0 18px 18px}
+.whomore:hover{color:var(--text);background:var(--surface-2)}
+
 </style>
 </head>
 <body>
@@ -878,7 +882,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 21:07";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 21:31";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -3986,17 +3990,19 @@ function whoItems(){
   return out.sort((a,b)=>a.at<b.at?1:-1);
 }
 function vWho(){
-  const all=whoItems(), f=S.whoBy||"", by=[...new Set(all.map(x=>x.by))].filter(Boolean), list=(f?all.filter(x=>x.by===f):all).slice(0,40);
+  const all=whoItems(), f=S.whoBy||"", by=[...new Set(all.map(x=>x.by))].filter(Boolean), full=(f?all.filter(x=>x.by===f):all).slice(0,40), list=S.whoAll?full:full.slice(0,5), mais=full.length-list.length;
   return `<section class="card" style="margin-top:14px"><div class="card-h"><h3>Últimas alterações</h3><button class="btn sm" data-a="meCfg">Este dispositivo</button></div>
     <p class="small muted" style="margin:8px 14px 0">As alterações feitas aqui aparecem como <b>${esc(meLabel())}</b>.</p>
     ${by.length>1?`<div class="chips" style="padding:10px 14px 0"><button class="chip ${!f?"on":""}" data-a="whoBy" data-k="">Todos</button>${by.map(b=>`<button class="chip ${f===b?"on":""}" data-a="whoBy" data-k="${esc(b)}">${esc(b)}</button>`).join("")}</div>`:""}
     <div class="list">${list.length?list.map(x=>{ const inner=`<span class="main"><b>${esc(x.what)}</b><small>${esc(x.by||"—")} · ${esc(ago(x.at))}</small></span>`;
       return x.pg&&x.id?`<button class="li" data-a="page" data-p="${x.pg}" data-id="${esc(x.id)}">${inner}</button>`:`<div class="li">${inner}</div>`; }).join("")
-      :`<div class="empty"><b>Ainda sem alterações registadas</b>A partir de agora, cada alteração fica com o nome do dispositivo que a fez.</div>`}</div></section>`;
+      :`<div class="empty"><b>Ainda sem alterações registadas</b>A partir de agora, cada alteração fica com o nome do dispositivo que a fez.</div>`}</div>
+    ${mais>0||(S.whoAll&&full.length>5)?`<button class="whomore" data-a="whoMore" aria-expanded="${S.whoAll?"true":"false"}">${S.whoAll?"Ver menos ▴":`Ver mais ${mais} ▾`}</button>`:""}</section>`;
 }
 Object.assign(A,{
   meCfg: () => meForm(),
-  whoBy: el => { S.whoBy=el.dataset.k; render(); }
+  whoBy: el => { S.whoBy=el.dataset.k; render(); },
+  whoMore: () => { S.whoAll=!S.whoAll; render(); }
 });
 
 /* ================= bolas paradas: quadro tático ================= */
