@@ -144,6 +144,10 @@ try:
     pg.screenshot(path=os.path.join(CAP,"t38_jogo.png"),full_page=True)
     pg.click('nav [data-t="hoje"]'); pg.wait_for_timeout(200)
     if "Estás convocado" not in pg.inner_text("#app"): errs.append("aviso de convocado no hoje")
+    # ícone antigo no ecrã principal (link que já não vale) mas o telemóvel tem o link bom guardado → usa o guardado
+    pg.goto("about:blank"); pg.goto("https://atleta.test/#s="+urllib.parse.quote(URL,safe="")+"&t="+"q"*24); pg.wait_for_timeout(2000)
+    t=pg.inner_text("#app")
+    if "já não é válido" in t or "Luís" not in t or "t="+TOK not in pg.url: errs.append("link antigo no endereço: não usou o link bom guardado")
     # tema escuro
     pg.emulate_media(color_scheme="dark"); pg.wait_for_timeout(200); pg.screenshot(path=os.path.join(CAP,"t38_hoje_escuro.png"),full_page=True); pg.emulate_media(color_scheme="light")
     # link inválido noutro telemóvel
@@ -174,11 +178,19 @@ try:
     # novo link desliga o anterior
     pa.click('#main [data-a="atGen"]'); pa.click('#dlgAsk [data-ask="1"]'); pa.wait_for_timeout(2500)
     if get({"a":"atleta","t":atk}).get("erro")!="link": errs.append("link antigo continua a funcionar")
+    # outro dispositivo sem o link ainda recebido: "Criar os links em falta" vai primeiro buscar à partilha e não cria outro
+    pa.evaluate("""()=>{const s=JSON.parse(localStorage.getItem('estrela-tecnico-v1')); delete s.players.ta1.atk; localStorage.setItem('estrela-tecnico-v1',JSON.stringify(s));
+      const c=JSON.parse(localStorage.getItem('estrela-tecnico-v1:sync')); c.last=0; localStorage.setItem('estrela-tecnico-v1:sync',JSON.stringify(c));}""")
+    pa.reload(); pa.wait_for_timeout(600)
+    pa.evaluate("""()=>{const s=JSON.parse(localStorage.getItem('estrela-tecnico-v1')); if(s.players.ta1) delete s.players.ta1.atk; localStorage.setItem('estrela-tecnico-v1',JSON.stringify(s));}""")
+    antes_atk=[json.loads(r[2]).get("atk") for r in estado()["docs"] if r[0]=="players" and r[1]=="ta1"][0]
     # lista de links no Plantel
     pa.click('nav [data-t="plantel"]'); pa.click('#main [data-a="atLinks"]'); pa.wait_for_timeout(300)
     t=pa.inner_text("#dlg"); print("lista:", t.count("Sem link"), "sem link")
     pa.click('#dlg [data-a="atGenAll"]'); pa.wait_for_timeout(2500)
     if "Sem link" in pa.inner_text("#dlg"): errs.append("criar links em falta")
+    depois_atk=[json.loads(r[2]).get("atk") for r in estado()["docs"] if r[0]=="players" and r[1]=="ta1"][0]; print("link do Luís mantém-se:", antes_atk==depois_atk)
+    if antes_atk!=depois_atk: errs.append("'Criar os links em falta' trocou um link que já existia noutro dispositivo")
     # endereço escrito sem https:// (como na captura do utilizador) → aceite e os links aparecem
     pa.fill('#dlg [name=site]',"estrelab-atleta.netlify.app"); pa.click('#dlg [data-a="mSave"]'); pa.wait_for_timeout(400)
     t=pa.inner_text("#dlg"); v=pa.input_value('#dlg [name=site]'); print("sem https:", v, "| copiar:", pa.locator('#dlg [data-a="atCopy"]').count())

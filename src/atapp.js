@@ -71,6 +71,9 @@ function atConvCard(g){
       :`Enquanto não publicares, a app dos atletas só mostra o jogo, sem convocatória.`}</p>
     <button class="btn sm ${pub?"ghost":"primary"}" data-a="atPub" data-id="${esc(g.id)}" ${!pub&&!n?"disabled":""}>${pub?"Retirar da app":"Publicar na app dos atletas"}</button></div></section>`;
 }
+/* antes de criar links: receber primeiro o que está na partilha (outro dispositivo pode já ter criado o link desse atleta;
+   criar outro aqui apagava o que o atleta já tem no telemóvel) */
+async function atFresh(){ if(typeof syncOn!=="function"||!syncOn()) return; try{ await syncPush(); await syncPull(); }catch(e){} }
 /* ---- verificar: o que o script da partilha entrega à app do atleta vs o que está nesta app ----
    A app do atleta só vê o que chegou ao Sheets pela partilha. Treinos/jogos criados num dispositivo sem a partilha ligada
    (ou na versão online do Claude, que não usa a partilha) não aparecem lá: aqui mostra quais e deixa enviá-los. */
@@ -82,18 +85,20 @@ async function atFetchAtleta(tok){
 async function atDiagForm(){
   const p=players().find(x=>x.atk); if(!p||!SYNC.cfg) return toast("Precisa da partilha ligada e de pelo menos um link criado.");
   modal({title:"O que os atletas veem",sub:"A comparar com o script da partilha…",body:`<div class="empty"><b>A perguntar ao Google…</b></div>`,foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
-  let d; try{ d=await atFetchAtleta(p.atk); }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
+  let d, srvP={}; try{ await atFresh(); const all=await syncGet({a:"pull",since:0}); (all.docs||[]).forEach(x=>{ if(x&&x.c==="players"&&!x.x&&x.d) srvP[x.i]=x.d; }); d=await atFetchAtleta((players().find(x=>x.atk&&srvP[x.id]&&srvP[x.id].atk===x.atk)||p).atk); }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
   const t=todayISO(), ate=addDays(t,14);
   const loc=events().filter(e=>(e.type==="treino"||e.type==="jogo")&&e.date>=t&&e.date<=ate).sort(byDT);
   const locG=events().filter(e=>e.type==="jogo"&&e.date>=t&&!e.closed).sort(byDT).slice(0,6);
   const srv=new Set([...(d.agenda||[]).map(a=>a.id),...(d.proximos||[]).map(a=>a.id)]);
   const falta=[...loc,...locG.filter(g=>!loc.includes(g))].filter(e=>!srv.has(e.id));
   const n=syncN(), online=MODE!=="local";
+  const lk=players().filter(x=>x.atk), lkMal=lk.filter(x=>!srvP[x.id]||srvP[x.id].atk!==x.atk);
   const row=e=>`<div class="li"><span class="main"><b>${e.type==="jogo"?"Jogo "+esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"")):"Treino"+(e.theme?" · "+esc(e.theme):"")}</b><small>${esc(fmtD(e.date,{weekday:"short",day:"numeric",month:"short"}))}${e.time?" · "+esc(e.time):""}</small></span><span class="tag bad">Não chegou</span></div>`;
   const body=`<div class="kpis" style="margin-bottom:12px">
       <div class="kpi"><span>Nesta app (15 dias)</span><b>${loc.filter(e=>e.type==="treino").length}<small> treinos</small> · ${loc.filter(e=>e.type==="jogo").length}<small> jogos</small></b></div>
       <div class="kpi"><span>A app do atleta vê</span><b>${(d.agenda||[]).filter(a=>a.tipo==="treino").length}<small> treinos</small> · ${(d.agenda||[]).filter(a=>a.tipo==="jogo").length}<small> jogos</small></b></div>
       <div class="kpi"><span>Por enviar daqui</span><b>${n}</b></div></div>
+    <p class="note" style="margin:0 0 10px">${lkMal.length?`<b>${lkMal.length} link(s) desta lista não são os que estão na partilha:</b> ${lkMal.map(x=>esc(x.name)).join(", ")}. Carrega em "Enviar agora" ou volta a abrir esta lista.`:`<b>Links:</b> os ${lk.length} links desta lista são os que funcionam. Um atleta com "link expirado" tem um link antigo (foi criado um novo depois): envia-lhe outra vez o link desta lista.`}</p>
     ${online?`<p class="note" style="margin:0 0 10px"><b>Estás na versão online (no Claude).</b> Esta versão não envia para o Sheets, por isso a app do atleta não vê o que fazes aqui. Cria os treinos e jogos na versão do Netlify com a partilha ligada.</p>`:""}
     ${falta.length?`<p style="margin:0 0 8px"><b>${falta.length} ${falta.length>1?"registos não chegaram":"registo não chegou"} à partilha</b> — os atletas não os veem:</p><div class="list">${falta.slice(0,30).map(row).join("")}</div>
       ${online?"":`<p class="small muted">Provavelmente foram criados num dispositivo sem a partilha ligada. Envia-os agora a partir daqui:</p><button class="btn primary" data-a="atDiagSend">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}`
@@ -108,13 +113,15 @@ Object.assign(A,{
   atDiagSend: async () => { const ids=(M&&M.falta)||[]; if(!ids.length||!syncOn()) return;
     ids.forEach(id=>{ if(D.events[id]) SYNC.q["events/"+id]={c:"events",i:id,d:D.events[id]}; }); syncSaveQ(); syncBadge();
     toast("A enviar…"); await syncPush(); if(SYNC.err) return toast(SYNC.err); toast(`${ids.length} registo(s) enviados — a app do atleta já os vê`); atDiagForm(); },
-  atGen: el => { const id=el.dataset.id, p=D.players[id]; if(!p) return;
+  atGen: async el => { const id=el.dataset.id; if(!D.players[id]) return;
+    const had=!!D.players[id].atk; await atFresh(); const p=D.players[id]; if(!p) return;
+    if(!had&&p.atk){ toast(`${firstName(p.name)} já tinha link (criado noutro dispositivo) — usa esse.`); if($("#dlg").open&&M&&M.save) atLinksForm(); else render(); return; }
     const go=()=>{ put("players",id,{...clone(p),atk:atToken()}); toast(p.atk?"Link novo criado — o anterior deixou de funcionar.":"Link pessoal criado"); if($("#dlg").open&&M&&M.save) atLinksForm(); };
     if(p.atk) askConfirm(`Criar um link novo para ${p.name}? O link anterior deixa de funcionar no telemóvel dele.`,"Criar link novo",true).then(ok=>{ if(ok) go(); }); else go(); },
-  atGenAll: () => { let n=0; players().forEach(p=>{ if(!p.atk){ put("players",p.id,{...clone(D.players[p.id]),atk:atToken()}); n++; } }); toast(`${n} link(s) criado(s)`); atLinksForm(); },
+  atGenAll: async () => { await atFresh(); let n=0; players().forEach(p=>{ if(!p.atk){ put("players",p.id,{...clone(D.players[p.id]),atk:atToken()}); n++; } }); toast(`${n} link(s) criado(s)`); atLinksForm(); },
   atCopy: async el => { const p=P(el.dataset.id), l=atLink(p); if(!l) return toast("Falta o endereço do site ou a partilha.");
     try{ await navigator.clipboard.writeText(l); toast(`Link de ${firstName(p.name)} copiado`); }catch(e){ const i=$("#atL_"+p.id); if(i){ i.select(); try{ document.execCommand("copy"); toast("Link copiado"); }catch(er){ toast("Seleciona e copia o link."); } } else toast("Não foi possível copiar."); } },
-  atLinks: () => atLinksForm(),
+  atLinks: async () => { atLinksForm(); await atFresh(); if($("#dlg").open&&M&&M.save) atLinksForm(); },
   atSiteCfg: () => atSiteForm(),
   atPub: el => { const id=el.dataset.id, g=D.events[id]; if(!g) return; const pub=!g.convPub;
     put("events",id,{...clone(g),convPub:pub}); toast(pub?"Convocatória publicada na app dos atletas":"Convocatória retirada da app dos atletas"); }

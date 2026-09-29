@@ -276,6 +276,7 @@ const S = { cfg:ls.get(":cfg",null), data:ls.get(":dados",null), at:ls.get(":dad
   const h=new URLSearchParams(location.hash.replace(/^#/,""));
   if(h.get("s")&&h.get("t")){
     const cfg={s:h.get("s"),t:h.get("t")};
+    if(S.cfg&&S.cfg.t!==cfg.t) S.alt=S.cfg;   // o que estava guardado: tenta-se se o do endereço já não valer
     if(!S.cfg||S.cfg.t!==cfg.t){ S.data=null; ls.del(":dados"); }
     S.cfg=cfg; ls.set(":cfg",cfg);
   }
@@ -311,6 +312,8 @@ async function load(manual){
   S.loading=true; if(manual) render();
   try{
     const d=await apiGet();
+    if(d.erro==="link"&&S.alt){ const a=S.alt; S.alt=null; S.cfg=a; ls.set(":cfg",a); S.loading=false;
+      try{ history.replaceState(null,"",location.pathname+location.search+`#s=${encodeURIComponent(a.s)}&t=${a.t}`); }catch(e){} return load(manual); }
     if(d.erro){ S.err = d.erro==="link" ? "link" : (d.msg||d.erro); }
     else { S.data=d; S.at=new Date().toISOString(); S.err=""; ls.set(":dados",d); ls.set(":dados_em",S.at); }
   }catch(e){ S.err="rede"; }
@@ -424,7 +427,7 @@ function top(sub){
 }
 function vLink(){
   return top()+`<main><div class="card empty"><b>${S.err==="link"?"Este link já não é válido":"Abre o teu link pessoal"}</b>
-    ${S.err==="link"?"A equipa técnica gerou um link novo para ti (ou retirou o acesso). Pede-lhes o link atual e abre-o neste telemóvel.":"A equipa técnica envia-te um link só teu (por WhatsApp). Abre-o neste telemóvel uma vez e a app fica pronta."}</div></main>`;
+    ${S.err==="link"?"A equipa técnica gerou um link novo para ti. Pede-lhes o link atual e abre-o neste telemóvel. Se tens a app no ecrã principal, apaga esse ícone e volta a adicioná-la a partir do link novo.":"A equipa técnica envia-te um link só teu (por WhatsApp). Abre-o neste telemóvel uma vez e a app fica pronta."}</div></main>`;
 }
 const agendaDe = iso => ((S.data&&S.data.agenda)||[]).filter(a=>a.date===iso);
 /* cartão de jogo: casa à esquerda; com resultado ou com hora */
