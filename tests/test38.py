@@ -188,6 +188,19 @@ try:
     if "endereço desta app" not in pa.inner_text("#toast") or "estrelab-atleta" not in pa.evaluate("JSON.parse(localStorage.getItem('estrela-tecnico-v1')).meta.cfg.atletaUrl"): errs.append("aceitou o endereço da própria app")
     pa.fill('#dlg [name=site]',"https://atleta.test/"); pa.click('#dlg [data-a="mSave"]'); pa.wait_for_timeout(300)
     pa.click('#dlg [data-a="mClose"]')
+    # verificar o que os atletas veem: um treino que só existe aqui (criado sem a partilha) → aparece e envia-se
+    pa.evaluate("""(d)=>{const s=JSON.parse(localStorage.getItem('estrela-tecnico-v1')); s.events.tr_sopartilha={type:'treino',date:d,time:'18:00',dur:75,theme:'Só aqui',att:{}}; localStorage.setItem('estrela-tecnico-v1',JSON.stringify(s));}""",d(1))
+    pa.reload(); pa.wait_for_timeout(2500)
+    pa.click('nav [data-t="plantel"]'); pa.click('#main [data-a="atLinks"]'); pa.wait_for_timeout(300)
+    pa.click('#dlg [data-a="atDiag"]'); pa.wait_for_timeout(2500)
+    t=pa.inner_text("#dlg"); print("verificar:", t.replace("\n"," | ")[:300])
+    if "Só aqui" not in t or "Não chegou" not in t: errs.append("verificar: treino que não chegou à partilha")
+    pa.screenshot(path=os.path.join(CAP,"t38_verificar.png"))
+    pa.click('#dlg [data-a="atDiagSend"]'); pa.wait_for_timeout(3500)
+    ag=[a["id"] for a in get({"a":"atleta","t":TOK})["agenda"]]
+    if "tr_sopartilha" not in ag: errs.append("verificar: envio para a partilha")
+    if "Está tudo igual" not in pa.inner_text("#dlg"): errs.append("verificar: depois de enviar")
+    pa.click('#dlg [data-a="mClose"]')
     # convocatória: publicar
     pa.click('nav [data-t="jogos"]'); pa.click('[data-a="jsub"][data-k="conv"]'); pa.wait_for_timeout(400)
     gid=pa.evaluate("document.querySelector('select[data-c=convG]').value")

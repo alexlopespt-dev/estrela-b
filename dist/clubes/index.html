@@ -878,7 +878,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "29/09/2026 17:11";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "29/09/2026 17:31";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -4734,7 +4734,8 @@ function atLinksForm(){
   modal({title:"App do atleta",sub:"Links pessoais — um por atleta, enviados em privado",big:true,body:`
     <div class="form"><label class="fld full">Endereço do site da app do atleta<input name="site" value="${esc(atSite())}" placeholder="estrela-b-atleta.netlify.app"></label></div>
     ${miss&&SYNC.cfg?"":miss?`<div style="margin:10px 0">${miss}</div>`:""}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button class="btn sm" data-a="atGenAll" ${sem?"":"disabled"}>Criar os links em falta (${sem})</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button class="btn sm" data-a="atGenAll" ${sem?"":"disabled"}>Criar os links em falta (${sem})</button>
+      <button class="btn sm" data-a="atDiag" ${pls.some(p=>p.atk)&&SYNC.cfg?"":"disabled"}>Verificar o que os atletas veem</button></div>
     <div class="list">${pls.map(p=>{ const l=atLink(p); return `<div class="li"><span class="main"><b>${esc(p.name)}</b><small>${p.atk?(l?"Link criado":"Link criado — falta o endereço do site"):"Sem link"}</small></span>
       ${l?`<button class="btn sm" data-a="atCopy" data-id="${esc(p.id)}">Copiar</button><a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(atMsg(p,l))}" target="_blank" rel="noopener">WhatsApp</a>`
         :p.atk?"":`<button class="btn sm" data-a="atGen" data-id="${esc(p.id)}">Criar</button>`}</div>`; }).join("")}</div>
@@ -4757,7 +4758,43 @@ function atConvCard(g){
       :`Enquanto não publicares, a app dos atletas só mostra o jogo, sem convocatória.`}</p>
     <button class="btn sm ${pub?"ghost":"primary"}" data-a="atPub" data-id="${esc(g.id)}" ${!pub&&!n?"disabled":""}>${pub?"Retirar da app":"Publicar na app dos atletas"}</button></div></section>`;
 }
+/* ---- verificar: o que o script da partilha entrega à app do atleta vs o que está nesta app ----
+   A app do atleta só vê o que chegou ao Sheets pela partilha. Treinos/jogos criados num dispositivo sem a partilha ligada
+   (ou na versão online do Claude, que não usa a partilha) não aparecem lá: aqui mostra quais e deixa enviá-los. */
+async function atFetchAtleta(tok){
+  const u=SYNC.cfg.url.trim()+(SYNC.cfg.url.includes("?")?"&":"?")+"a=atleta&t="+encodeURIComponent(tok)+"&_="+Date.now().toString(36);
+  let d; try{ const r=await fetch(u); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }catch(e){ d=await monJsonp(u); }
+  if(d&&d.erro) throw new Error(d.msg||d.erro); return d;
+}
+async function atDiagForm(){
+  const p=players().find(x=>x.atk); if(!p||!SYNC.cfg) return toast("Precisa da partilha ligada e de pelo menos um link criado.");
+  modal({title:"O que os atletas veem",sub:"A comparar com o script da partilha…",body:`<div class="empty"><b>A perguntar ao Google…</b></div>`,foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
+  let d; try{ d=await atFetchAtleta(p.atk); }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
+  const t=todayISO(), ate=addDays(t,14);
+  const loc=events().filter(e=>(e.type==="treino"||e.type==="jogo")&&e.date>=t&&e.date<=ate).sort(byDT);
+  const locG=events().filter(e=>e.type==="jogo"&&e.date>=t&&!e.closed).sort(byDT).slice(0,6);
+  const srv=new Set([...(d.agenda||[]).map(a=>a.id),...(d.proximos||[]).map(a=>a.id)]);
+  const falta=[...loc,...locG.filter(g=>!loc.includes(g))].filter(e=>!srv.has(e.id));
+  const n=syncN(), online=MODE!=="local";
+  const row=e=>`<div class="li"><span class="main"><b>${e.type==="jogo"?"Jogo "+esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"")):"Treino"+(e.theme?" · "+esc(e.theme):"")}</b><small>${esc(fmtD(e.date,{weekday:"short",day:"numeric",month:"short"}))}${e.time?" · "+esc(e.time):""}</small></span><span class="tag bad">Não chegou</span></div>`;
+  const body=`<div class="kpis" style="margin-bottom:12px">
+      <div class="kpi"><span>Nesta app (15 dias)</span><b>${loc.filter(e=>e.type==="treino").length}<small> treinos</small> · ${loc.filter(e=>e.type==="jogo").length}<small> jogos</small></b></div>
+      <div class="kpi"><span>A app do atleta vê</span><b>${(d.agenda||[]).filter(a=>a.tipo==="treino").length}<small> treinos</small> · ${(d.agenda||[]).filter(a=>a.tipo==="jogo").length}<small> jogos</small></b></div>
+      <div class="kpi"><span>Por enviar daqui</span><b>${n}</b></div></div>
+    ${online?`<p class="note" style="margin:0 0 10px"><b>Estás na versão online (no Claude).</b> Esta versão não envia para o Sheets, por isso a app do atleta não vê o que fazes aqui. Cria os treinos e jogos na versão do Netlify com a partilha ligada.</p>`:""}
+    ${falta.length?`<p style="margin:0 0 8px"><b>${falta.length} ${falta.length>1?"registos não chegaram":"registo não chegou"} à partilha</b> — os atletas não os veem:</p><div class="list">${falta.slice(0,30).map(row).join("")}</div>
+      ${online?"":`<p class="small muted">Provavelmente foram criados num dispositivo sem a partilha ligada. Envia-os agora a partir daqui:</p><button class="btn primary" data-a="atDiagSend">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}`
+    :`<div class="empty"><b>Está tudo igual</b>A app do atleta tem os mesmos treinos e jogos. Se o telemóvel mostra outra coisa, carrega no botão de atualizar da app do atleta.</div>`}
+    ${n&&!online?`<p class="small muted">Há ${n} alteraç${n>1?"ões":"ão"} deste dispositivo por enviar. <button class="btn sm" data-a="atDiagPush">Enviar agora</button></p>`:""}`;
+  modal({title:"O que os atletas veem",sub:`Pelo link de ${esc(p.name)} · script da partilha`,big:true,body,
+    foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`,ctx:{falta:falta.map(e=>e.id)}});
+}
 Object.assign(A,{
+  atDiag: () => atDiagForm(),
+  atDiagPush: async () => { toast("A enviar…"); await syncPush(); toast(SYNC.err||"Enviado"); atDiagForm(); },
+  atDiagSend: async () => { const ids=(M&&M.falta)||[]; if(!ids.length||!syncOn()) return;
+    ids.forEach(id=>{ if(D.events[id]) SYNC.q["events/"+id]={c:"events",i:id,d:D.events[id]}; }); syncSaveQ(); syncBadge();
+    toast("A enviar…"); await syncPush(); if(SYNC.err) return toast(SYNC.err); toast(`${ids.length} registo(s) enviados — a app do atleta já os vê`); atDiagForm(); },
   atGen: el => { const id=el.dataset.id, p=D.players[id]; if(!p) return;
     const go=()=>{ put("players",id,{...clone(p),atk:atToken()}); toast(p.atk?"Link novo criado — o anterior deixou de funcionar.":"Link pessoal criado"); if($("#dlg").open&&M&&M.save) atLinksForm(); };
     if(p.atk) askConfirm(`Criar um link novo para ${p.name}? O link anterior deixa de funcionar no telemóvel dele.`,"Criar link novo",true).then(ok=>{ if(ok) go(); }); else go(); },
