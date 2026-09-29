@@ -124,8 +124,8 @@ async function atDiagForm(){
     <p class="note" style="margin:0 0 10px">${lkMal.length?`<b>${lkMal.length} link(s) desta lista não são os que estão na partilha:</b> ${lkMal.map(x=>esc(x.name)).join(", ")}. Carrega em "Enviar agora" ou volta a abrir esta lista.`:`<b>Links:</b> os ${lk.length} links desta lista são os que funcionam. Um atleta com "link expirado" tem um link antigo (foi criado um novo depois): envia-lhe outra vez o link desta lista.`}</p>
     ${online?`<p class="note" style="margin:0 0 10px"><b>Estás na versão online (no Claude).</b> Esta versão não envia para o Sheets, por isso a app do atleta não vê o que fazes aqui. Cria os treinos e jogos na versão do Netlify com a partilha ligada.</p>`:""}
     ${falta.length?`<p style="margin:0 0 8px"><b>${falta.length} ${falta.length>1?"treinos/jogos estão":"treino/jogo está"} diferente${falta.length>1?"s":""} ou em falta na partilha</b> — os atletas não os veem assim${pas.length?` (${pas.length} já passados: resultados, minutos, golos e presenças contam para as estatísticas deles)`:""}:</p>
-      <div class="list">${fut.slice(0,20).map(row).join("")}${pas.slice(-20).reverse().map(row).join("")}</div>
-      ${online?"":`<button class="btn primary" data-a="atDiagSend" style="margin-top:8px">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}`
+      ${online?"":`<button class="btn primary" data-a="atDiagSend" style="margin:0 0 10px">Enviar ${falta.length>1?"estes "+falta.length:"este"} para a partilha</button>`}
+      <div class="list">${fut.slice(0,20).map(row).join("")}${pas.slice(-20).reverse().map(row).join("")}</div>`
     :`<div class="empty"><b>Treinos e jogos: está tudo igual</b>A app do atleta tem os mesmos treinos, jogos e resultados. Se o telemóvel mostra outra coisa, carrega no botão de atualizar da app do atleta.</div>`}
     ${n&&!online?`<p class="small muted">Há ${n} alteraç${n>1?"ões":"ão"} deste dispositivo por enviar. <button class="btn sm" data-a="atDiagPush">Enviar agora</button></p>`:""}
     ${resp}`;

@@ -448,8 +448,10 @@ function atFolha_(id, chave) {
   ss.getSheets().forEach(function (f) {
     if (f.getLastRow() < 1) return;
     var cab = f.getRange(1, 1, 1, Math.max(1, f.getLastColumn())).getValues()[0];
-    if (atAcha_(cab, ['carimbo', 'timestamp']) === -1 || atAcha_(cab, chave) === -1) return;
-    if (f.getLastRow() > n) { melhor = f; n = f.getLastRow(); }
+    var ct = atAcha_(cab, ['carimbo', 'timestamp']);
+    if (ct === -1 || atAcha_(cab, chave) === -1) return;
+    var cheias = f.getRange(1, ct + 1, f.getLastRow(), 1).getValues().filter(function (l) { return l[0] !== '' && l[0] !== null; }).length;
+    if (cheias > n) { melhor = f; n = cheias; }
   });
   if (!melhor) throw new Error('Não encontrei a folha de respostas (' + chave[0] + ').');
   var cab = melhor.getRange(1, 1, 1, melhor.getLastColumn()).getValues()[0], u = [], c = {};
@@ -461,9 +463,10 @@ function atFolha_(id, chave) {
   if (c.n < 0) throw new Error('A folha de respostas não tem a coluna do nome.');
   return { f: melhor, cab: cab, c: c };
 }
-/** Últimas linhas (até 800), com o número da linha. A última linha escrita conta pela coluna do carimbo. */
+/** Últimas linhas (até 800), com o número da linha. A última linha conta pela coluna do carimbo: colunas com fórmulas
+ *  arrastadas até ao fim da folha ("Score Total", "Estado") fazem o getLastRow() dar 1000 e as respostas ficavam de fora. */
 function atLinhas_(F) {
-  var ult = F.f.getLastRow();
+  var ult = atUltimaLinha_(F);
   if (ult < 2) return [];
   var ini = Math.max(2, ult - 799), vals = F.f.getRange(ini, 1, ult - ini + 1, F.cab.length).getValues(), out = [];
   vals.forEach(function (r, i) { var d = atData_(r[F.c.t]); if (d) out.push({ row: ini + i, d: d, v: r }); });

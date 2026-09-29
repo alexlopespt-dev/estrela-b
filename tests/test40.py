@@ -106,7 +106,9 @@ try:
     agora(DIA+"T07:50:00")
     post({"a":"x"}); run("prepararDadosApp")
     ok("avisosAtletas" in rq("/__estado")["triggers"],"acionador dos avisos instalado")
-    rq("/__prep",{"nomes":["Luís A.","Hugo R."],"respostas":[{"id":ID_BEM,"nome":"respostas","linhas":[H_BEM]},{"id":ID_PSE,"nome":"respostas","linhas":[H_PSE]}]})
+    # como na folha verdadeira: colunas com fórmulas arrastadas até à linha 950 (o getLastRow() dá 950)
+    FORM=[[""]*len(H_BEM)+["—"] for _ in range(949)]
+    rq("/__prep",{"nomes":["Luís A.","Hugo R."],"respostas":[{"id":ID_BEM,"nome":"respostas","linhas":[H_BEM+["Score Total"]]+FORM},{"id":ID_PSE,"nome":"respostas","linhas":[H_PSE+["Carga"]]+[[""]*len(H_PSE)+["—"] for _ in range(949)]}]})
     ops=[{"c":"players","i":"ta1","d":{"name":"Luís A.","n":7,"atk":TOK}},{"c":"players","i":"ta2","d":{"name":"Hugo R.","n":9,"atk":TOK_H,"photoData":FOTO}},
          {"c":"meta","i":"cfg","d":{"atletaUrl":"https://estrela-b-atleta.netlify.app"}},
          {"c":"events","i":"tr1","d":{"type":"treino","date":DIA,"time":"19:00","dur":90,"att":{}}},
@@ -149,6 +151,9 @@ try:
     agora(DIA+"T09:15:00"); run("avisosAtletas"); ok(not agora()["pedidos"],"bem-estar não repete no mesmo dia")
     # Luís responde; PSE: fim 20:30 + 20 min
     agora(DIA+"T10:00:00"); post({"a":"atleta_bem","t":TOK,"i":[4,4,4,4],"d":DIA})
+    r=get({"a":"atleta","t":TOK}); ok(r["respostas"]["bem"] is not None and any(h["d"]==DIA and h["t"]==16 for h in r["respostas"]["hist"]),"folha com fórmulas até ao fim: a resposta aparece (hoje e 14 dias)")
+    ok(post({"a":"atleta_bem","t":TOK,"i":[1,1,1,1]}).get("erro")=="ja","folha com fórmulas até ao fim: já respondeu hoje")
+    ok(get({"a":"atletas_diag","k":KEY})["atletas"]["ta1"]["bem"]==1,"verificar: conta a resposta na folha com fórmulas")
     post({"a":"atleta_pse","t":TOK,"tipo":"Treino","dur":90,"rpe":6,"d":DIA}) if False else None
     agora(DIA+"T20:45:00"); run("avisosAtletas"); ok(not agora()["pedidos"],"PSE: ainda não (20:45)")
     agora(DIA+"T20:40:00"); agora()
