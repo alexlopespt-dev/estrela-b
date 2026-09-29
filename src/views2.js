@@ -102,8 +102,9 @@ function pJogo(id){
 
 /* ================= PLANTEL ================= */
 function vPlantel(){
-  const sub=`<div class="seg" role="tablist">${[["at","Atletas e equipa"],["pres","Presenças"]].map(([k,l])=>`<button data-a="plsub" data-k="${k}" class="${(S.plsub||"at")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const sub=`<div class="seg" role="tablist">${[["at","Atletas e equipa"],["pres","Presenças"],["tat","Esquema tático"]].map(([k,l])=>`<button data-a="plsub" data-k="${k}" class="${(S.plsub||"at")===k?"on":""}">${l}</button>`).join("")}</div>`;
   if(S.plsub==="pres") return vPresencas(sub);
+  if(S.plsub==="tat") return vTat(sub);
   const st=stats(), m=meta();
   const list=players().filter(p=>!S.plGroup||GROUP(p.pos)===S.plGroup);
   const arch=allPlayers().filter(p=>p.archived);

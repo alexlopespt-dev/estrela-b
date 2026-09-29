@@ -238,7 +238,7 @@ async function syncPing(){
 }
 
 /* recuperar registos apagados (o script guarda o último conteúdo dos apagados nos últimos 60 dias) */
-const COL_L = {events:"Treino/jogo",players:"Atleta",exercises:"Exercício",injuries:"Lesão",evals:"Avaliação",tests:"Testes físicos",scout:"Scouting",cycles:"Ciclo",principles:"Princípio",staff:"Staff",opponents:"Adversário",statdefs:"Estatística",meta:"Configuração"};
+const COL_L = {events:"Treino/jogo",players:"Atleta",exercises:"Exercício",injuries:"Lesão",evals:"Avaliação",tests:"Testes físicos",scout:"Scouting",cycles:"Ciclo",principles:"Princípio",staff:"Staff",opponents:"Adversário",tactics:"Esquema tático",statdefs:"Estatística",meta:"Configuração"};
 function lixoNome(x){
   const d=x.d||{};
   if(x.c==="events") return (d.type==="jogo"?`Jogo ${d.venue==="F"?"@":"vs"} ${d.opp||""}`:`Treino${d.theme?" — "+d.theme:""}`)+(d.date?" · "+fmtD(d.date,{day:"numeric",month:"short",year:"numeric"}):"");

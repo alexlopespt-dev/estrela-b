@@ -101,7 +101,7 @@ function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show")
 
 /* ================= dados ================= */
 const BUILD = "__BUILD__";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
-const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces"];
+const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
 const LS = "estrela-tecnico-v1";

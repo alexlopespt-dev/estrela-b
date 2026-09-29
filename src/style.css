@@ -664,3 +664,26 @@ dialog.bpdlg .dlg-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   .top-act{position:absolute;top:10px;right:14px}
   .top-act .themebt{width:32px;height:32px}
 }
+
+/* ---- esquema tático (tat.js) ---- */
+.tac-grid{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:14px;align-items:start}
+.tac-side{display:grid;gap:14px}
+.tac-card{overflow:hidden}
+.tac-top{display:flex;gap:10px;padding:12px 14px 4px;flex-wrap:wrap}
+.tac-top .fld{margin:0}.tac-nm{flex:1 1 180px}.tac-fm{flex:0 0 130px}
+.tac-pitch{padding:8px 14px 4px}
+.tac-pitch svg.tac{width:100%;height:auto;display:block;border-radius:14px;box-shadow:0 6px 18px -8px rgba(0,0,0,.45)}
+svg.tac g.ts[data-a]{cursor:pointer}
+svg.tac g.ts[data-a]:hover rect:first-of-type,svg.tac g.ts[data-a]:focus-visible rect:first-of-type{stroke:#f2bd4b;stroke-width:3}
+svg.tac g.ts:focus{outline:none}
+svg.tac.move g.ts{cursor:grab;touch-action:none}
+svg.tac.move g.ts:active{cursor:grabbing}
+.tac-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px 0}
+.tac-k{display:inline-grid;place-items:center;min-width:44px;height:26px;padding:0 6px;border-radius:7px;background:var(--surface-2);font-family:var(--fc);font-weight:800;font-size:13px;color:var(--text)}
+.tac-rest{display:grid;gap:8px}.tac-rest .tag{margin:2px 2px 0 0}
+.tac-du{display:inline-flex}.tac-du label{position:relative}.tac-du input{position:absolute;opacity:0;pointer-events:none}
+.tac-du span{display:block;padding:7px 12px;border-radius:8px;font-weight:600;cursor:pointer}
+.tac-du input:checked+span{background:var(--grena);color:#fff}
+.tac-du input:focus-visible+span{outline:2px solid var(--ouro)}
+@media (max-width:900px){ .tac-grid{grid-template-columns:1fr} .tac-card{max-width:600px;width:100%;margin:0 auto} }
+@media (max-width:520px){ .tac-pitch{padding:6px 8px 2px} .tac-tools{padding:8px 8px 0} }

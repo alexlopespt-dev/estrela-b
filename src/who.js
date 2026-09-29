@@ -52,7 +52,7 @@ function meForm(){
 const meBanner = () => meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
 
 /* ---- últimas alterações (todas as coleções, pelo carimbo) ---- */
-const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
+const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
 function whoItems(){
   const out=[];
   Object.keys(WHO_COL).forEach(c=>Object.entries(D[c]||{}).forEach(([id,x])=>{ if(!x||!x._at) return;

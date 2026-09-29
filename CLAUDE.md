@@ -11,7 +11,7 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 
 ## O que é
 Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 11 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-abas Convocatória e Bolas paradas; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias — e "Presenças", grelha mensal `vPresencas`, `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-abas Convocatória e Bolas paradas; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias —, "Presenças", grelha mensal `vPresencas`, e "Esquema tático", `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -30,6 +30,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   actions.js   modais, formulários e todas as ações (objeto A) e alterações de campos (objeto Cg)
   who.js       quem alterou: identificação do dispositivo, carimbo _by/_at em put(), "Última alteração" nas fichas, "Últimas alterações" no Plantel
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
+  tat.js       Plantel → Esquema tático (campo tipo Football Manager: formação, função/missão e atleta por posição, arrastar posições, PNG)
   conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
   migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
@@ -82,7 +83,7 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - "Relatório PDF" → `weekPrint(start,end)` (via `printAsk("week","start|end")`): resumo, carga (gráfico), treinos, momentos (circular), jogos, lesões, destaques, presenças (test27).
 
 ## Modelo de dados (coleções em COLS, um documento por registo)
-meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents, setpieces.
+meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents, setpieces, tactics.
 - Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|pos|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
@@ -108,6 +109,12 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 - Cartões ("quadrados" do conceito): `.card`/`.kpi` com cantos 18-20 px e brilho suave no topo (`--card-hi`, definido nos dois temas escuros).
 - A partir de 1280 px a página tem 1280 px de largura e os separadores cabem todos (`nav.tabs` com espaço distribuído).
 - Ecrã de arranque (`#splash` em shell.html, emblema em `__CRESTSRC__`): só CSS com animações de opacidade/transform (correm na placa gráfica, ficam fluidas enquanto o JS carrega — não animar stroke, filter nem letter-spacing), anel dourado a rodar + emblema + "A app da equipa técnica", some aos ~1,75 s (`spOut`) e o boot.js retira-o do DOM (no máximo aos 2 s); `pointer-events:none`, por isso nunca bloqueia toques.
+
+## Esquema tático (tat.js, test35)
+- Plantel → sub-aba "Esquema tático" (`S.plsub="tat"`, `vTat(sub)`, esquema em `S.tacId`; vários esquemas em chips, "+ Novo esquema", duplicar, apagar). Documento `tactics`: `{name, form, sl:{CHAVE:{r,d,p,x?,y?,ins?}}, notes}`.
+- Formações em `TAC_FORMS` (4-4-2, 4-3-3, 4-2-3-1, 4-1-4-1, 4-3-1-2, 3-5-2, 3-4-3, 5-3-2, 5-4-1; coordenadas em % com o ataque em cima); chaves/nomes das posições em `TAC_POS` (zona gk/dc/lat/wb/dm/mc/wm/am/wing/st). Funções em `TAC_ROLES` (siglas PT: GR, GRL, DC, DCC, LIB, LAT, LAI, LAC, ALA, ALI, MD, TRI, PIV, MR, VOL, MC, BB, ORG, MEZ, CAR, ME, AD, EXT, EI, AI, ORA, MO, N10, AS, PL, REF, F9, AA, AC, APR), missão `TAC_DUT` def/apo/ata (vermelho/azul/verde como no FM).
+- Campo em SVG 680x940 (`tacSVG`, o mesmo no ecrã e na imagem PNG com faixa grená e emblema): camisola com número (GR verde), cartão com "SIGLA - Missão" (cor da faixa pela zona, `TAC_ZC`) e nome (encurta/`textLength` se longo). Tocar numa posição → janela (atleta — se já estiver noutra posição, troca —, função, missão, instruções). Mudar a formação (`tacRemap`) mantém as posições com o mesmo nome e passa os atletas das que desaparecem para a posição livre mais próxima; nenhum atleta se perde. "Mover posições" (`S.tacMove`) deixa arrastar as camisolas (x/y guardados; "Repor posições"). "Preencher vazios" usa `TAC_FIT` (posição do atleta) e prefere disponíveis. Lado: ideias do esquema (notas), funções no campo, fora do onze.
+- Cartões não se podem sobrepor em nenhuma formação (test35 mede).
 
 ## Respostas do dia (mon.js, test34)
 - Monitorização → sub-aba "Respostas do dia" (`S.monV="resp"`, `monResp(d)`; dia em `S.monDia`, por omissão o mais recente): bem-estar (hora, sono/fadiga/dor/stress com o texto do formulário, total 4-20, estado como na folha: ≤12 Risco, 13-16 Atenção, 17+ OK — `monHooper`) e PSE (hora, sessão, duração, PSE, carga, sensação), "Sem resposta"/"Sem PSE" dos disponíveis/condicionados, "escreveu …" quando o nome veio escrito de outra forma.
