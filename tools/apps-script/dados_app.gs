@@ -664,15 +664,15 @@ function atResponder_(p) {
       resumo = tipo + ' · PSE ' + rpe + ' · ' + dur + ' min';
     }
     vals[F.c.n] = A.nome; vals[F.c.t] = agora;
-    // já respondeu hoje? (no PSE: a mesma sessão)
-    var mesma = linhas.filter(function (l) {
-      if (atKey_(l.d) !== hoje || (!atMesmo_(l.v[F.c.n], A.nome) && !atMesmo_(l.v[F.c.n], A.p.name))) return false;
-      return bem || F.c.tipo < 0 || atMesmo_(l.v[F.c.tipo], vals[F.c.tipo]);
+    // já respondeu hoje (pela app ou pelo formulário)? Então só amanhã — como no painel do Sheets, uma resposta por dia
+    var ja = linhas.filter(function (l) {
+      return atKey_(l.d) === hoje && (atMesmo_(l.v[F.c.n], A.nome) || atMesmo_(l.v[F.c.n], A.p.name));
     }).pop();
-    var row = mesma ? mesma.row : atUltimaLinha_(F) + 1;
+    if (ja) return { erro: 'ja', msg: (bem ? 'Já respondeste ao bem-estar hoje' : 'Já registaste o PSE hoje') + ' (às ' + atHora_(ja.d) + '). Voltas a responder amanhã.' };
+    var row = atUltimaLinha_(F) + 1;
     Object.keys(vals).forEach(function (c) { F.f.getRange(row, Number(c) + 1).setValue(vals[c]); });
-    atMarca_(A.nome, (mesma ? 'corrigiu ' : '') + resumo);
-    return { ok: true, corrigido: !!mesma, h: atHora_(agora) };
+    atMarca_(A.nome, resumo);
+    return { ok: true, h: atHora_(agora) };
   } finally { lock.releaseLock(); }
 }
 /** Separador "· App atletas" no Painel: A2 = hora da última resposta (a monitorização vê e recalcula) + registo. */
@@ -701,7 +701,7 @@ function atResposta_(fn) {
 // ============================================================ AVISOS NO TELEMÓVEL (APP DO ATLETA)
 /*
  * Notificações "push" da app do atleta, enviadas por este script (sem servidor extra):
- *  - bem-estar: às 9h, a quem ainda não respondeu, nos dias com treino ou jogo;
+ *  - bem-estar: às 8h30, a quem ainda não respondeu, nos dias com treino ou jogo;
  *  - PSE: 20 min depois do fim do treino/jogo do dia (hora + duração), a quem ainda não registou;
  *  - convocatória: quando a equipa técnica a publica, a cada convocado (entre as 8h e as 22h30).
  * O acionador "avisosAtletas" corre de 15 em 15 minutos (instalado por instalarAvisos — corre-a uma vez no editor).
@@ -710,7 +710,7 @@ function atResposta_(fn) {
  * criadas na primeira vez e ficam nas propriedades do script (av_vapid). No iPhone os avisos só funcionam com a app
  * adicionada ao ecrã principal (iOS 16.4 ou mais recente).
  */
-var AV_BEM_HORA = 9 * 60;       // 09:00
+var AV_BEM_HORA = 8 * 60 + 30;  // 08:30
 var AV_BEM_ATE = 13 * 60;       // depois das 13h já não lembra
 var AV_PSE_DEPOIS = 20;         // minutos depois do fim da sessão
 var AV_CONV = [8 * 60, 22 * 60 + 30];

@@ -60,7 +60,7 @@ async function apiGet(){
 }
 async function apiPost(body){
   const r=await fetch(S.cfg.s,{method:"POST",body:JSON.stringify({...body,t:S.cfg.t})});
-  const j=await r.json(); if(j.erro) throw Object.assign(new Error(j.msg||j.erro),{srv:true,link:j.erro==="link"}); return j;
+  const j=await r.json(); if(j.erro) throw Object.assign(new Error(j.msg||j.erro),{srv:true,link:j.erro==="link",ja:j.erro==="ja"}); return j;
 }
 async function load(manual){
   if(!S.cfg||S.loading) return;
@@ -72,6 +72,14 @@ async function load(manual){
   }catch(e){ S.err="rede"; }
   S.loading=false; render();
   if(manual && S.err==="rede") toast("Sem ligação — a mostrar os últimos dados.");
+}
+/* uma resposta por dia (como no painel do Sheets): antes de abrir o formulário confirma com o Sheets */
+function jaHoje(k){ const t=today(), r=(S.data&&S.data.respostas)||{};
+  return k==="bem" ? !!(r.bem||S.fila.find(x=>x.a==="atleta_bem"&&x.d===t)) : !!((r.pse||[]).length||S.fila.find(x=>x.a==="atleta_pse"&&x.d===t)); }
+async function livre(k){
+  if(!jaHoje(k)&&navigator.onLine!==false&&(!S.at||Date.now()-new Date(S.at).getTime()>60000)) await load();
+  if(jaHoje(k)){ toast(k==="bem"?"Já respondeste ao bem-estar hoje. Voltas a responder amanhã.":"Já registaste o PSE hoje. Voltas a registar amanhã."); render(); return false; }
+  return true;
 }
 /* ---- respostas: enviadas logo; sem rede ficam na fila ---- */
 async function send(item){
@@ -117,7 +125,7 @@ function pushCard(onde){
   if(st==="ios") b=`<p class="sub">No iPhone, os avisos só funcionam com a app no ecrã principal:</p><ol class="steps"><li>Toca em <b>Partilhar</b> (o quadrado com a seta, em baixo no Safari).</li><li>Escolhe <b>"Adicionar ao ecrã principal"</b>.</li><li>Abre a app pelo ícone novo e toca em <b>Ativar avisos</b>.</li></ol><p class="note">Precisa do iOS 16.4 ou mais recente.</p>`;
   else if(st==="denied") b=`<p class="sub">Os avisos estão bloqueados neste telemóvel. ${IOS?"Vai a Definições → Notificações → Estrela B e ativa.":"Toca no cadeado ao lado do endereço (ou Definições do Chrome → Notificações) e permite."}</p>`;
   else if(st==="off") b=`<p class="sub">Um lembrete de manhã para o bem-estar, outro depois do treino para o PSE e um aviso quando fores convocado.</p><button class="cta" data-a="pushOn">Ativar avisos</button>${onde==="hoje"?`<button class="cta sec" data-a="pushDepois">Agora não</button>`:""}`;
-  else b=`<p class="sub">Bem-estar às 9h (dias de treino ou jogo), PSE depois do treino e convocatória.</p><button class="cta sec" data-a="pushTeste">Enviar um aviso de teste</button><button class="cta sec" data-a="pushOff">Desligar neste telemóvel</button>`;
+  else b=`<p class="sub">Bem-estar às 8h30 (dias de treino ou jogo), PSE depois do treino e convocatória.</p><button class="cta sec" data-a="pushTeste">Enviar um aviso de teste</button><button class="cta sec" data-a="pushOff">Desligar neste telemóvel</button>`;
   return `<section class="card task" id="pushCard">${h}${b}</section>`;
 }
 if(PUSH_OK&&ls.get(":push",null)){ navigator.serviceWorker.register("sw.js").catch(()=>{}); swCfg(); }
@@ -161,7 +169,8 @@ const I = {
 function top(sub){
   const d=S.data, nm=d&&d.me?first(d.me.name):"";
   const h=new Date().getHours(), ola=h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
-  return `<header class="top"><div class="top-r"><img src="${CREST}" alt=""><div><small>${esc(teamName())}</small><h1>${nm?`${ola}, ${esc(nm)}`:"App do atleta"}</h1></div>
+  const me=d&&d.me, face=me&&me.foto?`<img class="me-ph" src="${me.foto}" alt="">`:me?`<span class="me-ph ini">${esc(initials(me.name))}</span>`:`<img src="${CREST}" alt="">`;
+  return `<header class="top"><div class="top-r">${face}<div><small>${esc(teamName())}</small><h1>${nm?`${ola}, ${esc(nm)}`:"App do atleta"}</h1></div>
     ${S.cfg&&S.data?`<button class="rf${S.loading?" spin":""}" data-a="refresh" aria-label="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg></button>`:""}</div>${sub?`<p>${sub}</p>`:""}</header>`;
 }
 function vLink(){
@@ -190,14 +199,14 @@ function vHoje(){
   const bem=r.bem, tot=bem?bem.i.reduce((s,v)=>s+v,0):null, est=bemEstado(tot);
   const cBem=`<section class="card task"><div class="task-h"><span class="ico" style="--c:#c2185b">${I.heart}</span><div><p class="k">Bem-estar de hoje</p>${bem?`<h2>Respondido às ${esc(bem.h)}</h2>`:pendBem?`<h2>Guardado no telemóvel</h2>`:`<h2>Como estás hoje?</h2>`}</div></div>
     ${bem?`<div class="pills">${BEM_Q.map(([k,,t],j)=>`<span style="--c:${BEM_COR[bem.i[j]-1]}"><i>${bem.i[j]}</i>${esc(cap(t.replace("Qualidade do ","").replace(" geral","").replace(" muscular","")))}</span>`).join("")}</div>
-      <p class="sub">Total ${tot}/20 · <b style="color:${est.c}">${est.l}</b></p><button class="cta sec" data-a="bem">Corrigir</button>`
+      <p class="sub">Total ${tot}/20 · <b style="color:${est.c}">${est.l}</b></p><p class="note">Já respondeste hoje. Voltas a responder amanhã.</p>`
     : pendBem?`<span class="pend">Guardado no telemóvel — envia quando houver rede</span>`
     : `<p class="sub">4 perguntas rápidas: sono, fadiga, dores e stress.</p><button class="cta" data-a="bem">Responder</button>`}</section>`;
   const sess=hj.length?hj.map(a=>a.tipo==="jogo"?`jogo das ${a.time||"—"}`:`treino das ${a.time||"—"}`).join(" e "):"";
   const cPse=`<section class="card task"><div class="task-h"><span class="ico" style="--c:#e0702a">${I.bolt}</span><div><p class="k">Esforço da sessão (PSE)</p><h2>${(r.pse||[]).length?"Registado":hj.length?`Depois do ${esc(sess)}`:"Sem sessão hoje"}</h2></div></div>
     ${(r.pse||[]).map(p=>`<div class="done"><span class="tick" style="background:${rpeCor(p.rpe||0)}">${esc(p.rpe)}</span><div><b>${esc(p.tipo||"Sessão")}</b><div class="sub">${p.dur?esc(p.dur)+" min · ":""}às ${esc(p.h)}</div></div></div>`).join("")}
     ${pendPse.map(p=>`<span class="pend">${esc(p.tipo)} guardado no telemóvel — envia quando houver rede</span>`).join("")}
-    ${(r.pse||[]).length||pendPse.length ? `<button class="cta sec" data-a="pse">Corrigir ou outra sessão</button>`
+    ${(r.pse||[]).length||pendPse.length ? `<p class="note">Já registaste o PSE hoje. Voltas a registar amanhã.</p>`
       : hj.length ? `<p class="sub">Diz-nos quão intenso foi, de 0 a 10.</p><button class="cta" data-a="pse">Registar esforço</button>`
       : `<p class="sub">Hoje não há treino nem jogo marcado.</p><button class="cta sec" data-a="pse">Registar outra sessão</button>`}</section>`;
   const conv=d&&d.conv, prox=((d&&d.agenda)||[]).find(a=>a.tipo==="jogo");
@@ -362,16 +371,16 @@ const A={
   refresh:()=>{ flush(); load(true); },
   sair:()=>{ if(!window.confirm||window.confirm("Desligar a app deste telemóvel? Vais precisar do link outra vez.")){ ls.del(":cfg"); ls.del(":dados"); ls.del(":fila"); S.cfg=null; S.data=null; render(); } },
   fechar:()=>{ S.view=null; S.form=null; render(); },
-  bem:()=>{ const b=S.data&&S.data.respostas&&S.data.respostas.bem; S.form={i:b?b.i.slice():[0,0,0,0]}; S.view="bem"; render(); $(".sheet").scrollTop=0; },
+  bem:async()=>{ if(!(await livre("bem"))) return; S.form={i:[0,0,0,0]}; S.view="bem"; render(); $(".sheet").scrollTop=0; },
   bemOpt:el=>{ const j=+el.dataset.j; S.form.i[j]=+el.dataset.n; const sc=$(".sheet").scrollTop; render(); const sh=$(".sheet"); sh.scrollTop=sc;
     const nx=$("#q"+(j+1)); if(nx&&!S.form.i[j+1]) nx.scrollIntoView({behavior:"smooth",block:"start"}); else if(S.form.i.every(v=>v)) $(".sheet .cta").scrollIntoView({behavior:"smooth",block:"end"}); },
   bemEnviar:async()=>{ const f=S.form; if(!f.i.every(v=>v)||f.busy) return; f.busy=true; render();
     try{ const r=await send({a:"atleta_bem",i:f.i,d:today()});
       if(r.fila){ S.view={t:"Guardado no telemóvel",s:"Sem rede agora — enviamos assim que houver ligação."}; }
-      else { const tot=f.i.reduce((s,v)=>s+v,0); S.view={t:r.corrigido?"Corrigido":"Obrigado!",s:`Bem-estar de hoje: ${tot}/20.`}; load(); }
-    }catch(e){ f.busy=false; if(e.link){ S.err="link"; S.view=null; } else toast(e.message||"Não foi possível enviar."); }
+      else { const tot=f.i.reduce((s,v)=>s+v,0); S.view={t:"Obrigado!",s:`Bem-estar de hoje: ${tot}/20.`}; load(); }
+    }catch(e){ f.busy=false; if(e.link){ S.err="link"; S.view=null; } else { toast(e.message||"Não foi possível enviar."); if(e.ja){ S.view=null; load(); } } }
     S.form=null; render(); },
-  pse:()=>{ const t=today(), ev=((S.data&&S.data.agenda)||[]).filter(a=>a.date===t), g=ev.find(a=>a.tipo==="jogo"), tr=ev.find(a=>a.tipo==="treino");
+  pse:async()=>{ if(!(await livre("pse"))) return; const t=today(), ev=((S.data&&S.data.agenda)||[]).filter(a=>a.date===t), g=ev.find(a=>a.tipo==="jogo"), tr=ev.find(a=>a.tipo==="treino");
     const tipos=(S.data&&S.data.opcoes&&S.data.opcoes.pse&&S.data.opcoes.pse.tipos)||[];
     const pick=w=>tipos.find(x=>x.toLowerCase().startsWith(w))||(w==="jogo"?"Jogo":"Treino");
     const tipo=g?pick("jogo"):tr?pick("treino"):null, dur=g?(g.dur||90):tr?(tr.dur||90):60;
@@ -383,9 +392,9 @@ const A={
   pseEnviar:async()=>{ const f=S.form; const di=$("#pseDur"); if(di) f.dur=parseInt(di.value,10)||f.dur;
     if(!(f.tipo&&f.rpe!=null&&f.dur>0)||f.busy) return; f.busy=true; render();
     try{ const r=await send({a:"atleta_pse",tipo:f.tipo,dur:f.dur,rpe:f.rpe,sen:f.sen||"",d:today()});
-      S.view = r.fila ? {t:"Guardado no telemóvel",s:"Sem rede agora — enviamos assim que houver ligação."} : {t:r.corrigido?"Corrigido":"Obrigado!",s:`${f.tipo} · PSE ${f.rpe} · ${f.dur} min.`};
+      S.view = r.fila ? {t:"Guardado no telemóvel",s:"Sem rede agora — enviamos assim que houver ligação."} : {t:"Obrigado!",s:`${f.tipo} · PSE ${f.rpe} · ${f.dur} min.`};
       if(!r.fila) load();
-    }catch(e){ f.busy=false; if(e.link){ S.err="link"; S.view=null; } else toast(e.message||"Não foi possível enviar."); }
+    }catch(e){ f.busy=false; if(e.link){ S.err="link"; S.view=null; } else { toast(e.message||"Não foi possível enviar."); if(e.ja){ S.view=null; load(); } } }
     S.form=null; render(); }
 };
 function keep(){ const sh=$(".sheet"), sc=sh?sh.scrollTop:0; const di=$("#pseDur"); if(di&&S.form&&document.activeElement===di) S.form.dur=parseInt(di.value,10)||S.form.dur; render(); const s2=$(".sheet"); if(s2) s2.scrollTop=sc; }

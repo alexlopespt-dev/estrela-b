@@ -98,6 +98,7 @@ def agora(t=None): return rq("/__agora"+("?t="+t if t is not None else ""))
 def run(f): return rq("/__run?f="+f)
 def b64d(x): return base64.urlsafe_b64decode(x+"="*(-len(x)%4))
 DIA="2026-10-06"   # terça-feira
+FOTO="data:image/jpeg;base64,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"
 TOK="tokLuisA_abcdefghijklmnop"; TOK_H="tokHugo_abcdefghijklmnopq"
 H_BEM=["Carimbo de data/hora","Nome do Jogador","Qualidade do sono - Como dormiste esta noite?","Fadiga Geral - Como te sentes fisicamente?","Dor Muscular - nível de dores musculares?","Stress - Como está o teu nível de stress?"]
 H_PSE=["Carimbo de data/hora","Nome do Jogador","Tipo de sessão","Duração da sessão","Quão intenso foi o treino? (PSE)"]
@@ -106,7 +107,7 @@ try:
     post({"a":"x"}); run("prepararDadosApp")
     ok("avisosAtletas" in rq("/__estado")["triggers"],"acionador dos avisos instalado")
     rq("/__prep",{"nomes":["Luís A.","Hugo R."],"respostas":[{"id":ID_BEM,"nome":"respostas","linhas":[H_BEM]},{"id":ID_PSE,"nome":"respostas","linhas":[H_PSE]}]})
-    ops=[{"c":"players","i":"ta1","d":{"name":"Luís A.","n":7,"atk":TOK}},{"c":"players","i":"ta2","d":{"name":"Hugo R.","n":9,"atk":TOK_H}},
+    ops=[{"c":"players","i":"ta1","d":{"name":"Luís A.","n":7,"atk":TOK}},{"c":"players","i":"ta2","d":{"name":"Hugo R.","n":9,"atk":TOK_H,"photoData":FOTO}},
          {"c":"meta","i":"cfg","d":{"atletaUrl":"https://estrela-b-atleta.netlify.app"}},
          {"c":"events","i":"tr1","d":{"type":"treino","date":DIA,"time":"19:00","dur":90,"att":{}}},
          {"c":"events","i":"j1","d":{"type":"jogo","date":"2026-10-11","time":"15:00","opp":"Talaíde","venue":"F","dur":90,"call":["ta1"],"meetT":"13:15","convPub":True}}]
@@ -138,9 +139,10 @@ try:
     ok(r.get("pend") and r["pend"][0]["t"]=="Estás convocado!" and "Talaíde" in r["pend"][0]["b"] and "13:15" in r["pend"][0]["b"] and r["pend"][0]["tab"]=="jogo","mensagem da convocatória")
     r=get({"a":"aviso","t":TOK}); ok(len(r.get("pend",[]))==1,"a seguir mostra a última (aviso repetido do telemóvel)")
     agora(DIA+"T08:15:00"); run("avisosAtletas"); ok(not agora()["pedidos"],"convocatória não repete")
-    # 09:00: bem-estar aos dois; o endereço que já não existe (410) sai
-    agora(DIA+"T09:00:00"); n=run("avisosAtletas"); pd=agora()["pedidos"]; urls=sorted(p["url"] for p in pd)
-    ok(n==2 and len(urls)==3,"bem-estar às 9h: aviso aos dois ("+str(urls)+")")
+    # 08:30: bem-estar aos dois; o endereço que já não existe (410) sai
+    agora(DIA+"T08:29:00"); run("avisosAtletas"); ok(not agora()["pedidos"],"08:29: ainda não")
+    agora(DIA+"T08:30:00"); n=run("avisosAtletas"); pd=agora()["pedidos"]; urls=sorted(p["url"] for p in pd)
+    ok(n==2 and len(urls)==3,"bem-estar às 8h30: aviso aos dois ("+str(urls)+")")
     st=rq("/__estado")["props"]; subs=json.loads(st["av_ta2"])["subs"]
     ok([x["e"] for x in subs]==["https://web.push.apple.com/hugo1"],"endereço apagado (410) retirado")
     r=get({"a":"aviso","t":TOK_H}); ok(r["pend"][0]["t"].startswith("Bom dia, Hugo") and "bem-estar" in r["pend"][0]["b"],"mensagem do bem-estar")
@@ -213,6 +215,7 @@ try:
         t=pi.inner_text("#pushCard") if pi.locator("#pushCard").count() else ""
         ok("Adicionar ao ecrã principal" in t and pi.locator('#pushCard [data-a="pushOn"]').count()==0,"iPhone no Safari: explica o ecrã principal")
         pi.screenshot(path=os.path.join(CAP,"t40_iphone.png"))
+        ok(pi.get_attribute("header.top .me-ph","src")==FOTO,"foto do atleta ao lado do 'Boa tarde'")
         # manifesto e ícones
         man=json.load(open(os.path.join(ATD,"manifest.webmanifest")))
         ok(man["display"]=="standalone" and "start_url" not in man and all(os.path.isfile(os.path.join(ATD,i["src"])) for i in man["icons"]),"manifesto (sem start_url: o ícone abre com o link pessoal) e ícones")

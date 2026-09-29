@@ -7,7 +7,8 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 - **Agenda:** treinos e jogos dos próximos 10 dias (folgas incluídas).
 - **Jogo:** próximo jogo; a convocatória (convocado ou não, concentração, horário, lista com números) **só depois de a equipa técnica a publicar**.
 - **Eu:** jogos, minutos, titular, golos, assistências, presenças, bem-estar dos últimos 14 dias e últimos jogos. Não vê notas, avaliações, clínico nem dados de outros atletas.
-- Sem rede: a resposta fica guardada no telemóvel e é enviada quando houver ligação (conta para a hora em que respondeu, até 36 h). Pode corrigir a resposta do dia (substitui a linha, não duplica).
+- Sem rede: a resposta fica guardada no telemóvel e é enviada quando houver ligação (conta para a hora em que respondeu, até 36 h).
+- **Uma resposta por dia**, como no painel do Sheets: depois de responder ao bem-estar (ou ao PSE), pela app ou pelo formulário do Google, só volta a poder amanhã.
 
 **Como funciona por trás**
 - A app fala com o **script da partilha** (`dados_app.gs`, secção "APP DO ATLETA") com o código pessoal do link. Nunca recebe a chave da equipa técnica.
@@ -24,7 +25,7 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 7. **Avisos:** no editor do script da partilha, escolhe a função **instalarAvisos** → Executar → aceita as autorizações (agora pede também "ligar a serviços externos", para enviar os avisos). Depois **Implementar → Gerir implementações → Nova versão** outra vez.
 
 ## Avisos no telemóvel
-- **Bem-estar** às 9h a quem ainda não respondeu (só em dias com treino ou jogo na app; até às 13h). **PSE** 20 min depois do fim do treino/jogo (hora + duração da sessão na app) a quem ainda não registou (quem teve falta, lesão ou dispensa no treino não recebe). **Convocatória** quando é publicada, só aos convocados.
+- **Bem-estar** às 8h30 a quem ainda não respondeu (só em dias com treino ou jogo na app; até às 13h). **PSE** 20 min depois do fim do treino/jogo (hora + duração da sessão na app) a quem ainda não registou (quem teve falta, lesão ou dispensa no treino não recebe). **Convocatória** quando é publicada, só aos convocados.
 - Cada atleta liga os avisos na app (cartão "Avisos no telemóvel" no Hoje, ou em Eu). **iPhone:** só funciona com a app no ecrã principal (Safari → Partilhar → "Adicionar ao ecrã principal" → abrir pelo ícone → Ativar avisos), iOS 16.4 ou mais recente. **Android:** funciona no Chrome direto.
 - Ao ligar, chega um aviso de teste. Em Eu há "Enviar um aviso de teste" e "Desligar neste telemóvel".
 - O link pessoal fica no endereço da página de propósito: o iPhone usa o endereço atual ao adicionar ao ecrã principal, e a app do ecrã principal não vê o que ficou guardado no Safari.
