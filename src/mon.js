@@ -1,7 +1,8 @@
 /* ================= monitorização (Google Sheets: bem-estar, PSE, prontidão) ================= */
-// A app lê o resumo publicado pelo Apps Script do ficheiro "Estrela B - Painel" (ver tools/apps-script/ligacao_app.gs).
+// A app lê o resumo publicado pelo Apps Script do ficheiro "Estrela B - Painel" (MON_FILE) (ver tools/apps-script/ligacao_app.gs).
 // O endereço e a chave ficam em meta/cfg; o último resumo recebido fica guardado neste browser para abrir sem rede.
 const MON = { data:null, at:null, err:"", loading:false };
+const MON_FILE = EDITION==="clubes" ? "Painel de monitorização" : "Estrela B - Painel";   // nome do ficheiro Google Sheets nas mensagens
 const MON_LS = LS+":mon";
 try{ const c=JSON.parse(localStorage.getItem(MON_LS)||"null"); if(c&&c.data){ MON.data=c.data; MON.at=c.at; } }catch(e){}
 const monCfg = () => cfg().mon || {};
@@ -51,7 +52,7 @@ function monJsonp(u){
 }
 function monAuto(){ const c=monCfg(); if(!c.url) return; if(MON.at && Date.now()-new Date(MON.at).getTime()<10*60*1000) return; monFetch(false); }
 
-/* ligação nome da folha -> atleta da app: igual, depois abreviaturas ("Bruno Vunge" = "Bruno V."), depois o que foi escolhido à mão */
+/* ligação nome da folha -> atleta da app: igual, depois abreviaturas ("João Silva" = "João S."), depois o que foi escolhido à mão */
 function monMatch(){
   const d=MON.data; if(!d) return {map:{},miss:[]};
   const man=monCfg().map||{}, pls=allPlayers(), map={}, used=new Set();
@@ -90,7 +91,7 @@ function monAge(){ if(!MON.data) return ""; const a=MON.data.atualizado?new Date
 /* ---- cartão do painel ---- */
 function monCard(){
   const c=monCfg();
-  if(!c.url) return `<section class="card"><div class="card-h"><h3>Prontidão e bem-estar</h3><button class="btn sm" data-a="monCfg">Ligar ao Sheets</button></div><div class="empty"><b>Painel de monitorização por ligar</b>Liga o ficheiro "Estrela B - Painel" para veres aqui a prontidão, o bem-estar e a carga.</div></section>`;
+  if(!c.url) return `<section class="card"><div class="card-h"><h3>Prontidão e bem-estar</h3><button class="btn sm" data-a="monCfg">Ligar ao Sheets</button></div><div class="empty"><b>Painel de monitorização por ligar</b>Liga o ficheiro "${MON_FILE}" para veres aqui a prontidão, o bem-estar e a carga.</div></section>`;
   const d=MON.data;
   if(!d) return `<section class="card"><div class="card-h"><h3>Prontidão e bem-estar</h3><button class="btn sm" data-a="monRefresh">${MON.loading?"A carregar…":"Atualizar"}</button></div><div class="empty"><b>${MON.loading?"A ler o Google Sheets…":"Ainda sem dados"}</b>${esc(MON.err||"")}</div></section>`;
   const js=d.jogadores, com=js.filter(j=>j.prontidao!=null), med=com.length?Math.round(avg(com.map(j=>j.prontidao))):null;
@@ -116,7 +117,7 @@ function vMon(){
   const head=`<div class="bar"><h2>Monitorização</h2>${d?`<span class="small muted">${esc(monAge())}</span>`:""}<span class="sp"></span>
     <button class="btn" data-a="monCfg">${c.url?"Ligação ao Sheets":"Ligar ao Google Sheets"}</button>${c.url?`<button class="btn primary" data-a="monRefresh" ${MON.loading?"disabled":""}>${MON.loading?"A atualizar…":"Atualizar"}</button>`:""}${d?`<button class="btn${preJogoOk(d)?"":" off"}" data-a="preJogo" title="Disponível no dia anterior ao jogo e no dia do jogo">Relatório pré-jogo</button>`:""}</div>
     ${MON.err?`<div class="alert bad" style="cursor:default"><i></i><span class="main"><b>${esc(MON.err)}</b><small>${d?"A mostrar os últimos dados recebidos.":"Confirma o endereço e a chave em “Ligação ao Sheets”."}</small></span></div>`:""}`;
-  if(!c.url) return head+`<div class="empty"><b>Sem ligação ao painel de monitorização</b>Os questionários de bem-estar e de PSE são tratados no Google Sheets "Estrela B - Painel". Liga-o aqui para veres a prontidão, o bem-estar e a carga de cada atleta na app.</div>`;
+  if(!c.url) return head+`<div class="empty"><b>Sem ligação ao painel de monitorização</b>Os questionários de bem-estar e de PSE são tratados no Google Sheets "${MON_FILE}". Liga-o aqui para veres a prontidão, o bem-estar e a carga de cada atleta na app.</div>`;
   if(!d) return head+`<div class="empty"><b>${MON.loading?"A ler o Google Sheets…":"Ainda sem dados"}</b></div>`;
   const sub=`<div class="seg" style="margin:0 0 14px">${[["","Prontidão e carga"],["resp","Respostas do dia"]].map(([k2,l])=>`<button data-a="monV" data-k="${k2}" class="${(S.monV||"")===k2?"on":""}">${l}</button>`).join("")}</div>`;
   if(S.monV==="resp") return head+sub+monResp(d);
@@ -154,7 +155,7 @@ function vMon(){
     <td>${spark(j.serieBem||[])}</td><td>${spark(j.serieCarga||[],{bars:true,folga:d.folga})}</td>
     <td class="small" style="min-width:260px;text-align:left;white-space:normal">${esc(j.leitura)}${j.folga?`<br><span class="muted">${esc(j.folga)}</span>`:""}</td></tr>`).join("")}
   </tbody></table></div></section>
-  <p class="note">Dados calculados no Google Sheets "Estrela B - Painel" (bem-estar de 1 a 5, carga = duração × PSE). Prontidão e condição de 0 a 100: 80+ excelente, 65+ bom, 50+ aceitável, 35+ baixo. Passa o dedo/rato pela prontidão, condição e confiança para veres o porquê. Toca num cabeçalho para ordenar.</p>`;
+  <p class="note">Dados calculados no Google Sheets "${MON_FILE}" (bem-estar de 1 a 5, carga = duração × PSE). Prontidão e condição de 0 a 100: 80+ excelente, 65+ bom, 50+ aceitável, 35+ baixo. Passa o dedo/rato pela prontidão, condição e confiança para veres o porquê. Toca num cabeçalho para ordenar.</p>`;
 }
 
 /* ---- respostas do dia (bem-estar e PSE tal como foram dadas nos formulários) ---- */
@@ -164,7 +165,7 @@ const monRv = v => v==null?"var(--surface-2)":monCol((v-1)/4*100);
 function monRespDias(r){ const s=new Set(); (r.bem||[]).forEach(x=>s.add(x.d)); (r.pse||[]).forEach(x=>s.add(x.d)); return [...s].sort().reverse(); }
 function monResp(d){
   const r=d.respostas;
-  if(!r) return `<div class="empty"><b>O script do Sheets ainda não envia as respostas</b>Cola a versão nova do <b>monitorizacao_completo.gs</b> no Apps Script do "Estrela B - Painel" e corre “Atualizar agora” no menu ⚽ Monitorização. Depois carrega em Atualizar aqui.</div>`;
+  if(!r) return `<div class="empty"><b>O script do Sheets ainda não envia as respostas</b>Cola a versão nova do <b>monitorizacao_completo.gs</b> no Apps Script do "${MON_FILE}" e corre “Atualizar agora” no menu ⚽ Monitorização. Depois carrega em Atualizar aqui.</div>`;
   const dias=monRespDias(r);
   if(!dias.length) return `<div class="empty"><b>Sem respostas nos últimos 7 dias</b></div>`;
   const dia=dias.includes(S.monDia)?S.monDia:dias[0], t=todayISO();
@@ -224,7 +225,7 @@ function monCfgForm(){
   const c=monCfg(), {map,miss}=monMatch();
   const names=MON.data?MON.data.jogadores.map(j=>j.nome).sort((a,b)=>a.localeCompare(b)):[];
   const opts=[{v:"",l:"— não ligar —"},...players().map(p=>({v:p.id,l:p.name}))];
-  const body=`<p class="small muted" style="margin:0 0 12px">Endereço da aplicação Web publicada no Apps Script do ficheiro "Estrela B - Painel" (Implementar → Aplicação Web; termina em <b>/exec</b>) e a chave definida no script (CHAVE_APP).</p>
+  const body=`<p class="small muted" style="margin:0 0 12px">Endereço da aplicação Web publicada no Apps Script do ficheiro "${MON_FILE}" (Implementar → Aplicação Web; termina em <b>/exec</b>) e a chave definida no script (CHAVE_APP).</p>
     <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
       <label class="fld full">Chave<input name="key" value="${esc(c.key||"")}" autocomplete="off"></label></div>
     ${names.length?`<div class="asec" style="margin-top:16px"><span>Nomes da folha → atletas da app</span></div>

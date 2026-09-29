@@ -16,7 +16,8 @@ function devGuess(){
 }
 const firstName = n => String(n||"").trim().split(/\s+/)[0]||"";
 // "MacBook Pro de Alexandre"; sem pessoa: só o dispositivo; nunca identificado: "Mac (sem nome)"
-function meLabel(){ const m=meGet(), d=(m.disp||"").trim(), n=firstName(m.nome);
+function meLabel(){ if(EDITION==="clubes") return sbName();   // versão com login: o nome da conta
+  const m=meGet(), d=(m.disp||"").trim(), n=firstName(m.nome);
   return d&&n ? `${d} de ${n}` : d || (n ? `${devGuess()} de ${n}` : `${devGuess()} (sem nome)`); }
 function stamp(obj){ obj._by=meLabel(); obj._at=new Date().toISOString(); }
 
@@ -36,7 +37,7 @@ function meForm(){
   const m=meGet(), names=staff().map(s=>s.name);
   modal({title:"Quem está a usar este dispositivo?",sub:"Fica guardado só neste browser. As alterações feitas aqui passam a mostrar este nome.",
     body:`<div class="form">
-      <label class="fld">A tua pessoa<input name="nome" list="meNames" value="${esc(m.nome||"")}" placeholder="ex.: Alexandre Lopes" autocomplete="off"><datalist id="meNames">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>
+      <label class="fld">A tua pessoa<input name="nome" list="meNames" value="${esc(m.nome||"")}" placeholder="ex.: João Silva" autocomplete="off"><datalist id="meNames">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>
       <label class="fld">Nome do dispositivo<input name="disp" value="${esc(m.disp||"")}" placeholder="ex.: MacBook Pro, iPad da equipa (${esc(devGuess())})"></label>
     </div><p class="small muted" style="margin:10px 0 0">Vai aparecer como: <b id="mePrev">${esc(meLabel())}</b></p>`,
     foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Cancelar</button><button class="btn primary" data-a="mSave">Guardar</button></span>`,
@@ -49,7 +50,7 @@ function meForm(){
   const upd=()=>{ const f=$("#dlg"); if(!f) return; const n=firstName(f.querySelector("[name=nome]").value), d=f.querySelector("[name=disp]").value.trim(); const p=$("#mePrev"); if(p) p.textContent=d&&n?`${d} de ${n}`:d||(n?`${devGuess()} de ${n}`:`${devGuess()} (sem nome)`); };
   $("#dlg").querySelectorAll("input").forEach(i=>i.addEventListener("input",upd));
 }
-const meBanner = () => meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
+const meBanner = () => EDITION==="clubes" || meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
 
 /* ---- últimas alterações (todas as coleções, pelo carimbo) ---- */
 const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};

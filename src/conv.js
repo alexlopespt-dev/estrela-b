@@ -43,9 +43,9 @@ function vConv(){
   <section class="card"><div class="card-h"><h3>Jogo</h3>${sel("",gs.map(opt),id,'data-c="convG" class="inp" style="max-width:340px" aria-label="Jogo"')}</div><div class="card-b"><div class="form">
     ${F("comp","Prova",g.comp,"text",'placeholder="Ex.: III Divisão Distrital"')}${F("phase","Jornada",g.phase,"text",'placeholder="Ex.: Jornada 1"')}
     <label class="fld">Casa / fora${sel("",[{v:"C",l:"Casa (visitado)"},{v:"F",l:"Fora (visitante)"}],g.venue||"C",`data-c="f" data-col="events" data-id="${esc(id)}" data-f="venue"`)}</label>
-    ${F("place","Local do jogo",g.place,"text",'placeholder="Ex.: Parque de Jogos C.E.R. Tenente Valdez"')}
+    ${F("place","Local do jogo",g.place,"text",'placeholder="Ex.: Campo Municipal"')}
     ${F("date","Data",g.date,"date")}${F("time","Hora do jogo",g.time,"time")}
-    ${F("meetT","Hora de concentração",g.meetT,"time")}${F("meetP","Local de concentração",g.meetP,"text",'placeholder="Ex.: Estádio José Gomes"')}
+    ${F("meetT","Hora de concentração",g.meetT,"time")}${F("meetP","Local de concentração",g.meetP,"text",'placeholder="Ex.: Estádio Municipal"')}
     ${F("coach","Treinador",g.coach,"text",`placeholder="${esc(convCoach({}))}"`)}
     <label class="fld full">Observações<input value="${esc(g.cnote??"")}" data-c="f" data-col="events" data-id="${esc(id)}" data-f="cnote" placeholder="Números sujeitos a alterações!"></label>
   </div></div></section>

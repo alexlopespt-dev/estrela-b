@@ -1,5 +1,5 @@
 /* ================= arranque ================= */
-const use = n => (window.claude && typeof window.claude.use==="function") ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
+const use = n => EDITION==="clubes" ? sbUse(n) : (window.claude && typeof window.claude.use==="function") ? window.claude.use(n).catch(()=>null) : Promise.resolve(null);
 document.getElementById("crest").src = CREST;
 document.documentElement.style.setProperty("--wm", `url("${CREST}")`);   // emblema em marca d'água no cabeçalho
 // ecrã de arranque: some sozinho por CSS (≤ 1,8 s); aqui só se retira do DOM no fim

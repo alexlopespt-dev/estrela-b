@@ -1,13 +1,14 @@
 "use strict";
 /* ================= constantes ================= */
 const CREST = "__CREST__";
+const EDITION = "__EDITION__";   // "estrela" (a app da equipa) ou "clubes" (versão com login para outros clubes, clubes.js)
 const SEED = __SEED__;
 const EXIMG = __EXIMG__;
 const EXVEC = __EXVEC__;   // desenhos vetoriais das imagens da biblioteca (imgk -> desenho v2, ver vec.js)
 const OPPIMG = __OPPIMG__;   // emblemas dos adversários (nome -> dataURL), embutidos no build
 const IMGC = {};   // imagens grandes guardadas no IndexedDB (versão offline): id -> URL
 // foto do utilizador > desenho vetorial da biblioteca (salvo se escolheu ver as originais) > imagem original
-const exImg = x => x && ((x.imgA && "/_blob/"+x.imgA) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
+const exImg = x => x && ((x.imgA && blobSrc(x.imgA)) || (x.imgL && IMGC[x.imgL]) || (x.imgG && gImg(x.imgG)) || x.img || (x.imgk && (exVecSrc(x.imgk) || EXIMG[x.imgk])) || null);
 const POS = ["GR","LAT","DC","MDF","MC","EXT","PL","EXT/PL"];
 const GROUP = p => { p=(p||"").toUpperCase(); if(p==="GR")return "GR"; if(p==="LAT"||p==="DC")return "DEF"; if(p==="MDF"||p==="MC")return "MED"; if(!p) return "X"; return "ATA"; };
 const GORDER = {GR:0,DEF:1,MED:2,ATA:3,X:4};
@@ -104,7 +105,7 @@ const BUILD = "__BUILD__";   // data da versão (build.py), mostrada no Plantel 
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
-const LS = "estrela-tecnico-v1";
+const LS = EDITION==="clubes" ? "equipa-tecnica-v1" : "estrela-tecnico-v1";
 function lsLoad(){
   let d=null; try{ d=JSON.parse(localStorage.getItem(LS)||"null"); }catch(e){ d=null; }
   const fromSeed = !d && SEED;
@@ -122,7 +123,7 @@ async function flush(key){
   while(pending[key]!==undefined){
     const job=pending[key]; delete pending[key];
     try{ if(job.del) await db.doc(job.col+"/"+job.id).delete(); else await db.doc(job.col+"/"+job.id).set(job.obj); }
-    catch(e){ toast(job.del?"Não foi possível apagar. Tenta de novo.":"Não foi possível guardar. Verifica a ligação e tenta de novo."); }
+    catch(e){ if(!(e&&e.shown)) toast(job.del?"Não foi possível apagar. Tenta de novo.":"Não foi possível guardar. Verifica a ligação e tenta de novo."); if(db&&db.failed) db.failed(job.col,job.id); }
   }
   inflight[key]=false;
 }
@@ -188,7 +189,10 @@ const staff = () => Object.entries(D.staff).map(([id,s])=>({id,...s})).sort((a,b
 const opponents = () => Object.entries(D.opponents).map(([id,o])=>({id,...o})).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
 const testMoments = () => Object.entries(D.tests).map(([id,t])=>({id,...t})).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 
-function photoSrc(p){ if(!p) return null; if(p.photo) return "/_blob/"+p.photo; if(p.photoData) return p.photoData; return null; }
+// fotos guardadas fora dos documentos: "/_blob/id" no artifact do Claude; "sb:caminho" no armazenamento da versão para clubes (sImg, clubes.js)
+const blobSrc = id => EDITION==="clubes" && String(id).startsWith("sb:") ? sImg(String(id).slice(3)) : "/_blob/"+id;
+const blobUrl = async id => EDITION==="clubes" && String(id).startsWith("sb:") ? sImgLoad(String(id).slice(3)) : "/_blob/"+id;
+function photoSrc(p){ if(!p) return null; if(p.photo) return blobSrc(p.photo); if(p.photoData) return p.photoData; return null; }
 function avatar(p,attrs=""){
   if(!p) return `<span class="ph g-X">?</span>`;
   const src=photoSrc(p), tag=attrs?"button":"span";

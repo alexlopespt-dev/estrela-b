@@ -99,9 +99,9 @@ async function exportData(){
   toast("A preparar a cópia…");
   const out={app:"estrela-tecnico",v:1,exported:new Date().toISOString()};
   COLS.forEach(c=>out[c]=clone(D[c]));
-  for(const x of Object.values(out.exercises)){ if(x.imgA||x.imgL){ const src=exImg(x); const data=src?await srcToData(src):null; if(data&&data.startsWith("data:")){ x.img=data; delete x.imgA; delete x.imgL; } } }
-  for(const [id,p] of Object.entries(out.players)){ if(p.photo){ try{ const r=await fetch("/_blob/"+p.photo); if(r.ok){ p.photoData=await blobToData(await r.blob()); p.photo=null; } }catch(e){} } }
-  const data=JSON.stringify(out), fname=`estrela-tecnico-${todayISO()}.json`;
+  for(const x of Object.values(out.exercises)){ if(x.imgA||x.imgL){ if(x.imgA) await blobUrl(x.imgA); const src=exImg(x); const data=src?await srcToData(src):null; if(data&&data.startsWith("data:")){ x.img=data; delete x.imgA; delete x.imgL; } } }
+  for(const [id,p] of Object.entries(out.players)){ if(p.photo){ try{ const u=await blobUrl(p.photo); if(!u) continue; const r=await fetch(u); if(r.ok){ p.photoData=await blobToData(await r.blob()); p.photo=null; } }catch(e){} } }
+  const data=JSON.stringify(out), fname=`${EDITION==="clubes"?slug(meta().full||meta().team||"equipa"):"estrela-tecnico"}-${todayISO()}.json`;
   const dl=await use("downloads");
   if(dl){ try{ await dl.save({filename:fname,data}); }catch(e){ if(!e||e.code!=="declined") toast("Não foi possível descarregar a cópia."); } return; }
   try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([data],{type:"application/json"})); a.download=fname; document.body.appendChild(a); a.click(); a.remove(); toast("Cópia descarregada"); }
@@ -292,7 +292,7 @@ function playerForm(id){
   const body=`<div class="form">
     <label class="fld">N.º<input name="n" inputmode="numeric" value="${esc(p.n??"")}"></label>
     <label class="fld" style="grid-column:span 2">Nome<input name="name" value="${esc(p.name||"")}"></label>
-    <label class="fld full">Nome completo (para a convocatória)<input name="full" value="${esc(p.full||"")}" placeholder="Ex.: Renato Zava"></label>
+    <label class="fld full">Nome completo (para a convocatória)<input name="full" value="${esc(p.full||"")}" placeholder="Ex.: João Silva"></label>
     <label class="fld">Posição${sel("pos",POS,p.pos||"MC")}</label>
     <label class="fld">Pé${sel("foot",FEET,p.foot,"","—")}</label>
     <label class="fld">Data de nascimento<input type="date" name="birth" value="${esc(p.birth||"")}"></label>

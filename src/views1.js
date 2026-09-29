@@ -16,7 +16,7 @@ function render(){
   const m=meta();
   // nome completo no cabeçalho (meta/team.full). No telemóvel: "CF Estrela da Amadora" numa linha e, por baixo,
   // "Equipa B · III Distrital · 2026/27" noutra (sem "Departamento técnico"); no computador tudo como antes.
-  const full=m.full || m.team || "Estrela B", cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
+  const full=m.full || m.team || (EDITION==="clubes"?"App da equipa técnica":"Estrela B"), cut=full.indexOf(" — "), n1=cut>0?full.slice(0,cut):full, n2=cut>0?full.slice(cut+3):"";
   $("#tTeam").innerHTML = `<span class="tn1">${esc(n1)}</span>${n2?`<span class="tn2"> — ${esc(n2)}</span>`:""}`;
   document.title = full + " — Departamento técnico";
   $("#tSub").innerHTML = `<span class="ts-d">${["Departamento técnico", m.comp?esc(m.comp):"", m.season?"Época <b>"+esc(m.season)+"</b>":""].filter(Boolean).join(" — ")}</span>`

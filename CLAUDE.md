@@ -32,7 +32,9 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   tat.js       Plantel → Esquema tático (campo tipo Football Manager: formação, função/missão e atleta por posição, arrastar posições, PNG)
   conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
-  migr.js      atualizações de dados que correm uma vez (MIGR, marcadas em meta/mig) + emblemas dos adversários
+  estrela.js   só na versão do Estrela: calendário 2026/27, exercícios enviados, modelo de jogo e a lista MIGR
+  clubes.js    só na versão para clubes: login, clube, convites e dados na Supabase (em vez de estrela.js)
+  migr.js      atualizações de dados que correm uma vez (runMigrations, marcadas em meta/mig) + emblemas dos adversários
   sync.js      partilha de dados na versão Netlify (Google Sheets via Apps Script): fila de envio, receção de 15 em 15 s, fotos para o Drive
   mon.js       monitorização: lê o resumo do Google Sheets "Estrela B - Painel" (separador Monitorização, cartão no painel, ficha do atleta, prontidão na convocatória)
   painel.js    painel: cartão do próximo jogo, prontidão/carga resumidas, "Precisa de atenção hoje", semana na horizontal, alertas no sino do cabeçalho
@@ -63,6 +65,7 @@ dist/       resultado do build (não editar à mão)
 python3 build.py              # gera dist/estrela-tecnico-app.html, dist/index.html e as versões de teste
 python3 build.py online       # só a versão para o artifact do Claude (sem dados, usa base de dados online)
 python3 build.py offline      # só dist/index.html (com dados e fotos, guarda no browser) — para Netlify
+python3 build.py clubes       # só dist/clubes/index.html (versão para outros clubes, com login; outro site Netlify)
 ./tests/correr_testes.sh      # build de teste + todos os testes
 ```
 Requisitos dos testes: `pip install playwright && python3 -m playwright install chromium` (no Claude Code na web, ver nota abaixo).
@@ -76,6 +79,14 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - **Lesões → Sheets** (`dados_app.gs`, test22): cada gravação da app que mexe em `injuries`/`players`/`meta` marca `lesoes_pend` e agenda o acionador `atualizarDaApp` (~30-60 s; o pedido da app não espera), que copia as lesões para o separador "· Lesões" do Painel (linhas com `app:id` na coluna F; linhas à mão intactas; nome pela mesma regra de ligação da monitorização; ativa→Lesionado, condicionado→Condicionado, alta→data de fim) (nomes lidos do separador "· Plantel" do Painel); a monitorização lê o separador na sua próxima atualização (formulário, 6h, "Atualizar agora"). Menu: "Copiar lesões da app para o separador Lesões".
 - Testar o Apps Script: `node tests/gas_servidor.js PORTA [ficheiro.gs]` corre o .gs verdadeiro (por omissão `dados_app.gs`) com Sheets/Drive/Properties simulados (usado pelo test20).
 - Os dados reais da versão online **não estão nesta pasta**. Para ter uma cópia: na app, Plantel → Exportar cópia, e guarda o JSON em `data/copias/`.
+
+## Versão para clubes (login + Supabase, clubes.js, test36)
+- **Mesmo código, outro ficheiro**: `python3 build.py clubes` → `dist/clubes/index.html` (site Netlify à parte). O `dist/index.html` do Estrela **não muda** (sem login, dados no browser + partilha Sheets). `EDITION` ("estrela"|"clubes", `__EDITION__`) decide o que muda; `src/estrela.js` (calendário, exercícios, modelo de jogo, `MIGR`) só entra na versão do Estrela e `src/clubes.js` só na dos clubes.
+- A versão para clubes não leva nada do Estrela: sem SEED, sem EXIMG/EXVEC/OPPIMG/MJIMG/modelo, emblema genérico (`generic_crest()` no build.py), nome "App da equipa técnica" até criar o clube, `LS`=`equipa-tecnica-v1`. Clube novo começa **vazio** (pedido da equipa: sem jogadores inventados; quando fecharem com um clube, personaliza-se para esse clube) — só `CLUBE_BASE` (estatísticas de jogo e categorias de exercícios). test36 verifica que não há nomes/dados do Estrela no ficheiro.
+- `clubes.js` fala diretamente (fetch, sem biblioteca) com a Supabase `SB_URL`/`SB_KEY` (chave publishable, pública): Auth (`/auth/v1`: token password/refresh, signup com `redirect_to`, recover, user PUT), REST (`/rest/v1`: `members` com `teams(clubs)`, RPC `create_club`/`accept_invite`/`set_my_name`, `docs` upsert `on_conflict=team_id,col,id` e apagar = `deleted=true`, `invites`) e Storage (bucket `equipa`, pasta = id da equipa; fotos → `imgA/photo = "sb:caminho"`, `blobSrc`/`sImg`/`sImgLoad`). Imita a base de dados do artifact (`sbDb.collection().onSnapshot`, `doc().set/delete`), por isso o resto da app funciona igual (`MODE="db"`); receção de 15 em 15 s por `v>maxV` (+ ao voltar à app/rede). Recusa por permissão (RLS) → aviso com a função e volta ao valor guardado (`db.failed`, `e.shown` em `flush`).
+- Ecrã de entrada `#sbGate` (fora do `#main`): entrar, criar conta (confirmação por email; links com `#access_token…&type=signup|recovery`), recuperar palavra-passe, criar clube (nome, equipa, época, competição) ou colar convite, escolher equipa. Sessão em `LS+":sessao"`, equipa em `:equipa`, convite pendente em `:convite`. `meLabel()` = nome da conta (`sbName`).
+- Plantel → "Conta e acessos" (`sbAccount`): nome, função, mudar nome, trocar de equipa, sair; admin vê pessoas (muda função/retira) e convites, e convida (email + função → link `#convite=token`, copiar/WhatsApp/email).
+- Base de dados: `supabase/migrations` (1.º base, 2.º membros — nome/email), testes RLS em `supabase/tests` (Postgres local: `PGHOST=/tmp PGPORT=55432 sh supabase/tests/correr.sh`, cluster em `/var/tmp/pgx`, arrancar com `su postgres -s /bin/bash -c "/usr/lib/postgresql/16/bin/pg_ctl -D /var/tmp/pgx/data -l /var/tmp/pgx/pg2.log -o '-p 55432 -k /tmp' start"`). Guia: `supabase/LEIA-ME.md`. Daqui não há rede para a Supabase: os testes usam `tests/sb_falso.py` (`page.route("https://sb.teste/**")`); a versão de teste `dist/app_clubes.html` expõe `window.__t`.
 
 ## Carga e relatório semanal
 - Treinos → Planeamento, cartão "Carga planeada vs. real" (`vCarga`, microciclo escolhido em "O que temos trabalhado" ou a semana atual): planeada = `INT_RPE[int]` (Baixa 3, Média 5, Alta 7, Muito alta 9) × minutos do plano (ou duração); real = RPE médio dos presentes × duração. Alerta se real (ou planeada) > 120% da média real dos até 4 microciclos anteriores (`cargaHabitual`). Jogos marcados no dia, fora das contas.

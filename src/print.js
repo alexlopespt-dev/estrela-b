@@ -71,7 +71,7 @@ function printDoc(fname, title, body){
 body{zoom:${(PRINT_PREF.scale||100)/100}}
 @media print{ body{zoom:${(PRINT_PREF.scale||100)/100}} }</style></head><body><div class="page">
 <header class="p"><img src="${CREST}" alt=""><div><h1>${esc(title)}</h1><p>${esc([m.team||"Estrela B",m.comp,m.season?"Época "+m.season:""].filter(Boolean).join(" — "))}</p></div><div class="right">Departamento técnico<b>${fmtD(todayISO(),{day:"numeric",month:"long",year:"numeric"})}</b></div></header>
-${body}<footer class="pf"><span>CF Estrela da Amadora — ${esc(m.team||"Equipa B")}</span><span>${esc(title)}</span></footer></div><script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};<\/script></body></html>`;
+${body}<footer class="pf"><span>${esc(m.full||(EDITION==="clubes"?m.team||"":"CF Estrela da Amadora — "+(m.team||"Equipa B")))}</span><span>${esc(title)}</span></footer></div><script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};<\/script></body></html>`;
   openPrintable(fname, html);
 }
 async function openPrintable(fname, html){

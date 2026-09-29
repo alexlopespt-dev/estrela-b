@@ -117,14 +117,15 @@ function vPlantel(){
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa técnica</h3><button class="btn sm primary" data-a="stfNew">+ Elemento</button></div>
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
   ${vWho()}
+  ${EDITION==="clubes"?sbAccount():""}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
-      <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: CF Estrela da Amadora — Equipa B"></label>
+      <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: ${EDITION==="clubes"?"GD Exemplo — Sub-19":"CF Estrela da Amadora — Equipa B"}"></label>
       <label class="fld">Época<input value="${esc(m.season||"")}" data-c="meta" data-f="season"></label>
       <label class="fld">Competição principal<input value="${esc(m.comp||"")}" data-c="meta" data-f="comp"></label>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button><button class="btn" data-a="syncCfg">${MODE==="local"&&SYNC.cfg?"Partilha com a equipa técnica":"Partilhar com a equipa técnica"}</button><button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button>${EDITION==="clubes"?"":`<button class="btn" data-a="syncCfg">${MODE==="local"&&SYNC.cfg?"Partilha com a equipa técnica":"Partilhar com a equipa técnica"}</button>`}<button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
     <p class="note">${MODE==="local"?(SYNC.cfg?"Dados partilhados com a equipa técnica através do Google Sheets (cópia também neste browser, para funcionar sem rede).":"Sem partilha ligada, os dados ficam só neste dispositivo e browser. Liga a partilha para a equipa técnica ver o mesmo, e exporta uma cópia de vez em quando."):"Os dados ficam guardados online e sincronizados. A cópia serve de backup ou para a versão offline."}</p>
   </div></section>`;
 }

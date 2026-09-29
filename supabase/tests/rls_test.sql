@@ -3,8 +3,9 @@
 \set ON_ERROR_STOP on
 set client_min_messages = warning;
 
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-00000000000a', 'a@clube-a.pt', '{"name":"Ana Admin"}');     -- admin do clube A
 insert into auth.users (id, email) values
-  ('00000000-0000-0000-0000-00000000000a', 'a@clube-a.pt'),     -- admin do clube A
   ('00000000-0000-0000-0000-00000000000b', 'b@clube-b.pt'),     -- admin do clube B
   ('00000000-0000-0000-0000-00000000000c', 'c@clube-a.pt'),     -- adjunto do clube A (convidado)
   ('00000000-0000-0000-0000-00000000000d', 'd@clube-a.pt'),     -- fisio do clube A (convidado)
@@ -105,6 +106,17 @@ select pg_temp.check((select action from public.audit where doc_id='tr1' order b
 select pg_temp.check((select v from public.docs where id='tr1') > (select max(v) from public.docs where id<>'tr1'), 'versão sobe a cada alteração');
 select pg_temp.check(pg_temp.fails($q$delete from public.members where user_id='00000000-0000-0000-0000-00000000000a'$q$), 'equipa não fica sem administrador');
 select pg_temp.check(pg_temp.fails($q$update public.docs set id='outro' where id='tr1'$q$), 'id do registo não muda');
+
+-- ===== nomes e emails dos membros (2.º ficheiro)
+select pg_temp.check((select display_name from public.members where user_id='00000000-0000-0000-0000-00000000000a') = 'Ana Admin', 'nome da conta guardado ao criar o clube');
+select pg_temp.check((select email from public.members where user_id='00000000-0000-0000-0000-00000000000c') = 'c@clube-a.pt', 'email guardado ao aceitar o convite');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c','c@clube-a.pt');
+select public.set_my_name('Carlos Adjunto');
+select pg_temp.check((select display_name from public.members where user_id=auth.uid()) = 'Carlos Adjunto', 'cada um muda o próprio nome');
+select pg_temp.check((select count(*) from public.members where display_name='Carlos Adjunto') = 1, 'só mudou o nome dele');
+select pg_temp.check(pg_temp.fails($q$select public.set_my_name('')$q$), 'nome vazio recusado');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b','b@clube-b.pt');
+select pg_temp.check((select count(*) from public.members where email like '%clube-a%') = 0, 'B não vê os emails do clube A');
 
 -- ===== visitante sem sessão (anon) não vê nada
 reset role; set role anon;
