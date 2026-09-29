@@ -570,6 +570,10 @@ function atleta_(tok) {
     }
   });
   agenda.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+  // próximos jogos do calendário (sem limite de dias: a agenda só tem 15)
+  var proximos = Object.keys(ev).filter(function (id) { var e = ev[id]; return e && e.type === 'jogo' && e.date >= hoje && !e.closed; })
+    .map(function (id) { var e = ev[id]; return { id: id, date: e.date, time: e.time || '', opp: e.opp || '', venue: e.venue || 'C', comp: e.comp || '', place: e.place || '', phase: e.phase || '' }; })
+    .sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); }).slice(0, 6);
   jogos.sort(function (a, b) { return b.date.localeCompare(a.date); });
   resultados.sort(function (a, b) { return b.date.localeCompare(a.date); });
   pres.sort(function (a, b) { return b.date.localeCompare(a.date); });
@@ -609,7 +613,7 @@ function atleta_(tok) {
     ok: true, hoje: hoje,
     me: { id: pid, name: A.p.name, full: A.p.full || '', n: A.p.n || '', pos: A.p.pos || '',
           foto: /^data:image\//.test(String(A.p.photoData || '')) && String(A.p.photoData).length < 60000 ? A.p.photoData : '' },
-    resultados: resultados.slice(0, 8), epoca: epoca, rank: rank, presencas: pres.slice(0, 20),
+    resultados: resultados.slice(0, 8), proximos: proximos, epoca: epoca, rank: rank, presencas: pres.slice(0, 20),
     push: (function () { try { return { key: avChaves_().pub }; } catch (e) { return null; } })(),
     equipa: { nome: tm.full || tm.team || '', curto: tm.team || '' },
     agenda: agenda, conv: conv, numeros: numeros, jogos: jogos.slice(0, 10),

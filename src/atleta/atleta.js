@@ -219,7 +219,8 @@ function vHoje(){
   if(conv) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(conv,{chip:`<span class="chip-s ${conv.convocado?"gold":""}">${conv.convocado?"✓ Estás convocado":"Convocatória publicada"}</span>`,
       foot:`<span>${esc(quando(conv.date))}</span>${conv.meetT?`<span>${I.bus}Concentração ${esc(conv.meetT)}</span>`:""}`})}</button>`;
   else if(prox&&diasAte(prox.date)<=7) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""})}</button>`;
-  const seg=((d&&d.agenda)||[]).filter(a=>a.date>=t).slice(0,3);
+  let seg=((d&&d.agenda)||[]).filter(a=>a.date>=t).slice(0,3);
+  if(!seg.length&&d&&(d.proximos||[])[0]) seg=[{...d.proximos[0],tipo:"jogo"}];   // nada nos próximos 15 dias: mostra o próximo jogo
   return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}${pushCard("hoje")}
     <h3 class="sec-t">A seguir</h3>${seg.length?seg.map(a=>`<div class="ag-day">${esc(dayName(a.date))}</div>${evCard(a)}`).join(""):`<div class="card empty"><b>Sem treinos nem jogos marcados</b></div>`}</main>`;
 }
@@ -242,7 +243,7 @@ function vAgenda(){
   return top("Treinos e jogos das próximas duas semanas")+`<main>${offline()}${strip}${out}</main>`;
 }
 function vJogo(){
-  const d=S.data||{}, conv=d.conv, prox=(d.agenda||[]).find(a=>a.tipo==="jogo");
+  const d=S.data||{}, conv=d.conv, prox=(d.proximos||[])[0]||(d.agenda||[]).find(a=>a.tipo==="jogo");
   let h="";
   if(conv){
     h+=matchCard(conv,{chip:`<span class="chip-s">${esc(quando(conv.date))}</span>`,foot:conv.place?`<span>${I.pin}${esc(conv.place)}</span>`:""});
@@ -255,6 +256,11 @@ function vJogo(){
     h+=matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""});
     h+=`<p class="note center">A convocatória aparece aqui quando a equipa técnica a publicar.</p>`;
   } else h+=`<div class="card empty"><b>Sem jogos marcados</b>Quando houver, aparece aqui.</div>`;
+  const seg=(d.proximos||[]).filter(g=>g.id!==(conv&&conv.id)&&g.id!==(prox&&prox.id));
+  if(seg.length) h+=`<h3 class="sec-t">Próximos jogos</h3>${seg.map(g=>`<div class="res">
+      <div class="res-d"><b>${toD(g.date).getDate()}</b><span>${esc(fmt(g.date,{month:"short"}).replace(".",""))}</span></div>
+      ${crest(g.opp,0,34)}<div class="res-t"><b>${g.venue==="F"?"@ ":"vs "}${esc(g.opp)}</b><span>${esc([g.phase,g.time].filter(Boolean).join(" · "))}</span></div>
+      <span class="tag">${g.venue==="F"?"Fora":"Casa"}</span></div>`).join("")}`;
   const res=d.resultados||[], ep=d.epoca;
   if(ep&&ep.j){
     const form=res.slice(0,5).reverse();

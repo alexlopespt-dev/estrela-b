@@ -50,7 +50,8 @@ try:
        {"c":"events","i":"j_passado","d":{"type":"jogo","date":d(-2),"time":"15:00","opp":"CAC","venue":"C","dur":90,"call":["ta1","ta2","ta3"],"xi":["ta1","ta3"],
           "ev":[{"t":"golo","min":30,"pid":"ta1"},{"t":"assist","min":30,"pid":"ta2"},{"t":"sub","min":60,"in":"ta2","out":"ta1"}],"rt":{"ta1":8},"ga":1,"closed":True}},
        {"c":"events","i":"j_prox","d":{"type":"jogo","date":d(3),"time":"15:00","opp":"Atlético CP B","venue":"F","comp":"III Divisão","place":"Tapadinha","dur":90,
-          "call":["ta1","ta3"],"xi":["ta1"],"meetT":"13:15","meetP":"Estádio","cnum":{"ta1":10},"sched":[{"l":"Concentração","t":"13:15"},{"l":"Jogo","t":"15:00"}]}}]
+          "call":["ta1","ta3"],"xi":["ta1"],"meetT":"13:15","meetP":"Estádio","cnum":{"ta1":10},"sched":[{"l":"Concentração","t":"13:15"},{"l":"Jogo","t":"15:00"}]}},
+       {"c":"events","i":"j_longe","d":{"type":"jogo","date":d(30),"time":"16:00","opp":"Porto Salvo","venue":"C","phase":"Jornada 9","dur":90}}]
   r=post({"k":KEY,"a":"push","ops":ops}); print("dados:", r.get("ok"), r.get("erros"))
   # ---- servidor
   r=get({"a":"atleta","t":"x"*24}); print("link errado:", r)
@@ -125,7 +126,8 @@ try:
     pg.screenshot(path=os.path.join(CAP,"t38_agenda.png"),full_page=True)
     pg.click('nav [data-t="jogo"]'); pg.wait_for_timeout(200); t=pg.inner_text("#app")
     if "quando a equipa técnica a publicar" not in t or "Estás convocado" in t: errs.append("convocatória antes de publicada")
-    post({"k":KEY,"a":"push","ops":[{"c":"events","i":"j_prox","d":{**ops[-1]["d"],"convPub":True}}]})
+    if "Próximos jogos" not in t or "Porto Salvo" not in t: errs.append("próximos jogos (mais de 15 dias)")
+    post({"k":KEY,"a":"push","ops":[{"c":"events","i":"j_prox","d":{**[o for o in ops if o["i"]=="j_prox"][0]["d"],"convPub":True}}]})
     pg.click('nav [data-t="eu"]'); pg.click('[data-a="refresh"]'); pg.wait_for_timeout(1200)
     t=pg.inner_text("#app"); print("eu:", t.replace("\n"," | ")[:260])
     if "60" not in t or "golos" not in t.lower() or "Presenças nos treinos" not in t: errs.append("os meus números")
