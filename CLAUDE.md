@@ -31,6 +31,8 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   who.js       quem alterou: identificação do dispositivo, carimbo _by/_at em put(), "Última alteração" nas fichas, "Últimas alterações" no Plantel
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   tat.js       Plantel → Esquema tático (campo tipo Football Manager: formação, função/missão e atleta por posição, arrastar posições, PNG)
+  atapp.js     app do atleta — lado da equipa técnica: link pessoal na ficha, lista no Plantel, publicar a convocatória
+  atleta/      app do atleta (site próprio: shell.html, atleta.css, atleta.js) → dist/atleta
   conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
   estrela.js   só na versão do Estrela: calendário 2026/27, exercícios enviados, modelo de jogo e a lista MIGR
   clubes.js    só na versão para clubes: login, clube, convites e dados na Supabase (em vez de estrela.js)
@@ -66,6 +68,7 @@ python3 build.py              # gera dist/estrela-tecnico-app.html, dist/index.h
 python3 build.py online       # só a versão para o artifact do Claude (sem dados, usa base de dados online)
 python3 build.py offline      # só dist/index.html (com dados e fotos, guarda no browser) — para Netlify
 python3 build.py clubes       # só dist/clubes/index.html (versão para outros clubes, com login; outro site Netlify)
+python3 build.py atleta       # só dist/atleta/ (app do atleta do Estrela B; outro site Netlify, arrasta-se a pasta)
 ./tests/correr_testes.sh      # build de teste + todos os testes + verificação de chaves (sai com erro se falhar)
 ```
 Requisitos dos testes: `pip install playwright && python3 -m playwright install chromium` (no Claude Code na web, ver nota abaixo).
@@ -97,6 +100,12 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - RLS: `supabase/verificar_rls.sql` (todas as tabelas com RLS, nada para anon, bucket privado) corre nos testes e todos os dias contra a produção; `rls_test.sql` tem 56 verificações (inclui ler/gravar noutro clube pelo id).
 - Cópias: `tools/copias/copia.sh` (pg_dump dados com gatilhos desligados + esquema + contas + lista de fotos + `contagens.json` com md5 dos docs), `ficheiros.py` (fotos, com a service key), `restauro.sh` (repõe numa base VAZIA de teste, recusa URLs da Supabase, compara contagens/md5, corre a auditoria).
 - GitHub (`.github/`): `testes.yml` (RLS + cópia/restauro com Postgres 17 + chaves em cada push; testes da app em PR/main), `copia-diaria.yml` (02:30 UTC, cifrada AES-256, 35 dias; Secrets SUPABASE_DB_URL + BACKUP_PASSPHRASE), `restauro-mensal.yml` (dia 1), `vigia.yml` (de hora a hora: site, HSTS/CSP, Supabase), `manutencao-mensal.yml` (issue com a lista), `dependabot.yml` (mensal). Os agendados só correm a partir da `main`.
+
+## App do atleta (src/atleta/, atapp.js, dados_app.gs "APP DO ATLETA", test38, APP_ATLETA.md)
+- Site próprio `python3 build.py atleta` → `dist/atleta/` (index.html ~85 KB + `_headers`; `build_atleta()` junta `src/atleta/shell.html`+`atleta.css`+`atleta.js`, emblema do Estrela). Só Estrela (não usa Supabase). Separadores Hoje / Agenda / Jogo / Eu; formulários em ecrã inteiro (bem-estar 4×5 botões com os textos da folha; PSE: sessão, minutos ±5, 0–10 Borg, "como te sentes" se a folha tiver). Guarda em `localStorage` `estrela-atleta-v1:*` (cfg, dados, fila). Sem rede → fila (`quando` = hora da resposta, aceite até 36 h). Pedidos: GET `?a=atleta&t=` (fetch, JSONP de reserva), POST text/plain `{a:"atleta_bem"|"atleta_pse",t,…}`.
+- Link pessoal: `<meta/cfg.atletaUrl>/#s=<URL do script da partilha>&t=<players.atk>` (24 caracteres, `atToken`). `atapp.js` (só `EDITION==="estrela"`): cartão "App do atleta" na ficha (`atCard`: criar/copiar/WhatsApp/novo link com confirmação), Plantel → "App do atleta" (`atLinksForm`: endereço do site, criar os em falta, lista), Convocatória → "App dos atletas" (`atConvCard`, `events.convPub`; sem convocados não publica).
+- `dados_app.gs`: `atleta_(tok)` devolve só dados desse atleta (agenda 15 dias, convocatória do próximo jogo se `convPub`, números com `atJogo_` = gameCalc, respostas de hoje e 14 dias lidas da folha, opções = textos mais usados na folha por número); `atResponder_` escreve nas folhas dos formulários (`ID_BEMESTAR`/`ID_PSE`, colunas por palavra-chave sem repetir — "Jogador" contém "dor"!), com o nome da monitorização (`ligacoesNomes_` + "· Plantel"), duração no formato da folha, e corrige a linha do dia (bem-estar; PSE por tipo de sessão) em vez de duplicar; `atMarca_` → Painel "· App atletas" (A2 = hora; registo). `atChave_`: pontuação = espaço. Monitorização: `verificarRespostasApp` (acionador de 10 min em `instalarTriggers`).
+- Simulador `tests/gas_servidor.js`: `/__prep {respostas:[{id,nome:"respostas",linhas}]}`, `/__estado` → `resp`, `atletas`; `formatDate` com padrões.
 
 ## Carga e relatório semanal
 - Treinos → Planeamento, cartão "Carga planeada vs. real" (`vCarga`, microciclo escolhido em "O que temos trabalhado" ou a semana atual): planeada = `INT_RPE[int]` (Baixa 3, Média 5, Alta 7, Muito alta 9) × minutos do plano (ou duração); real = RPE médio dos presentes × duração. Alerta se real (ou planeada) > 120% da média real dos até 4 microciclos anteriores (`cargaHabitual`). Jogos marcados no dia, fora das contas.

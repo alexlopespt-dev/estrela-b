@@ -1,5 +1,6 @@
 /**
  * ESTRELA B — Dados partilhados da app da equipa técnica  (script à parte da monitorização)
+ * + app do atleta (bem-estar, PSE, agenda, convocatória) — ver a secção "APP DO ATLETA" no fim.
  * ------------------------------------------------------------------------------------------
  * Guarda os dados da app (treinos, jogos, plantel, exercícios…) num Google Sheet, para toda a
  * equipa técnica ver o mesmo; fotos novas numa pasta do Drive; e copia as lesões do Clínico da app
@@ -32,7 +33,8 @@ function destino_() { return SpreadsheetApp.openById(ID_DESTINO); }
 
 function doGet(e) {
   var prm = (e && e.parameter) || {}, body;
-  if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
+  if (prm.a === 'atleta') body = JSON.stringify(atResposta_(function () { return atleta_(prm.t); }));   // app do atleta (link pessoal)
+  else if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
   else if (prm.a === 'pull' || prm.a === 'lixo') {
     try { body = JSON.stringify(prm.a === 'lixo' ? dadosLixo_() : dadosPull_(Number(prm.since || 0))); }
     catch (err) { body = JSON.stringify({ erro: String(err && err.message || err) }); }
@@ -237,7 +239,8 @@ function doPost(e) {
   var out;
   try {
     var p = JSON.parse(e && e.postData ? e.postData.contents : '{}');
-    if (String(p.k || '') !== CHAVE_APP) out = { erro: 'chave' };
+    if (p.a === 'atleta_bem' || p.a === 'atleta_pse') out = atResposta_(function () { return atResponder_(p); });   // app do atleta
+    else if (String(p.k || '') !== CHAVE_APP) out = { erro: 'chave' };
     else if (p.a === 'push') out = dadosPush_(p.ops || []);
     else if (p.a === 'img') out = dadosImg_(p);
     else out = { erro: 'pedido desconhecido' };
@@ -384,4 +387,288 @@ function atualizarDaApp() {
   if (!props.getProperty('lesoes_pend')) return;
   props.deleteProperty('lesoes_pend');
   espelharLesoes_();
+}
+
+// ============================================================ APP DO ATLETA
+/*
+ * A app do atleta (outro site, dist/atleta) fala só com estas funções, com o link pessoal de cada atleta
+ * (token "atk" guardado no atleta na app da equipa técnica — Plantel → atleta → App do atleta).
+ * Nunca recebe a CHAVE_APP nem dados de outros atletas: só a agenda, a convocatória publicada, os seus números
+ * e as suas respostas. As respostas vão para as MESMAS folhas dos formulários de bem-estar e PSE, com os mesmos
+ * textos das opções e o nome como a monitorização o conhece — por isso a monitorização continua igual.
+ * A monitorização recalcula sozinha: o acionador "verificarRespostasApp" (instalado com "Instalar automatismos"
+ * no Painel) vê a marca de hora deixada no separador "· App atletas" do Painel.
+ */
+var ID_BEMESTAR = '1w5BTGC_4J8565aigffuRKRFSeAOsqKK4WDgNnaAo8II';   // respostas do formulário de bem-estar
+var ID_PSE      = '1lnH3j_dXdFSOw-6Ak9CdtRpWWjm1MIvJBEToQowX_3Q';   // respostas do formulário de PSE
+var AT_BEM = {   // textos por omissão (se a folha ainda não tiver respostas com esse número)
+  sono:   ['1 - Muito Mau', '2 - Mau', '3 - Normal', '4 - Bom', '5 - Excelente'],
+  fadiga: ['1 - Exausto', '2 - Cansado', '3 - Normal', '4 - Bem', '5 - Muito Fresco'],
+  dor:    ['1 - Muita Dor', '2 - Dor moderada', '3 - Alguma Dor', '4 - Pouca Dor', '5 - Sem Dor'],
+  stress: ['1 - Muito Stressado', '2 - Stressado', '3 - Normal', '4 - Tranquilo', '5 - Muito Tranquilo']
+};
+var AT_TIPOS = ['Treino', 'Jogo', 'Recuperação', 'Tratamento'];
+
+function atKey_(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
+function atHora_(d) { return Utilities.formatDate(d, TZ, 'HH:mm'); }
+function atData_(v) {   // carimbo das folhas: data, número de série do Sheets ou texto
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  if (typeof v === 'number' && v > 20000 && v < 80000) { var d = Math.floor(v), m = Math.round((v - d) * 1440); return new Date(1899, 11, 30 + d, Math.floor(m / 60), m % 60); }
+  var t = String(v || '').trim(), x;
+  if ((x = t.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/))) return new Date(+x[1], +x[2] - 1, +x[3], +(x[4] || 0), +(x[5] || 0));
+  if ((x = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:[ ,]+(\d{1,2}):(\d{2}))?/))) return new Date(+x[3], +x[2] - 1, +x[1], +(x[4] || 0), +(x[5] || 0));
+  return null;
+}
+function atNum_(v) { var m = String(v === null || v === undefined ? '' : v).trim().match(/^(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : null; }
+// procura a coluna pela 1.ª palavra-chave, depois pela 2.ª…, sem repetir colunas já usadas
+// ("Nome do Jogador" contém "dor": por isso o nome é procurado primeiro e a dor já não o apanha)
+function atAcha_(cab, chaves, usados) {
+  usados = usados || [];
+  for (var j = 0; j < chaves.length; j++) {
+    for (var i = 0; i < cab.length; i++) {
+      if (usados.indexOf(i) !== -1) continue;
+      if (String(cab[i] || '').toLowerCase().indexOf(chaves[j]) !== -1) { usados.push(i); return i; }
+    }
+  }
+  return -1;
+}
+
+/** Separador das respostas (o que tem o carimbo e a coluna obrigatória; se houver vários, o com mais linhas). */
+function atFolha_(id, chave) {
+  var ss = SpreadsheetApp.openById(id), melhor = null, n = -1;
+  ss.getSheets().forEach(function (f) {
+    if (f.getLastRow() < 1) return;
+    var cab = f.getRange(1, 1, 1, Math.max(1, f.getLastColumn())).getValues()[0];
+    if (atAcha_(cab, ['carimbo', 'timestamp']) === -1 || atAcha_(cab, chave) === -1) return;
+    if (f.getLastRow() > n) { melhor = f; n = f.getLastRow(); }
+  });
+  if (!melhor) throw new Error('Não encontrei a folha de respostas (' + chave[0] + ').');
+  var cab = melhor.getRange(1, 1, 1, melhor.getLastColumn()).getValues()[0], u = [], c = {};
+  c.t = atAcha_(cab, ['carimbo', 'timestamp'], u); c.n = atAcha_(cab, ['nome do jogador', 'nome'], u);
+  c.sono = atAcha_(cab, ['qualidade do sono', 'sono'], u); c.fadiga = atAcha_(cab, ['fadiga'], u);
+  c.dor = atAcha_(cab, ['dor muscular', 'dores muscul', 'dor'], u); c.stress = atAcha_(cab, ['stress', 'stresse'], u);
+  c.tipo = atAcha_(cab, ['tipo de sess', 'tipo'], u); c.dur = atAcha_(cab, ['duração', 'duracao'], u);
+  c.rpe = atAcha_(cab, ['intenso', 'intens', 'rpe'], u); c.sen = atAcha_(cab, ['sentes', 'sensa'], u);
+  if (c.n < 0) throw new Error('A folha de respostas não tem a coluna do nome.');
+  return { f: melhor, cab: cab, c: c };
+}
+/** Últimas linhas (até 800), com o número da linha. A última linha escrita conta pela coluna do carimbo. */
+function atLinhas_(F) {
+  var ult = F.f.getLastRow();
+  if (ult < 2) return [];
+  var ini = Math.max(2, ult - 799), vals = F.f.getRange(ini, 1, ult - ini + 1, F.cab.length).getValues(), out = [];
+  vals.forEach(function (r, i) { var d = atData_(r[F.c.t]); if (d) out.push({ row: ini + i, d: d, v: r }); });
+  return out;
+}
+function atUltimaLinha_(F) {
+  var ult = F.f.getLastRow();
+  if (ult < 2) return 1;
+  var col = F.f.getRange(1, F.c.t + 1, ult, 1).getValues();
+  for (var i = col.length - 1; i >= 0; i--) if (String(col[i][0] === null ? '' : col[i][0]) !== '') return i + 1;
+  return 1;
+}
+/** Textos das opções como estão na folha (um por número), para a app mostrar exatamente o mesmo que o formulário. */
+function atOpcoes_(linhas, idx, pre) {
+  var por = {};
+  linhas.forEach(function (l) {
+    var t = String(l.v[idx] === null ? '' : l.v[idx]).trim(), n = atNum_(t);
+    if (!t || n === null) return;
+    por[n] = por[n] || {}; por[n][t] = (por[n][t] || 0) + 1;
+  });
+  var out = (pre || []).slice();
+  Object.keys(por).forEach(function (n) {
+    var melhor = Object.keys(por[n]).sort(function (a, b) { return por[n][b] - por[n][a]; })[0];
+    var k = out.findIndex(function (x) { return atNum_(x) === Number(n); });
+    if (k >= 0) out[k] = melhor; else out.push(melhor);
+  });
+  return out.sort(function (a, b) { return atNum_(a) - atNum_(b); });
+}
+function atDistintos_(linhas, idx, pre) {
+  var cont = {};
+  linhas.forEach(function (l) { var t = String(l.v[idx] === null ? '' : l.v[idx]).trim(); if (t) cont[t] = (cont[t] || 0) + 1; });
+  var out = (pre || []).filter(function (x) { return !Object.keys(cont).some(function (k) { return chaveApp_(k) === chaveApp_(x); }); });
+  return Object.keys(cont).sort(function (a, b) { return cont[b] - cont[a]; }).slice(0, 8).concat(out);
+}
+
+/** O atleta do link: {pid, p, reg, nome (como a monitorização o conhece)} ou erro. */
+function atAtleta_(tok) {
+  tok = String(tok || '');
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(tok)) throw new Error('link');
+  var reg = dadosTodos_(['players', 'events', 'meta', 'staff']), pid = null;
+  Object.keys(reg.players).forEach(function (id) { var p = reg.players[id]; if (p && p.atk === tok && !p.archived) pid = id; });
+  if (!pid) throw new Error('link');
+  var p = reg.players[pid], cfg = reg.meta.cfg || {}, nome = p.name;
+  try {
+    var map = ligacoesNomes_(nomesMonitorizacao_(), reg.players, (cfg.mon && cfg.mon.map) || {});
+    Object.keys(map).forEach(function (n) { if (map[n] === pid) nome = n; });
+  } catch (e) {}
+  return { pid: pid, p: p, reg: reg, nome: nome };
+}
+// o mesmo atleta? (sem acentos nem maiúsculas; a pontuação separa palavras: "Luís.A." = "Luís A.")
+function atChave_(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function atMesmo_(a, b) { return !!atChave_(a) && atChave_(a) === atChave_(b); }
+
+/** Minutos, golos… de um atleta num jogo (a mesma conta que a app da equipa técnica, gameCalc). */
+function atJogo_(g, pid) {
+  var dur = Number(g.dur) > 0 ? Number(g.dur) : 90, call = g.call || [], xi = g.xi || [];
+  if (call.indexOf(pid) === -1 && !(g.ev || []).some(function (e) { return e.pid === pid || e.in === pid || e.out === pid; })) return null;
+  var st = xi.indexOf(pid) !== -1, x = { st: st, in: st ? 0 : null, out: null, g: 0, a: 0, y: 0, r: 0 };
+  var clamp = function (m) { var n = atNum_(m); return n === null ? null : Math.max(0, Math.min(dur, n)); };
+  (g.ev || []).slice().sort(function (a, b) { var p = atNum_(a.min), q = atNum_(b.min); return (p === null ? 999 : p) - (q === null ? 999 : q); })
+    .forEach(function (e) {
+      var m = clamp(e.min);
+      if (e.t === 'sub') { if (e.out === pid && x.out === null && m !== null) x.out = m; if (e.in === pid && x.in === null && m !== null) x.in = m; }
+      else if (e.pid === pid) {
+        if (e.t === 'golo') x.g++; else if (e.t === 'assist') x.a++;
+        else if (e.t === 'amarelo') { x.y++; if (x.y >= 2 && x.out === null && m !== null) x.out = m; }
+        else if (e.t === 'vermelho') { x.r++; if (x.out === null && m !== null) x.out = m; }
+      }
+    });
+  x.min = x.in === null ? 0 : Math.max(0, (x.out === null ? dur : x.out) - x.in);
+  var ov = atNum_((g.minOv || {})[pid]); if (ov !== null) x.min = Math.max(0, Math.min(dur, ov));
+  return x;
+}
+
+/** Tudo o que a app do atleta mostra. */
+function atleta_(tok) {
+  var A = atAtleta_(tok), pid = A.pid, ev = A.reg.events, hoje = atKey_(new Date());
+  var ate = atKey_(new Date(Date.now() + 15 * 864e5)), tm = A.reg.meta.team || {};
+  var agenda = [], numeros = { jogos: 0, titular: 0, min: 0, golos: 0, assist: 0, amarelos: 0, vermelhos: 0, pres: 0, faltas: 0, treinos: 0 }, jogos = [];
+  Object.keys(ev).forEach(function (id) {
+    var e = ev[id]; if (!e || !e.date) return;
+    if (e.date >= hoje && e.date <= ate) {
+      agenda.push(e.type === 'jogo'
+        ? { id: id, tipo: 'jogo', date: e.date, time: e.time || '', opp: e.opp || '', venue: e.venue || 'C', comp: e.comp || '', place: e.place || '', dur: Number(e.dur) || 90 }
+        : { id: id, tipo: 'treino', date: e.date, time: e.time || '', dur: Number(e.dur) || 0, place: e.place || '', theme: e.theme || '' });
+    }
+    if (e.date > hoje) return;
+    if (e.type === 'jogo') {
+      var x = atJogo_(e, pid); if (!x) return;
+      if (x.min > 0 || x.st) numeros.jogos++; if (x.st) numeros.titular++;
+      numeros.min += x.min; numeros.golos += x.g; numeros.assist += x.a; numeros.amarelos += x.y; numeros.vermelhos += x.r;
+      if (x.min > 0 || x.st) jogos.push({ date: e.date, opp: e.opp || '', venue: e.venue || 'C', min: x.min, st: x.st, g: x.g, a: x.a });
+    } else {
+      var s = ((e.att || {})[pid] || {}).s;
+      if (s === 'P' || s === 'AT') { numeros.pres++; numeros.treinos++; } else if (s === 'FJ' || s === 'FI') { numeros.faltas++; numeros.treinos++; }
+    }
+  });
+  agenda.sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
+  jogos.sort(function (a, b) { return b.date.localeCompare(a.date); });
+  // convocatória: só a do próximo jogo e só se a equipa técnica a tiver publicado
+  var conv = null, prox = agenda.filter(function (a) { return a.tipo === 'jogo'; })[0];
+  if (prox && ev[prox.id].convPub) {
+    var g = ev[prox.id], pl = A.reg.players, call = g.call || [];
+    conv = { id: prox.id, date: g.date, time: g.time || '', opp: g.opp || '', venue: g.venue || 'C', place: g.place || '', comp: g.comp || '',
+      meetT: g.meetT || '', meetP: g.meetP || '', cnote: g.cnote || '', convocado: call.indexOf(pid) !== -1,
+      sched: (g.sched || []).map(function (s) { return { l: s.l, t: s.t }; }),
+      lista: call.map(function (id) { var q = pl[id] || {}; return { n: (g.cnum || {})[id] || q.n || '', name: q.name || '', eu: id === pid }; })
+        .sort(function (a, b) { return (Number(a.n) || 99) - (Number(b.n) || 99); }) };
+  }
+  // respostas de hoje e histórico (da folha, venham da app ou do formulário)
+  var B = atFolha_(ID_BEMESTAR, ['sono']), P = atFolha_(ID_PSE, ['intens', 'sessão', 'sessao']);
+  var lb = atLinhas_(B), lp = atLinhas_(P), desde = atKey_(new Date(Date.now() - 13 * 864e5));
+  var hojeBem = null, hist = {}, hojePse = [];
+  lb.forEach(function (l) {
+    if (!atMesmo_(l.v[B.c.n], A.nome) && !atMesmo_(l.v[B.c.n], A.p.name)) return;
+    var k = atKey_(l.d); if (k < desde) return;
+    var i = [B.c.sono, B.c.fadiga, B.c.dor, B.c.stress].map(function (c) { return atNum_(l.v[c]); });
+    if (i.some(function (v) { return v === null; })) return;
+    hist[k] = i.reduce(function (s, v) { return s + v; }, 0);
+    if (k === hoje) hojeBem = { h: atHora_(l.d), i: i };
+  });
+  lp.forEach(function (l) {
+    if (atKey_(l.d) !== hoje || (!atMesmo_(l.v[P.c.n], A.nome) && !atMesmo_(l.v[P.c.n], A.p.name))) return;
+    hojePse.push({ h: atHora_(l.d), tipo: String(l.v[P.c.tipo] || ''), rpe: atNum_(l.v[P.c.rpe]), dur: atMin_(l.v[P.c.dur]) });
+  });
+  return {
+    ok: true, hoje: hoje,
+    me: { id: pid, name: A.p.name, full: A.p.full || '', n: A.p.n || '', pos: A.p.pos || '' },
+    equipa: { nome: tm.full || tm.team || '', curto: tm.team || '' },
+    agenda: agenda, conv: conv, numeros: numeros, jogos: jogos.slice(0, 10),
+    respostas: { bem: hojeBem, pse: hojePse, hist: Object.keys(hist).sort().map(function (k) { return { d: k, t: hist[k] }; }) },
+    opcoes: {
+      bem: { sono: atOpcoes_(lb, B.c.sono, AT_BEM.sono), fadiga: atOpcoes_(lb, B.c.fadiga, AT_BEM.fadiga),
+             dor: atOpcoes_(lb, B.c.dor, AT_BEM.dor), stress: atOpcoes_(lb, B.c.stress, AT_BEM.stress) },
+      pse: { tipos: P.c.tipo >= 0 ? atDistintos_(lp, P.c.tipo, AT_TIPOS) : [], rpe: atOpcoes_(lp, P.c.rpe, []),
+             sens: P.c.sen >= 0 ? atDistintos_(lp, P.c.sen, []) : [] }
+    }
+  };
+}
+function atMin_(v) {   // duração na folha: hora (01:30), fração de dia ou minutos
+  if (v instanceof Date) return v.getHours() * 60 + v.getMinutes();
+  if (typeof v === 'number') return v < 1 ? Math.round(v * 1440) : v;
+  var m = String(v || '').match(/^(\d{1,2})[:h](\d{2})/); if (m) return Number(m[1]) * 60 + Number(m[2]);
+  return atNum_(v);
+}
+
+/** Grava uma resposta. Se o atleta já respondeu hoje (pela app ou pelo formulário), corrige essa linha. */
+function atResponder_(p) {
+  // hora em que o atleta respondeu (respostas guardadas no telemóvel sem rede chegam mais tarde: contam para esse dia, até 36 h)
+  var A = atAtleta_(p.t), agora = new Date(), q = p.quando ? new Date(p.quando) : null;
+  if (q && !isNaN(q.getTime()) && q <= agora && agora - q < 36 * 3600 * 1000) agora = q;
+  var hoje = atKey_(agora);
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var bem = p.a === 'atleta_bem', F = bem ? atFolha_(ID_BEMESTAR, ['sono']) : atFolha_(ID_PSE, ['intens', 'sessão', 'sessao']);
+    var linhas = atLinhas_(F), vals = {}, resumo;
+    if (bem) {
+      var op = { sono: atOpcoes_(linhas, F.c.sono, AT_BEM.sono), fadiga: atOpcoes_(linhas, F.c.fadiga, AT_BEM.fadiga),
+                 dor: atOpcoes_(linhas, F.c.dor, AT_BEM.dor), stress: atOpcoes_(linhas, F.c.stress, AT_BEM.stress) };
+      var i = (p.i || []).map(Number);
+      if (i.length !== 4 || i.some(function (v) { return !(v >= 1 && v <= 5); })) throw new Error('Respostas incompletas.');
+      ['sono', 'fadiga', 'dor', 'stress'].forEach(function (k, j) {
+        vals[F.c[k]] = op[k].filter(function (x) { return atNum_(x) === i[j]; })[0] || String(i[j]);
+      });
+      resumo = 'bem-estar ' + i.join('/') + ' (' + i.reduce(function (s, v) { return s + v; }, 0) + '/20)';
+    } else {
+      var rpe = Number(p.rpe), dur = Math.round(Number(p.dur)), tipo = String(p.tipo || 'Treino').slice(0, 40);
+      if (!(rpe >= 0 && rpe <= 10) || !(dur > 0 && dur <= 300)) throw new Error('Respostas incompletas.');
+      var rop = atOpcoes_(linhas, F.c.rpe, []);
+      vals[F.c.rpe] = rop.filter(function (x) { return atNum_(x) === rpe; })[0] || rpe;
+      if (F.c.tipo >= 0) vals[F.c.tipo] = tipo;
+      if (F.c.dur >= 0) {   // no mesmo formato das respostas anteriores
+        var ex = linhas.length ? linhas[linhas.length - 1].v[F.c.dur] : '';
+        vals[F.c.dur] = ex instanceof Date || /^\d{1,2}:\d{2}/.test(String(ex))
+          ? ('0' + Math.floor(dur / 60)).slice(-2) + ':' + ('0' + dur % 60).slice(-2) + ':00'
+          : (typeof ex === 'number' && ex > 0 && ex < 1) ? dur / 1440 : dur;
+      }
+      if (F.c.sen >= 0 && p.sen) vals[F.c.sen] = String(p.sen).slice(0, 80);
+      resumo = tipo + ' · PSE ' + rpe + ' · ' + dur + ' min';
+    }
+    vals[F.c.n] = A.nome; vals[F.c.t] = agora;
+    // já respondeu hoje? (no PSE: a mesma sessão)
+    var mesma = linhas.filter(function (l) {
+      if (atKey_(l.d) !== hoje || (!atMesmo_(l.v[F.c.n], A.nome) && !atMesmo_(l.v[F.c.n], A.p.name))) return false;
+      return bem || F.c.tipo < 0 || atMesmo_(l.v[F.c.tipo], vals[F.c.tipo]);
+    }).pop();
+    var row = mesma ? mesma.row : atUltimaLinha_(F) + 1;
+    Object.keys(vals).forEach(function (c) { F.f.getRange(row, Number(c) + 1).setValue(vals[c]); });
+    atMarca_(A.nome, (mesma ? 'corrigiu ' : '') + resumo);
+    return { ok: true, corrigido: !!mesma, h: atHora_(agora) };
+  } finally { lock.releaseLock(); }
+}
+/** Separador "· App atletas" no Painel: A2 = hora da última resposta (a monitorização vê e recalcula) + registo. */
+function atMarca_(nome, txt) {
+  try {
+    var ss = destino_(), f = ss.getSheetByName(PREFIXO + 'App atletas');
+    if (!f) {
+      f = ss.insertSheet(PREFIXO + 'App atletas');
+      f.getRange(1, 1, 1, 2).setValues([['Última resposta pela app do atleta (a monitorização recalcula quando isto muda)', '']]);
+      f.getRange(4, 1, 1, 3).setValues([['Quando', 'Atleta', 'Resposta']]);
+    }
+    f.getRange(2, 1).setValue(new Date());
+    f.insertRowAfter(4);
+    f.getRange(5, 1, 1, 3).setValues([[new Date(), nome, txt]]);
+    if (f.getLastRow() > 504) f.deleteRow(f.getLastRow());
+  } catch (e) {}
+}
+function atResposta_(fn) {
+  try { return fn(); }
+  catch (err) {
+    var m = String(err && err.message || err);
+    return m === 'link' ? { erro: 'link', msg: 'Este link já não é válido. Pede um novo à equipa técnica.' } : { erro: m };
+  }
 }

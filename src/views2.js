@@ -125,7 +125,7 @@ function vPlantel(){
       <label class="fld">Época<input value="${esc(m.season||"")}" data-c="meta" data-f="season"></label>
       <label class="fld">Competição principal<input value="${esc(m.comp||"")}" data-c="meta" data-f="comp"></label>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button>${EDITION==="clubes"?"":`<button class="btn" data-a="syncCfg">${MODE==="local"&&SYNC.cfg?"Partilha com a equipa técnica":"Partilhar com a equipa técnica"}</button>`}<button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" data-a="evalCfg">Atributos de avaliação</button><button class="btn" data-a="catCfg">Categorias de exercícios</button>${EDITION==="clubes"?"":`<button class="btn" data-a="syncCfg">${MODE==="local"&&SYNC.cfg?"Partilha com a equipa técnica":"Partilhar com a equipa técnica"}</button>`}${atOn()?`<button class="btn" data-a="atLinks">App do atleta</button>`:""}<button class="btn" data-a="export">Exportar cópia</button><button class="btn" data-a="import">Importar cópia</button></div>
     <p class="note">${MODE==="local"?(SYNC.cfg?"Dados partilhados com a equipa técnica através do Google Sheets (cópia também neste browser, para funcionar sem rede).":"Sem partilha ligada, os dados ficam só neste dispositivo e browser. Liga a partilha para a equipa técnica ver o mesmo, e exporta uma cópia de vez em quando."):"Os dados ficam guardados online e sincronizados. A cópia serve de backup ou para a versão offline."}</p>
   </div></section>`;
 }
@@ -170,6 +170,7 @@ function pAtleta(id){
   </section>
   <div class="grid2" style="margin-top:14px">
     ${monAth(id)}
+    ${atCard(id)}
     <section class="card"><div class="card-h"><h3>Avaliação</h3><button class="btn sm primary" data-a="evalNew" data-id="${esc(id)}">+ Avaliação</button></div><div class="card-b">
       ${last?`${radarSVG(la,pa)}<div class="areas" style="margin-top:8px">${Object.entries(evalCfg()).map(([k,a])=>`<div class="area"><span>${esc(a.l)}</span><b>${la[k]==null?"–":fmt1(la[k])}</b>${pa&&la[k]!=null&&pa[k]!=null?deltaHTML(la[k],pa[k],false,1):""}</div>`).join("")}</div>
         ${prev?`<p class="note">Linha tracejada: avaliação anterior (${fmtD(prev.date)}).</p>`:""}`:`<div class="empty"><b>Sem avaliações</b>Avalia técnica, tática, física e psicológica de 0 a 10.</div>`}

@@ -7,6 +7,7 @@ Uso:
   python3 build.py offline    -> dist/index.html (com dados iniciais e fotos; guarda no browser; para Netlify)
   python3 build.py clubes     -> dist/clubes/ (versão para outros clubes, PRODUÇÃO: index.html + _headers de segurança)
   python3 build.py clubes-testes -> dist/clubes-testes/ (a mesma versão ligada ao projeto Supabase de TESTES, com dados fictícios)
+  python3 build.py atleta     -> dist/atleta/ (app do atleta do Estrela B: bem-estar, PSE, agenda, convocatória; + _headers)
   python3 build.py teste      -> dist/app_local.html + dist/app_db.html + dist/app_clubes.html (usados pelos testes)
 
 A versão para clubes não leva nada do Estrela: sem dados, sem fotos, sem exercícios/modelo/emblemas/calendário
@@ -17,7 +18,7 @@ Cada pasta de clubes leva um _headers (HTTPS obrigatório/HSTS, CSP, etc.): no N
 import sys, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src"); DATA = os.path.join(ROOT, "data"); DIST = os.path.join(ROOT, "dist")
-JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","who.js","bp.js","conv.js","tat.js","@edicao","migr.js","mon.js","prejogo.js","painel.js","sync.js","boot.js"]
+JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","who.js","bp.js","conv.js","atapp.js","tat.js","@edicao","migr.js","mon.js","prejogo.js","painel.js","sync.js","boot.js"]
 
 # ambientes da versão para clubes (valores públicos: a segurança está nas regras RLS da base de dados)
 AMB = json.load(open(os.path.join(ROOT, "config", "ambientes.json")))
@@ -111,6 +112,33 @@ def build(seed, out, edition="estrela", env=None):
         open(os.path.join(os.path.dirname(path), "_headers"), "w").write(headers_for(env))
     print(f"{out}: {len(h)//1024} KB")
 
+def headers_atleta():
+    google = "https://script.google.com https://script.googleusercontent.com"   # script da partilha (dados_app.gs)
+    csp = ("default-src 'self'; "
+           f"script-src 'self' 'unsafe-inline' {google}; "
+           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; "
+           f"img-src 'self' data:; connect-src 'self' {google}; "
+           "frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests")
+    return ("/*\n"
+            f"  Content-Security-Policy: {csp}\n"
+            "  Strict-Transport-Security: max-age=63072000; includeSubDomains\n"
+            "  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n"
+            "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()\n"
+            "  X-Robots-Tag: noindex, nofollow\n  Cache-Control: no-cache\n")
+
+def build_atleta():
+    """App do atleta (Estrela B): página própria, pequena, pensada para o telemóvel. O link pessoal traz o endereço do
+    script e o código do atleta, por isso não há nada de secreto nem de configurável aqui dentro."""
+    crest = open(os.path.join(DATA, "emblema.b64")).read().strip()
+    d = os.path.join(SRC, "atleta")
+    h = open(os.path.join(d, "shell.html")).read()
+    h = h.replace("/*CSS*/", open(os.path.join(d, "atleta.css")).read()).replace("/*JS*/", open(os.path.join(d, "atleta.js")).read())
+    h = h.replace('"__CREST__"', json.dumps(crest))
+    out = os.path.join(DIST, "atleta"); os.makedirs(out, exist_ok=True)
+    open(os.path.join(out, "index.html"), "w").write(h)
+    open(os.path.join(out, "_headers"), "w").write(headers_atleta())
+    print(f"atleta/index.html: {len(h)//1024} KB")
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "tudo"
     seed_local = json.load(open(os.path.join(DATA, "seed_local.json")))
@@ -119,6 +147,7 @@ if __name__ == "__main__":
     if what in ("clubes", "tudo"): build(None, "clubes/index.html", "clubes", env_of("producao"))
     if what == "clubes-testes" or (what == "tudo" and AMB["testes"].get("sb_url")):
         build(None, "clubes-testes/index.html", "clubes", env_of("testes"))
+    if what in ("atleta", "teste", "tudo"): build_atleta()
     if what in ("teste", "tudo"):
         build(seed_local, "app_local.html")
         build(None, "app_db.html")

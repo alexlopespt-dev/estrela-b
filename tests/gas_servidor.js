@@ -14,6 +14,8 @@ function Sheet(name){ this.name=name; this.cells=[]; this.fmt={}; return chain(t
 Sheet.prototype = {
   setName(n){ this.name=n; return this; }, getName(){ return this.name; },
   setFrozenRows(){ return this; }, deleteRow(r){ this.cells.splice(r-1,1); return this; },
+  insertRowAfter(r){ this.cells.splice(r,0,[]); return this; },
+  getLastColumn(){ return this.cells.reduce((m,row)=>{ let n=(row||[]).length; while(n>0&&(row[n-1]===""||row[n-1]==null)) n--; return Math.max(m,n); },0); },
   getLastRow(){ let n=this.cells.length; while(n>0 && !(this.cells[n-1]||[]).some(v=>v!==""&&v!=null)) n--; return n; },
   getRange(a,b,c,d){
     if(typeof a==="string"){ const rc=a1(a); if(!rc) return chain({}); return this.getRange(rc[0],rc[1]); }
@@ -57,7 +59,9 @@ const ctx = {
   ContentService: { MimeType:{JSON:"application/json",JAVASCRIPT:"application/javascript"},
     createTextOutput(s){ return { s, m:"text/plain", setMimeType(m){ this.m=m; return this; } }; } },
   Utilities: { base64Decode(s){ return Array.from(Buffer.from(s,"base64")); }, newBlob(bytes,type,name){ return {bytes,type,name}; },
-    formatDate(d){ return new Date(d).toISOString().replace(/[-:T]/g,"").slice(0,15); } },
+    formatDate(d,tz,f){ d=new Date(d); if(!f) return d.toISOString().replace(/[-:T]/g,"").slice(0,15);
+      const p=n=>String(n).padStart(2,"0");
+      return f.replace("yyyy",d.getFullYear()).replace("MM",p(d.getMonth()+1)).replace("dd",p(d.getDate())).replace("HH",p(d.getHours())).replace("mm",p(d.getMinutes())).replace("ss",p(d.getSeconds())); } },
   ScriptApp: { getProjectTriggers(){ return triggers.slice(); }, deleteTrigger(t){ const i=triggers.indexOf(t); if(i>=0) triggers.splice(i,1); },
     newTrigger(fn){ const t={fn, getHandlerFunction(){ return fn; }}; return chain({ create(){ triggers.push(t); return t; } }); } }, MailApp: {}, Session: { getScriptTimeZone(){ return "Europe/Lisbon"; } }
 };
@@ -72,6 +76,8 @@ http.createServer((req,res)=>{
     const dest=SSS[ctx.ID_DESTINO], les=dest&&dest.getSheetByName("· Lesões");
     return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props,
       lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn),
+      resp: Object.fromEntries(Object.entries(SSS).filter(([id,x])=>x.name==="respostas").map(([id,x])=>[id,x.sheets[0].cells])),
+      atletas: (dest&&dest.getSheetByName("· App atletas")) ? dest.getSheetByName("· App atletas").cells : null,
       copias: copies.filter(c=>!c.trashed).map(c=>({name:c.name,rows:c.rows.length}))})});
   }
   if(u.pathname==="/__run"){   // corre uma função do script (ex.: prepararDadosApp, copiaDiaria)
@@ -90,6 +96,8 @@ http.createServer((req,res)=>{
     let body=""; req.on("data",c=>body+=c); req.on("end",()=>{ const p=JSON.parse(body||"{}");
       if(p.nomes){ const f=ctx.destino_(); const pl=f.insertSheet("· Plantel"); pl.getRange(4,1,1,2).setValues([["Jogador","Posição"]]);
         p.nomes.forEach((n,i)=>pl.getRange(5+i,1,1,2).setValues([[n,"Campo"]])); }
+      if(p.respostas){ p.respostas.forEach(r=>{ const ss=new SS(r.nome||"respostas",r.id); ss.sheets[0].name=r.folha||"Respostas ao formulário 1";
+        ss.sheets[0].cells=r.linhas.map(l=>l.slice()); SSS[r.id]=ss; }); }
       if(p.manual){ const f=ctx.destino_(); const sh=ctx.folhaLesoes_(f);
         p.manual.forEach(r=>sh.getRange(sh.getLastRow()+1,1,1,5).setValues([r])); }
       send({m:"application/json",s:"{}"}); });

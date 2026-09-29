@@ -50,6 +50,7 @@ function vConv(){
     <label class="fld full">Observações<input value="${esc(g.cnote??"")}" data-c="f" data-col="events" data-id="${esc(id)}" data-f="cnote" placeholder="Números sujeitos a alterações!"></label>
   </div></div></section>
   <section class="card"><div class="card-h"><h3>Convocados</h3><span class="sub">${call.length} convocados</span></div><div class="card-b">${byGroup(tile)}</div></section>
+  ${atConvCard(g)}
   <section class="card"><div class="card-h"><h3>Números e nomes</h3><span class="sub">O nome completo fica guardado no atleta</span></div>
     ${list.length?`<div class="tscroll"><table class="tb convtb"><thead><tr><th>N.º</th><th class="l">Nome completo</th><th class="l">Observações</th></tr></thead><tbody>
     ${list.map(({p,num,obs})=>`<tr><td><input class="cell" inputmode="numeric" value="${esc((g.cnum||{})[p.id]??"")}" placeholder="${esc(p.n??"")}" data-c="cnum" data-id="${esc(id)}" data-p="${esc(p.id)}" aria-label="Número de ${esc(p.name)}"></td>

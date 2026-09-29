@@ -110,6 +110,8 @@ function instalarTriggers() {
   ScriptApp.newTrigger('atualizar').forSpreadsheet(ID_BEMESTAR).onFormSubmit().create();
   ScriptApp.newTrigger('atualizar').forSpreadsheet(ID_PSE).onFormSubmit().create();
   ScriptApp.newTrigger('atualizar').timeBased().atHour(6).everyDays(1).create();
+  // respostas vindas da app do atleta (não disparam o "ao enviar formulário"): vê de 10 em 10 min se chegou alguma
+  ScriptApp.newTrigger('verificarRespostasApp').timeBased().everyMinutes(10).create();
   try {
     destino_().toast('Automatismos instalados. O painel passa a atualizar-se sozinho.', 'Pronto', 8);
   } catch (e) { Logger.log('Automatismos instalados.'); }
@@ -142,8 +144,24 @@ function limparOrigens() {
 
 function removerTriggers() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'atualizar') ScriptApp.deleteTrigger(t);
+    var f = t.getHandlerFunction();
+    if (f === 'atualizar' || f === 'verificarRespostasApp') ScriptApp.deleteTrigger(t);
   });
+}
+
+/**
+ * A app do atleta escreve nas mesmas folhas dos formulários (através do script da partilha, dados_app.gs) e deixa a
+ * hora da última resposta na célula A2 do separador "· App atletas" deste Painel. Se mudou desde a última vez, recalcula.
+ */
+function verificarRespostasApp() {
+  var f = destino_().getSheetByName(PREFIXO + 'App atletas');
+  if (!f) return false;
+  var v = f.getRange(2, 1).getValue(), t = v instanceof Date ? v.getTime() : Number(v) || 0;
+  var props = PropertiesService.getScriptProperties(), antes = Number(props.getProperty('app_atletas_visto') || 0);
+  if (!t || t <= antes) return false;
+  props.setProperty('app_atletas_visto', String(t));
+  atualizar();
+  return true;
 }
 
 // ============================================================ 4. UTILITÁRIOS
