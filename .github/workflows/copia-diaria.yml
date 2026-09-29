@@ -43,7 +43,7 @@ jobs:
             --symmetric --cipher-algo AES256 -o "copia-$D.tar.gz.gpg"
           rm -rf copia
           echo "NOME=copia-$D" >> "$GITHUB_ENV"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.NOME }}
           path: copia-*.tar.gz.gpg
