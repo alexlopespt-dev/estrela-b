@@ -4,7 +4,7 @@ document.getElementById("crest").src = CREST;
 document.documentElement.style.setProperty("--wm", `url("${CREST}")`);   // emblema em marca d'água no cabeçalho
 // ecrã de arranque: some sozinho por CSS (≤ 1,8 s); aqui só se retira do DOM no fim
 (()=>{ const sp=document.getElementById("splash"); if(!sp) return; const rm=()=>{ if(sp.parentNode) sp.remove(); };
-  sp.addEventListener("animationend",e=>{ if(e.animationName==="spOut") rm(); }); setTimeout(rm,2000); })();
+  sp.addEventListener("animationend",e=>{ if(e.animationName==="spOut") rm(); }); setTimeout(rm,1000); })();
 /* tema: automático (segue o sistema), escuro ou claro — escolha guardada neste dispositivo */
 const THEMES=[["auto","Tema automático (segue o sistema)"],["dark","Modo noite"],["light","Modo dia"]];
 let THEME="auto"; try{ const t=localStorage.getItem(LS+":theme"); if(t==="dark"||t==="light") THEME=t; }catch(e){}

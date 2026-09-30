@@ -114,7 +114,12 @@ function lsLoad(){
   if(fromSeed) lsSave();
   VER++;
 }
-function lsSave(){ try{ const o={}; COLS.forEach(c=>o[c]=D[c]); localStorage.setItem(LS,JSON.stringify(o)); }catch(e){ toast("Sem espaço no browser para guardar. Exporta uma cópia e apaga fotos grandes."); } }
+// gravações seguidas (ex.: atualizações de dados no arranque, ações que mexem em vários registos) juntam-se numa só:
+// cada gravação escreve TODOS os dados no browser, e fazê-lo uma vez por registo atrasava muito o arranque
+let LS_T=null;
+function lsSaveSoon(){ if(LS_T) return; LS_T=setTimeout(()=>{ LS_T=null; lsSave(); },0); }
+window.addEventListener("pagehide",()=>{ if(LS_T){ clearTimeout(LS_T); LS_T=null; lsSave(); } });
+function lsSave(){ if(LS_T){ clearTimeout(LS_T); LS_T=null; } try{ const o={}; COLS.forEach(c=>o[c]=D[c]); localStorage.setItem(LS,JSON.stringify(o)); }catch(e){ toast("Sem espaço no browser para guardar. Exporta uma cópia e apaga fotos grandes."); } }
 
 const pending={}, inflight={};
 async function flush(key){
@@ -133,11 +138,11 @@ function put(col,id,obj){
   obj=clone(obj);
   if(col!=="meta"){ if(NOSTAMP){ if(prev&&prev._by){ obj._by=prev._by; obj._at=prev._at; } } else stamp(obj); }   // quem alterou (who.js)
   D[col][id]=obj; VER++; schedule();
-  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSave(); syncQ(col,id,obj,prev); }
+  if(db){ const key=col+"/"+id; pending[key]={col,id,obj}; flush(key); } else { lsSaveSoon(); syncQ(col,id,obj,prev); }
 }
 function del(col,id){
   delete D[col][id]; VER++; schedule();
-  if(db){ const key=col+"/"+id; pending[key]={col,id,del:true}; flush(key); } else { lsSave(); syncQ(col,id,null); }
+  if(db){ const key=col+"/"+id; pending[key]={col,id,del:true}; flush(key); } else { lsSaveSoon(); syncQ(col,id,null); }
 }
 const busy = key => inflight[key] || pending[key]!==undefined;
 

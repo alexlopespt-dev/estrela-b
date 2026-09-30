@@ -444,7 +444,11 @@ function atAcha_(cab, chaves, usados) {
 
 /** Separador das respostas (o que tem o carimbo e a coluna obrigatória; se houver vários, o com mais linhas). */
 function atFolha_(id, chave) {
-  var ss = SpreadsheetApp.openById(id), melhor = null, n = -1;
+  var ss = SpreadsheetApp.openById(id), melhor = null, n = -1, cache = CacheService.getScriptCache(), ck = 'at_folha_' + id + '_' + chave[0];
+  try {
+    var h = cache.get(ck);
+    if (h) { h = JSON.parse(h); var fc = ss.getSheetByName(h.nome); if (fc) return { f: fc, cab: h.cab, c: h.c }; }
+  } catch (e) {}
   ss.getSheets().forEach(function (f) {
     if (f.getLastRow() < 1) return;
     var cab = f.getRange(1, 1, 1, Math.max(1, f.getLastColumn())).getValues()[0];
@@ -461,6 +465,7 @@ function atFolha_(id, chave) {
   c.tipo = atAcha_(cab, ['tipo de sess', 'tipo'], u); c.dur = atAcha_(cab, ['duração', 'duracao'], u);
   c.rpe = atAcha_(cab, ['intenso', 'intens', 'rpe'], u); c.sen = atAcha_(cab, ['sentes', 'sensa'], u);
   if (c.n < 0) throw new Error('A folha de respostas não tem a coluna do nome.');
+  try { cache.put(ck, JSON.stringify({ nome: melhor.getName(), cab: cab, c: c }), 3600); } catch (e) {}
   return { f: melhor, cab: cab, c: c };
 }
 /** Últimas linhas (até 800), com o número da linha. A última linha conta pela coluna do carimbo: colunas com fórmulas
@@ -503,15 +508,42 @@ function atDistintos_(linhas, idx, pre) {
 }
 
 /** O atleta do link: {pid, p, reg, nome (como a monitorização o conhece)} ou erro. */
+/* ---- rapidez: a app do atleta abre várias vezes por dia; ler o Sheet dos dados, o Painel e a estrutura das folhas
+   dos formulários de cada vez demorava vários segundos. Fica em cache (CacheService): os dados até mudarem de versão
+   (qualquer gravação da app muda a versão), os nomes da monitorização 10 min, a estrutura das folhas 1 h. */
+function atReg_() {
+  var cache = CacheService.getScriptCache(), k = 'at_reg_' + String(dadosVer_()), TAM = 45000;
+  try {
+    var n = cache.get(k + '_n');
+    if (n) {
+      var s = '';
+      for (var i = 0; i < Number(n); i++) { var p = cache.get(k + '_' + i); if (p === null || p === undefined) { s = null; break; } s += p; }
+      if (s !== null) return JSON.parse(s);
+    }
+  } catch (e) {}
+  var reg = dadosTodos_(['players', 'events', 'meta', 'staff']);
+  try {
+    var js = JSON.stringify(reg), m = Math.ceil(js.length / TAM);
+    if (m <= 60) { for (var j = 0; j < m; j++) cache.put(k + '_' + j, js.substr(j * TAM, TAM), 21600); cache.put(k + '_n', String(m), 21600); }
+  } catch (e) {}
+  return reg;
+}
+function atNomesMon_() {
+  var c = CacheService.getScriptCache(), s = c.get('at_nomes_mon');
+  if (s) { try { return JSON.parse(s); } catch (e) {} }
+  var n = nomesMonitorizacao_();
+  try { c.put('at_nomes_mon', JSON.stringify(n), 600); } catch (e) {}
+  return n;
+}
 function atAtleta_(tok) {
   tok = String(tok || '');
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(tok)) throw new Error('link');
-  var reg = dadosTodos_(['players', 'events', 'meta', 'staff']), pid = null;
+  var reg = atReg_(), pid = null;
   Object.keys(reg.players).forEach(function (id) { var p = reg.players[id]; if (p && p.atk === tok && !p.archived) pid = id; });
   if (!pid) throw new Error('link');
   var p = reg.players[pid], cfg = reg.meta.cfg || {}, nome = p.name;
   try {
-    var map = ligacoesNomes_(nomesMonitorizacao_(), reg.players, (cfg.mon && cfg.mon.map) || {});
+    var map = ligacoesNomes_(atNomesMon_(), reg.players, (cfg.mon && cfg.mon.map) || {});
     Object.keys(map).forEach(function (n) { if (map[n] === pid) nome = n; });
   } catch (e) {}
   return { pid: pid, p: p, reg: reg, nome: nome, man: atManual_(cfg) };
@@ -526,12 +558,15 @@ function atMesmo_(a, b) { return !!atChave_(a) && atChave_(a) === atChave_(b); }
 var AT_ALIAS = null;
 function atAliases_() {
   if (AT_ALIAS) return AT_ALIAS;
+  var cache = CacheService.getScriptCache(), cs = cache.get('at_alias');
+  if (cs) { try { AT_ALIAS = JSON.parse(cs); return AT_ALIAS; } catch (e) {} }
   AT_ALIAS = {};
   try {
     var f = destino_().getSheetByName(PREFIXO + 'Nomes');
     if (f && f.getLastRow() >= 4) f.getRange(4, 1, f.getLastRow() - 3, 2).getValues().forEach(function (l) {
       var de = String(l[0] || '').trim(), para = String(l[1] || '').trim(); if (de && para) AT_ALIAS[atChave_(de)] = para;
     });
+    cache.put('at_alias', JSON.stringify(AT_ALIAS), 600);
   } catch (e) {}
   return AT_ALIAS;
 }
@@ -825,7 +860,7 @@ function avJwt_(aud) {
   var cache = CacheService.getScriptCache(), ck = 'av_jwt_' + aud, j = cache.get(ck);
   if (j) return j;
   var K = avChaves_(), site = '';
-  try { site = String(((dadosTodos_(['meta']).meta || {}).cfg || {}).atletaUrl || ''); } catch (e) {}
+  try { site = String(((atReg_().meta || {}).cfg || {}).atletaUrl || ''); } catch (e) {}
   var sub = /^https:\/\/[^\s]+$/.test(site) ? site.replace(/\/+$/, '') : 'https://estrela-b-atleta.netlify.app';
   var enc = function (o) { return avB64_(avUtf8_(JSON.stringify(o))); };
   var ini = enc({ typ: 'JWT', alg: 'ES256' }) + '.' + enc({ aud: aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: sub });
@@ -895,10 +930,10 @@ function avisosAtletas() {
   var pr = PropertiesService.getScriptProperties(), all = pr.getProperties(), ids = Object.keys(all).filter(function (k) { return /^av_/.test(k) && k !== 'av_vapid'; });
   if (!ids.length) return 0;
   var agora = new Date(), hoje = atKey_(agora), hm = atHora_(agora).split(':'), min = Number(hm[0]) * 60 + Number(hm[1]);
-  var reg = dadosTodos_(['players', 'events', 'meta']), ev = reg.events, pl = reg.players, cfg = reg.meta.cfg || {};
+  var reg = atReg_(), ev = reg.events, pl = reg.players, cfg = reg.meta.cfg || {};
   // nome de cada atleta na monitorização (o mesmo que o atleta escreve / que a app grava)
   var nomeDe = {};
-  try { var map = ligacoesNomes_(nomesMonitorizacao_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
+  try { var map = ligacoesNomes_(atNomesMon_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
   var resp = function (id, chave) {   // chaves dos nomes que já responderam hoje (null se não deu para ler a folha)
     try { var F = atFolha_(id, chave), s = {}, al = atAliases_(); atLinhas_(F).forEach(function (l) { if (atKey_(l.d) !== hoje) return; var k = atChave_(l.v[F.c.n]); s[k] = 1; if (al[k]) s[atChave_(al[k])] = 1; }); return s; } catch (e) { return null; }
   };
@@ -946,8 +981,8 @@ function avisosAtletas() {
 /** App técnica ("Verificar o que os atletas veem"): respostas de bem-estar e PSE dos últimos 14 dias por atleta, com a
  *  mesma regra de nomes da app do atleta, e os nomes escritos nas folhas que não correspondem a nenhum atleta. */
 function atDiagTodos_() {
-  var reg = dadosTodos_(['players', 'meta']), pl = reg.players, cfg = reg.meta.cfg || {}, man = atManual_(cfg), nomeDe = {};
-  try { var map = ligacoesNomes_(nomesMonitorizacao_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
+  var reg = atReg_(), pl = reg.players, cfg = reg.meta.cfg || {}, man = atManual_(cfg), nomeDe = {};
+  try { var map = ligacoesNomes_(atNomesMon_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
   var ids = Object.keys(pl).filter(function (id) { return pl[id] && !pl[id].archived; }), out = {}, sem = {}, erros = [];
   var As = ids.map(function (id) { out[id] = { nome: nomeDe[id] || pl[id].name, bem: 0, pse: 0, ult: '' }; return { pid: id, p: pl[id], nome: nomeDe[id] || pl[id].name, man: man }; });
   var desde = atKey_(new Date(Date.now() - 13 * 864e5));
