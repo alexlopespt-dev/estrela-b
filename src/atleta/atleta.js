@@ -145,7 +145,6 @@ const BEM_Q = [["sono","Como dormiste esta noite?","Qualidade do sono"],["fadiga
 const BEM_COR = ["#c62828","#e0702a","#c9a400","#3fa34d","#1f7a3d"];
 const RPE = ["Repouso","Muito, muito fácil","Fácil","Moderado","Um pouco difícil","Difícil","Difícil +","Muito difícil","Muito difícil +","Quase máximo","Máximo"];
 const rpeCor = n => `hsl(${Math.round(130-n*13)},62%,${n>=8?40:44}%)`;
-const bemEstado = t => t==null?null : t<=12?{l:"Risco",c:"var(--bad)"} : t<=16?{l:"Atenção",c:"var(--warn)"} : {l:"OK",c:"var(--ok)"};
 
 /* ---- ícones ---- */
 const IC = {
@@ -209,10 +208,10 @@ function evCard(a){
 function vHoje(){
   const d=S.data, t=today(), r=(d&&d.respostas)||{}, hj=agendaDe(t);
   const pendBem=S.fila.find(x=>x.a==="atleta_bem"&&x.d===t), pendPse=S.fila.filter(x=>x.a==="atleta_pse"&&x.d===t);
-  const bem=r.bem, tot=bem?bem.i.reduce((s,v)=>s+v,0):null, est=bemEstado(tot);
+  const bem=r.bem, tot=bem?bem.i.reduce((s,v)=>s+v,0):null;
   const cBem=`<section class="card task"><div class="task-h"><span class="ico" style="--c:#c2185b">${I.heart}</span><div><p class="k">Bem-estar de hoje</p>${bem?`<h2>Respondido às ${esc(bem.h)}</h2>`:pendBem?`<h2>Guardado no telemóvel</h2>`:`<h2>Como estás hoje?</h2>`}</div></div>
     ${bem?`<div class="pills">${BEM_Q.map(([k,,t],j)=>`<span style="--c:${BEM_COR[bem.i[j]-1]}"><i>${bem.i[j]}</i>${esc(cap(t.replace("Qualidade do ","").replace(" geral","").replace(" muscular","")))}</span>`).join("")}</div>
-      <p class="sub">Total ${tot}/20 · <b style="color:${est.c}">${est.l}</b></p><p class="note">Já respondeste hoje. Voltas a responder amanhã.</p>`
+      <p class="sub">Total ${tot}/20</p><p class="note">Já respondeste hoje. Voltas a responder amanhã.</p>`
     : pendBem?`<span class="pend">Guardado no telemóvel — envia quando houver rede</span>`
     : `<p class="sub">4 perguntas rápidas: sono, fadiga, dores e stress.</p><button class="cta" data-a="bem">Responder</button>`}</section>`;
   const sess=hj.length?hj.map(a=>a.tipo==="jogo"?`jogo das ${a.time||"—"}`:`treino das ${a.time||"—"}`).join(" e "):"";
@@ -297,7 +296,7 @@ function vEu(){
     <h2>${esc(me.full||me.name||"")}</h2>
     ${rks?`<div class="pc-rk">${rks}</div>`:""}
     <div class="pc-st"><div><b>${n.jogos||0}</b><span>Jogos</span></div><div><b>${n.min||0}</b><span>Minutos</span></div><div><b>${n.golos||0}</b><span>Golos</span></div><div><b>${n.assist||0}</b><span>Assist.</span></div></div>
-    <div class="pc-st sm"><div><b>${n.titular||0}</b><span>Titular</span></div><div><b>${n.jogos?Math.round((n.min||0)/n.jogos):0}'</b><span>Min./jogo</span></div><div><b>${n.amarelos||0}</b><span>Amarelos</span></div><div><b>${n.vermelhos||0}</b><span>Vermelhos</span></div></div>
+    <div class="pc-st sm"><div><b>${n.titular||0}</b><span>Titular</span></div><div><b>${n.jogos?Math.round((n.min||0)/n.jogos):0}'</b><span>Min./jogo</span></div><div><b><i class="cd y"></i>${n.amarelos||0}<i class="cd r"></i>${n.vermelhos||0}</b><span>Cartões</span></div></div>
   </section>`;
   const pl=(d.presencas||[]).slice().reverse(), cnt={}; pl.forEach(p=>cnt[p.s]=(cnt[p.s]||0)+1);
   const cPres=`<h3 class="sec-t">Presenças nos treinos</h3><section class="card"><div class="pres">
@@ -312,11 +311,10 @@ function vEu(){
       <div class="res-s" style="--c:${RES_C[g.r]}"><b>${g.gf}–${g.ga}</b><i>${g.r}</i></div></div>`).join("")}`:"";
   const t=today(), days=[...Array(14)].map((_,i)=>addDays(t,i-13)), by={}; hist.forEach(h=>by[h.d]=h.t);
   const vals=hist.map(h=>h.t), med=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length):null;
-  const bars=`<div class="bars" role="img" aria-label="Bem-estar dos últimos 14 dias">${days.map(x=>{ const v=by[x]; const e=bemEstado(v);
-    return `<i title="${esc(fmt(x,{day:"numeric",month:"short"}))}: ${v==null?"sem resposta":v+"/20"}" style="height:${v==null?4:Math.max(10,(v-4)/16*100)}%;background:${v==null?"var(--line)":e.c}">${v==null?"":`<em>${v}</em>`}</i>`; }).join("")}</div>
+  const bars=`<div class="bars" role="img" aria-label="Bem-estar dos últimos 14 dias">${days.map(x=>{ const v=by[x];
+    return `<i title="${esc(fmt(x,{day:"numeric",month:"short"}))}: ${v==null?"sem resposta":v+"/20"}" style="height:${v==null?4:Math.max(10,(v-4)/16*100)}%;background:${v==null?"var(--line)":"var(--bar)"}">${v==null?"":`<em>${v}</em>`}</i>`; }).join("")}</div>
     <div class="bars-x">${days.map((x,i)=>`<span>${i%2?"":toD(x).getDate()}</span>`).join("")}</div>`;
-  const cBem=`<h3 class="sec-t">O meu bem-estar · 14 dias</h3><section class="card">${med!=null?`<p class="sub" style="margin-bottom:4px">Média <b>${med.toFixed(1)}</b>/20 · ${vals.length} resposta${vals.length>1?"s":""}</p>`:""}${bars}
-    <div class="lg"><span><i style="background:var(--ok)"></i>OK 17+</span><span><i style="background:var(--warn)"></i>Atenção 13-16</span><span><i style="background:var(--bad)"></i>Risco ≤12</span></div></section>`;
+  const cBem=`<h3 class="sec-t">O meu bem-estar · 14 dias</h3><section class="card">${med!=null?`<p class="sub" style="margin-bottom:4px">Média <b>${med.toFixed(1)}</b>/20 · ${vals.length} resposta${vals.length>1?"s":""}</p>`:""}${bars}</section>`;
   return top("A minha época")+`<main>${offline()}${card}${cPres}${cJogos}${cBem}${pushCard("eu")?`<h3 class="sec-t">Avisos</h3>${pushCard("eu")}`:""}
     <details class="card cfg"><summary>Este telemóvel</summary><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
       <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></details></main>`;

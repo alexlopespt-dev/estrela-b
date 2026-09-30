@@ -99,6 +99,7 @@ try:
     if len(rows)!=7 or nova[1]!="Luís A." or nova[2:6]!=["4 - Bom","3 - Normal","5 - Sem Dor","4 - Tranquilo"] or (len(nova)>6 and nova[6] not in ("",None)): errs.append("linha do bem-estar")
     pg.click('.sheet [data-a="fechar"]'); pg.wait_for_timeout(900)
     if "Respondido às" not in pg.inner_text("#app"): errs.append("hoje não mostra respondido")
+    if any(w in pg.inner_text("#app") for w in ("Risco","Atenção","OK")): errs.append("o atleta não pode ver o estado (Risco/Atenção/OK)")
     # uma resposta por dia: sem botão para responder outra vez e o script recusa
     if pg.locator('[data-a="bem"]').count() or "Voltas a responder amanhã" not in pg.inner_text("#app"): errs.append("bem-estar: deixa responder outra vez")
     r=post({"a":"atleta_bem","t":TOK,"i":[2,2,2,2]}); rows=estado()["resp"][ID_BEM]; print("segunda resposta:", r.get("erro"), len(rows), rows[-1][2])
@@ -139,6 +140,9 @@ try:
     t=pg.inner_text("#app"); print("eu:", t.replace("\n"," | ")[:260])
     if "60" not in t or "golos" not in t.lower() or "Presenças nos treinos" not in t: errs.append("os meus números")
     if not pg.locator(".pcard").count(): errs.append("cartão do jogador")
+    if any(w in t for w in ("Risco","Atenção","OK 17")): errs.append("estado do bem-estar visível no Eu")
+    over=pg.evaluate("[...document.querySelectorAll('.pc-st span')].filter(e=>{const r=e.getBoundingClientRect(),p=e.parentElement.getBoundingClientRect();return r.width>p.width+1||e.scrollWidth>e.clientWidth+1}).map(e=>e.textContent)")
+    if over: errs.append("números do cartão encavalitados "+str(over))
     pg.screenshot(path=os.path.join(CAP,"t38_eu.png"),full_page=True)
     pg.click('nav [data-t="jogo"]'); pg.wait_for_timeout(200); t=pg.inner_text("#app"); print("jogo:", t.replace("\n"," | ")[:220])
     if "Estás convocado" not in t or "13:15" not in t or "Rui" not in t or "10" not in t: errs.append("convocatória publicada")

@@ -882,7 +882,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "30/09/2026 08:50";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "30/09/2026 11:58";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
