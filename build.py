@@ -18,7 +18,7 @@ Cada pasta de clubes leva um _headers (HTTPS obrigatório/HSTS, CSP, etc.): no N
 import sys, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src"); DATA = os.path.join(ROOT, "data"); DIST = os.path.join(ROOT, "dist")
-JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","dwv.js","who.js","bp.js","conv.js","atapp.js","tat.js","@edicao","migr.js","mon.js","prejogo.js","painel.js","sync.js","boot.js"]
+JS_ORDER = ["core.js","vec.js","views1.js","views2.js","views3.js","cfg.js","draw.js","quick.js","print.js","actions.js","dwv.js","who.js","bp.js","conv.js","atapp.js","tat.js","reab.js","@edicao","migr.js","mon.js","prejogo.js","painel.js","sync.js","boot.js"]
 
 # ambientes da versão para clubes (valores públicos: a segurança está nas regras RLS da base de dados)
 AMB = json.load(open(os.path.join(ROOT, "config", "ambientes.json")))

@@ -30,19 +30,21 @@ function injRow(i){
   return `<button class="li" data-a="injEdit" data-id="${esc(i.id)}"><span class="main"><b>${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")}</b><small>${fmtD(i.date,{day:"numeric",month:"short",year:"numeric"})}${days!=null?` — ${days} dias`:""}${i.ctx?" — em "+esc(i.ctx.toLowerCase()):""}</small></span><span class="tag ${INJ_ST[i.status]?.c||""}">${INJ_ST[i.status]?.l||"—"}</span></button>`;
 }
 function vClinico(){
+  const sub=`<div class="seg" style="margin:0 0 14px">${[["","Lesões"],["reab","Reabilitação"]].map(([k,l])=>`<button data-a="csub" data-k="${k}" class="${(S.csub||"")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.csub==="reab") return vReab(sub);
   const all=injuries(), act=all.filter(i=>i.status!=="alta"), hist=all.filter(i=>i.status==="alta");
   const t=todayISO();
   const lost=all.reduce((s,i)=>{ if(!validISO(i.date)) return s; const end=i.status==="alta"&&validISO(i.ret)?i.ret:t; return s+Math.max(0,dayDiff(i.date,end)); },0);
   const byZone={}; all.forEach(i=>{ byZone[i.zone||"—"]=(byZone[i.zone||"—"]||0)+1; });
   const card=i=>{ const p=P(i.pid)||{name:"(removido)"}; const days=validISO(i.date)?Math.max(0,dayDiff(i.date,t)):0; const steps=i.plan||[]; const done=steps.filter(s=>s.done).length;
-    return `<section class="card"><div class="card-h" style="gap:12px">${avatar(p)}<div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small muted">${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")} — ${days} dias${validISO(i.exp)?` — regresso previsto ${fmtD(i.exp)}`:""}</div></div><span class="tag ${INJ_ST[i.status].c}">${INJ_ST[i.status].l}</span></div>
+    return `<section class="card"><div class="card-h" style="gap:12px">${avatar(p)}<div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small muted">${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")} — ${plural(days,"dia","dias")}${validISO(i.exp)?` — regresso previsto ${fmtD(i.exp)}`:""}</div></div><span class="tag ${INJ_ST[i.status].c}">${INJ_ST[i.status].l}</span></div>
       <div class="card-b">${i.diag?`<p style="margin:0 0 8px"><b>Diagnóstico:</b> ${esc(i.diag)}</p>`:""}
         ${steps.length?`<div class="small muted" style="font-weight:700;margin-bottom:4px">Plano de recuperação — ${done}/${steps.length}</div><div class="meter" style="margin-bottom:8px"><i style="width:${pct(done,steps.length)}%"></i></div>${steps.map((s,k)=>`<label class="chk ${s.done?"done":""}"><input type="checkbox" ${s.done?"checked":""} data-c="step" data-id="${esc(i.id)}" data-i="${k}"><span>${esc(s.t)}</span></label>`).join("")}`:`<div class="small muted">Sem plano de recuperação.</div>`}
-        ${trtHTML(i)}
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm primary" data-a="trtNew" data-id="${esc(i.id)}">+ Tratamento</button>${i.status==="ativa"?`<button class="btn sm" data-a="injSt" data-id="${esc(i.id)}" data-s="condicionado">Passar a condicionado</button>`:""}<button class="btn sm gold" data-a="injSt" data-id="${esc(i.id)}" data-s="alta">Dar alta</button><button class="btn sm" data-a="injEdit" data-id="${esc(i.id)}">Editar</button><button class="btn sm ghost" data-a="page" data-p="atleta" data-id="${esc(i.pid)}">Ficha do atleta</button></div>
+        ${trtHTML(i)}${rbResumo(i)}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm primary" data-a="trtNew" data-id="${esc(i.id)}">+ Tratamento</button><button class="btn sm" data-a="csub" data-k="reab">Reabilitação</button>${i.status==="ativa"?`<button class="btn sm" data-a="injSt" data-id="${esc(i.id)}" data-s="condicionado">Passar a condicionado</button>`:""}<button class="btn sm gold" data-a="injSt" data-id="${esc(i.id)}" data-s="alta">Dar alta</button><button class="btn sm" data-a="injEdit" data-id="${esc(i.id)}">Editar</button><button class="btn sm ghost" data-a="page" data-p="atleta" data-id="${esc(i.pid)}">Ficha do atleta</button></div>
       </div></section>`; };
   return `
-  <div class="bar"><h2>Clínico</h2><button class="btn primary" data-a="injNew">+ Registar lesão</button></div>
+  <div class="bar"><h2>Clínico</h2><button class="btn primary" data-a="injNew">+ Registar lesão</button></div>${sub}
   <div class="kpis" style="margin-bottom:14px">
     <div class="kpi"><span>Em tratamento</span><b>${act.filter(i=>i.status==="ativa").length}</b></div>
     <div class="kpi"><span>Condicionados</span><b>${act.filter(i=>i.status==="condicionado").length}</b></div>

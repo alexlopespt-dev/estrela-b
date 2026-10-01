@@ -23,19 +23,19 @@
   --fc:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   box-sizing:border-box; color-scheme:light;
   --card-hi:rgba(143,34,57,.035); --mp-bar:#dcb0ba;
-  --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
+  --rb:var(--grena); --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
-    --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
+    --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
     --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
     --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
   }
 }
 :root[data-theme="dark"]{ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
-  --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
+  --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
   --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
   --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
 }
@@ -323,7 +323,7 @@ table.tb{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 
 /* checklist */
 .chk{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
-.chk input{width:18px;height:18px;margin-top:2px;accent-color:var(--grena)}
+.chk input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:var(--grena)}
 .chk.done span{text-decoration:line-through;color:var(--muted)}
 
 /* dialogs */
@@ -754,6 +754,34 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .whomore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:none;color:var(--muted);font-weight:700;font-size:13px;padding:10px;cursor:pointer;border-radius:0 0 18px 18px}
 .whomore:hover{color:var(--text);background:var(--surface-2)}
 
+/* Clínico → Reabilitação (reab.js) */
+.rbfases{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}
+.rbfb{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:52px;padding:7px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--muted);text-align:left;font:inherit;cursor:pointer}
+.rbfb b{font:800 15px/1 var(--fc);color:var(--text)}.rbfb span{font-size:11px;line-height:1.2;font-weight:600}
+.rbfb.on{border-color:var(--rb);background:color-mix(in srgb,var(--rb) 14%,var(--surface));color:var(--text)}.rbfb.on b{color:var(--rb)}
+.rbitems{list-style:none;margin:0;padding:0;counter-reset:rb;border-top:1px solid var(--line)}
+.rbitems li{counter-increment:rb;border-bottom:1px solid var(--line)}
+.rbit{display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px;background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.rbit::before{content:counter(rb);flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--surface-2);font:800 13px var(--fc);color:var(--muted)}
+.rbit .main{flex:1;min-width:0;display:flex;flex-direction:column}.rbit .main b{font-size:14px}.rbit .main small{color:var(--muted);font-size:12px}
+.rbdose{flex:none;font:700 14px var(--fc);color:var(--rb);white-space:nowrap}
+.rblast{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
+.rblast>div{display:flex;flex-direction:column;gap:3px;min-width:0}.rblast small{color:var(--muted)}.rblast .tag{align-self:flex-start}
+.rbsum{align-items:flex-end}.rbsp{color:var(--rb);fill:var(--rb)}
+.rbacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.rbres{margin-top:10px;padding:8px 10px;border-radius:10px;background:var(--surface-2)}
+.rbfilt{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 16px 4px}.rbfilt .inp{max-width:260px}
+.tag.rbf{border-color:var(--rb);color:var(--rb);background:transparent;white-space:nowrap}
+.rbdor{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;margin-top:4px}
+.rbdor label{position:relative}.rbdor input{position:absolute;opacity:0;inset:0}
+.rbdor span{display:grid;place-items:center;min-height:38px;border:1px solid var(--line);border-radius:9px;font-weight:700;background:var(--surface-2);cursor:pointer}
+.rbdor input:checked+span{background:var(--rb);border-color:var(--rb);color:#fff}
+.rbdor input:focus-visible+span{outline:2px solid var(--rb);outline-offset:2px}
+:root[data-theme="dark"] .rbdor input:checked+span{color:#2a1a08}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .rbdor input:checked+span{color:#2a1a08} }
+.rbpick small{font-weight:500}
+@media (max-width:520px){ .rbfb span{display:none} .rbfb{min-height:38px;align-items:center} .rbdor{grid-template-columns:repeat(6,1fr)} }
+
 </style>
 </head>
 <body>
@@ -882,8 +910,8 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "01/10/2026 08:55";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
-const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics"];
+const BUILD = "01/10/2026 11:16";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics","rehab","rehabex"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
 const LS = EDITION==="clubes" ? "equipa-tecnica-v1" : "estrela-tecnico-v1";
@@ -2153,19 +2181,21 @@ function injRow(i){
   return `<button class="li" data-a="injEdit" data-id="${esc(i.id)}"><span class="main"><b>${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")}</b><small>${fmtD(i.date,{day:"numeric",month:"short",year:"numeric"})}${days!=null?` — ${days} dias`:""}${i.ctx?" — em "+esc(i.ctx.toLowerCase()):""}</small></span><span class="tag ${INJ_ST[i.status]?.c||""}">${INJ_ST[i.status]?.l||"—"}</span></button>`;
 }
 function vClinico(){
+  const sub=`<div class="seg" style="margin:0 0 14px">${[["","Lesões"],["reab","Reabilitação"]].map(([k,l])=>`<button data-a="csub" data-k="${k}" class="${(S.csub||"")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(S.csub==="reab") return vReab(sub);
   const all=injuries(), act=all.filter(i=>i.status!=="alta"), hist=all.filter(i=>i.status==="alta");
   const t=todayISO();
   const lost=all.reduce((s,i)=>{ if(!validISO(i.date)) return s; const end=i.status==="alta"&&validISO(i.ret)?i.ret:t; return s+Math.max(0,dayDiff(i.date,end)); },0);
   const byZone={}; all.forEach(i=>{ byZone[i.zone||"—"]=(byZone[i.zone||"—"]||0)+1; });
   const card=i=>{ const p=P(i.pid)||{name:"(removido)"}; const days=validISO(i.date)?Math.max(0,dayDiff(i.date,t)):0; const steps=i.plan||[]; const done=steps.filter(s=>s.done).length;
-    return `<section class="card"><div class="card-h" style="gap:12px">${avatar(p)}<div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small muted">${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")} — ${days} dias${validISO(i.exp)?` — regresso previsto ${fmtD(i.exp)}`:""}</div></div><span class="tag ${INJ_ST[i.status].c}">${INJ_ST[i.status].l}</span></div>
+    return `<section class="card"><div class="card-h" style="gap:12px">${avatar(p)}<div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small muted">${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")} — ${plural(days,"dia","dias")}${validISO(i.exp)?` — regresso previsto ${fmtD(i.exp)}`:""}</div></div><span class="tag ${INJ_ST[i.status].c}">${INJ_ST[i.status].l}</span></div>
       <div class="card-b">${i.diag?`<p style="margin:0 0 8px"><b>Diagnóstico:</b> ${esc(i.diag)}</p>`:""}
         ${steps.length?`<div class="small muted" style="font-weight:700;margin-bottom:4px">Plano de recuperação — ${done}/${steps.length}</div><div class="meter" style="margin-bottom:8px"><i style="width:${pct(done,steps.length)}%"></i></div>${steps.map((s,k)=>`<label class="chk ${s.done?"done":""}"><input type="checkbox" ${s.done?"checked":""} data-c="step" data-id="${esc(i.id)}" data-i="${k}"><span>${esc(s.t)}</span></label>`).join("")}`:`<div class="small muted">Sem plano de recuperação.</div>`}
-        ${trtHTML(i)}
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm primary" data-a="trtNew" data-id="${esc(i.id)}">+ Tratamento</button>${i.status==="ativa"?`<button class="btn sm" data-a="injSt" data-id="${esc(i.id)}" data-s="condicionado">Passar a condicionado</button>`:""}<button class="btn sm gold" data-a="injSt" data-id="${esc(i.id)}" data-s="alta">Dar alta</button><button class="btn sm" data-a="injEdit" data-id="${esc(i.id)}">Editar</button><button class="btn sm ghost" data-a="page" data-p="atleta" data-id="${esc(i.pid)}">Ficha do atleta</button></div>
+        ${trtHTML(i)}${rbResumo(i)}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm primary" data-a="trtNew" data-id="${esc(i.id)}">+ Tratamento</button><button class="btn sm" data-a="csub" data-k="reab">Reabilitação</button>${i.status==="ativa"?`<button class="btn sm" data-a="injSt" data-id="${esc(i.id)}" data-s="condicionado">Passar a condicionado</button>`:""}<button class="btn sm gold" data-a="injSt" data-id="${esc(i.id)}" data-s="alta">Dar alta</button><button class="btn sm" data-a="injEdit" data-id="${esc(i.id)}">Editar</button><button class="btn sm ghost" data-a="page" data-p="atleta" data-id="${esc(i.pid)}">Ficha do atleta</button></div>
       </div></section>`; };
   return `
-  <div class="bar"><h2>Clínico</h2><button class="btn primary" data-a="injNew">+ Registar lesão</button></div>
+  <div class="bar"><h2>Clínico</h2><button class="btn primary" data-a="injNew">+ Registar lesão</button></div>${sub}
   <div class="kpis" style="margin-bottom:14px">
     <div class="kpi"><span>Em tratamento</span><b>${act.filter(i=>i.status==="ativa").length}</b></div>
     <div class="kpi"><span>Condicionados</span><b>${act.filter(i=>i.status==="condicionado").length}</b></div>
@@ -3198,7 +3228,7 @@ function injForm(pid,injId){
       const old=i.plan||[]; const plan=fv("plan").split("\n").map(s=>s.trim()).filter(Boolean).map(t=>({t,done:!!(old.find(o=>o.t===t)||{}).done}));
       put("injuries",injId||uid("in_"),{trt:clone((injId&&D.injuries[injId]&&D.injuries[injId].trt)||[]),pid:p,date,ctx:fv("ctx"),type:fv("type"),zone:fv("zone"),side:fv("side"),sev:fv("sev"),diag:fv("diag"),exp:fv("exp"),status,ret:status==="alta"?ret:"",plan,notes:fv("notes")});
       closeModal(); toast("Lesão guardada"); },
-    del:()=>askConfirm("Eliminar este registo de lesão?","Eliminar",true).then(ok=>{ if(ok){ del("injuries",injId); closeModal(); } })
+    del:()=>askConfirm("Eliminar este registo de lesão?","Eliminar",true).then(ok=>{ if(ok){ del("injuries",injId); if((D.rehab||{})[injId]) del("rehab",injId); closeModal(); } })
   }});
 }
 
@@ -3419,9 +3449,9 @@ function oppRepForm(oid,rid){
 let PRINT_PREF={scale:100};
 try{ const p=JSON.parse(localStorage.getItem(LS+":print")||"null"); if(p&&p.scale) PRINT_PREF=p; }catch(e){}
 function printAsk(kind,id){
-  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id),prejogo:()=>preJogoPrint()}[kind];
+  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id),prejogo:()=>preJogoPrint(),rehab:id=>rbPrint(id)}[kind];
   if(!run) return;
-  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal",bp:"Bolas paradas",prejogo:"Relatório pré-jogo"};
+  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal",bp:"Bolas paradas",prejogo:"Relatório pré-jogo",rehab:"Plano de reabilitação"};
   modal({title:titles[kind],sub:"Documento para imprimir ou guardar em PDF",
     body: kind==="plan" ? `<p class="small muted" style="margin:0">Plano em A4 ao alto: cabeçalho da sessão e cada exercício com o desenho em grande. O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>` : `<div class="qlbl"><span>Tamanho da folha</span></div>
       <div class="seg" style="margin-bottom:14px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>
@@ -3982,13 +4012,13 @@ function meForm(){
 const meBanner = () => EDITION==="clubes" || meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
 
 /* ---- últimas alterações (todas as coleções, pelo carimbo) ---- */
-const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
+const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",rehab:"Reabilitação",rehabex:"Exercício de reabilitação",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
 function whoItems(){
   const out=[];
   Object.keys(WHO_COL).forEach(c=>Object.entries(D[c]||{}).forEach(([id,x])=>{ if(!x||!x._at) return;
     let what, pg=null;
     if(c==="events"){ what=x.type==="jogo"?`Jogo ${x.venue==="F"?"@ ":"vs "}${x.opp||""}`:`Treino${x.theme?" — "+x.theme:""}`; what+=x.date?` (${fmtD(x.date,{day:"2-digit",month:"2-digit"})})`:""; pg=x.type==="jogo"?"jogo":"treino"; }
-    else { const nm=x.name||x.label||(c==="injuries"||c==="evals"?pname(x.pid):"")||(x.date?fmtD(x.date):""); what=`${WHO_COL[c]}${nm?": "+nm:""}`;
+    else { const nm=x.name||x.label||(c==="injuries"||c==="evals"||c==="rehab"?pname(x.pid):"")||(x.date?fmtD(x.date):""); what=`${WHO_COL[c]}${nm?": "+nm:""}`;
       pg={players:"atleta",opponents:"adversario",scout:"alvo"}[c]||null; if(c==="injuries"||c==="evals"){ if(D.players[x.pid]){ pg="atleta"; id=x.pid; } } }
     out.push({at:x._at,by:x._by||"",what,pg,id});
   }));
@@ -5054,6 +5084,221 @@ Object.assign(Cg,{
   tacForm: el => { const id=el.dataset.id, t=clone(D.tactics[id]); if(!t||!TAC_FORMS[el.value]) return; t.sl=tacRemap(t,el.value); t.form=el.value; put("tactics",id,t); }
 });
 
+/* ================= CLÍNICO → REABILITAÇÃO =================
+   Biblioteca de exercícios de reabilitação (coleção rehabex) e plano por lesão (coleção rehab, id = id da lesão):
+   rehabex/<id> = {name, reg, fase(1-4), tipo, s, r, t, desc, vid}
+   rehab/<injId> = {pid, fase, items:[{id,x,s,r,t,n}], log:[{id,d,by,dor,ok:[itemId],n}]}
+   Fisioterapeuta e preparador físico prescrevem os exercícios, registam cada sessão (dor 0-10) e enviam o plano ao atleta. */
+const RB_FASES = {1:"Proteção e controlo da dor",2:"Mobilidade e ativação",3:"Força e controlo",4:"Retorno ao campo"};
+const RB_REG = ["Coxa posterior","Coxa anterior","Adutores / virilha","Gémeos / Aquiles","Tornozelo","Joelho","Anca / glúteo","Core / lombar","Ombro","Geral"];
+const RB_TIPO = ["Isometria","Mobilidade","Ativação","Força","Excêntrico","Propriocepção","Pliometria","Corrida","Cardio sem impacto"];
+// exercícios base (ids fixos: juntar outra vez não duplica)
+const RB_BASE = [
+  ["rb01","Isometria de isquiotibiais (calcanhar contra o chão)","Coxa posterior",1,"Isometria",5,"","30 s","Deitado, joelho fletido a 30-90°. Empurra o calcanhar contra o chão sem dor. Sobe o ângulo à medida que tolera."],
+  ["rb02","Ponte de glúteos","Anca / glúteo",1,"Ativação",3,"12","","Deitado, pés no chão. Sobe a anca até alinhar ombros, anca e joelhos; 2 s em cima."],
+  ["rb03","Ponte de isquiotibiais com pés no banco","Coxa posterior",2,"Força",3,"10","","Calcanhares no banco, joelhos quase estendidos. Sobe a anca devagar. Progride para uma perna."],
+  ["rb04","Deslizamento de isquiotibiais (slider)","Coxa posterior",3,"Excêntrico",3,"8","","Em ponte, deixa os calcanhares deslizar até estender as pernas em 3-4 s; volta com as duas."],
+  ["rb05","Peso morto romeno unilateral","Coxa posterior",3,"Força",3,"8","Halter","Joelho ligeiramente fletido, inclina o tronco com as costas direitas até sentir alongar atrás da coxa."],
+  ["rb06","Nordic (excêntrico de isquiotibiais)","Coxa posterior",3,"Excêntrico",3,"5","","De joelhos, pés presos. Desce o tronco o mais devagar possível; usa as mãos para amortecer."],
+  ["rb07","Contração isométrica do quadricípite","Coxa anterior",1,"Isometria",3,"10","5 s","Perna estendida, empurra a parte de trás do joelho contra o chão (toalha enrolada por baixo)."],
+  ["rb08","Elevação da perna estendida","Joelho",1,"Ativação",3,"12","","Deitado, contrai o quadricípite e sobe a perna estendida até à altura do outro joelho."],
+  ["rb09","Spanish squat (isometria)","Joelho",2,"Isometria",5,"","45 s","Elástico atrás dos joelhos preso à frente. Agacha até 60-90° com a tíbia vertical e mantém."],
+  ["rb10","Step-down excêntrico","Joelho",3,"Excêntrico",3,"10","","Num degrau, desce o calcanhar da outra perna ao chão em 3 s sem o joelho fugir para dentro."],
+  ["rb11","Agachamento búlgaro","Coxa anterior",3,"Força",3,"8","Halteres","Pé de trás no banco. Desce até a coxa da frente ficar paralela ao chão; tronco direito."],
+  ["rb12","Adução isométrica com bola","Adutores / virilha",1,"Isometria",5,"","30 s","Deitado, joelhos fletidos com a bola entre eles. Aperta a 50-70% sem dor."],
+  ["rb13","Copenhagen (prancha lateral de adutores)","Adutores / virilha",3,"Força",3,"6","","Prancha lateral com a perna de cima apoiada no banco (joelho = curto, tornozelo = longo). Sobe e desce controlado."],
+  ["rb14","Elevação de gémeos","Gémeos / Aquiles",2,"Força",3,"15","","Sobe nas pontas dos pés e desce devagar. Progride de duas pernas para uma e depois com carga."],
+  ["rb15","Excêntrico de gémeos no degrau","Gémeos / Aquiles",3,"Excêntrico",3,"15","","Sobe com as duas pernas, desce só com a lesionada em 3 s até abaixo do degrau. Joelho estendido e fletido."],
+  ["rb16","Mobilidade do tornozelo (alfabeto)","Tornozelo",1,"Mobilidade",2,"","1 alfabeto","Sentado, desenha as letras do alfabeto com o pé, só com o tornozelo."],
+  ["rb17","Equilíbrio unipodal","Tornozelo",2,"Propriocepção",3,"","30 s","Numa perna, joelho ligeiramente fletido. Progride: olhos fechados, superfície instável, passes com bola."],
+  ["rb18","Alcances em estrela (Y-balance)","Joelho",3,"Propriocepção",3,"5 por direção","","Apoio numa perna, alcança o mais longe possível à frente, atrás-dentro e atrás-fora sem perder o equilíbrio."],
+  ["rb19","Saltos unipodais com estabilização","Tornozelo",4,"Pliometria",3,"6","","Salta numa perna e aterra a estabilizar 2 s (joelho sobre o pé). Progride: para os lados, em diagonal."],
+  ["rb20","Monster walk com elástico","Anca / glúteo",2,"Ativação",3,"10 m","Elástico","Elástico acima dos joelhos ou nos tornozelos. Passos largos para o lado e em diagonal, tronco estável."],
+  ["rb21","Prancha frontal","Core / lombar",1,"Isometria",3,"","30 s","Antebraços e pontas dos pés, corpo alinhado. Não deixes a anca cair."],
+  ["rb22","Prancha lateral","Core / lombar",2,"Isometria",3,"","30 s por lado","Apoio no antebraço, anca alta e corpo alinhado."],
+  ["rb23","Dead bug","Core / lombar",2,"Ativação",3,"10","","Deitado, braços e pernas no ar. Estende braço e perna opostos sem a lombar sair do chão."],
+  ["rb24","Rotação externa do ombro com elástico","Ombro",2,"Força",3,"12","Elástico","Cotovelo junto ao corpo a 90°. Roda o antebraço para fora devagar."],
+  ["rb25","Bicicleta estática","Geral",1,"Cardio sem impacto",1,"","15-20 min","Ritmo moderado, sem dor. Mantém a condição enquanto não pode correr."],
+  ["rb26","Corrida progressiva em linha reta","Geral",4,"Corrida",6,"","60 m","Acelerações a 50%, 70% e 90%. Só avança se no dia seguinte não houver dor."],
+  ["rb27","Mudanças de direção progressivas","Geral",4,"Corrida",4,"","6 por lado","Corridas com mudança a 45° e depois 90°, primeiro planeadas e depois reativas ao sinal."]
+];
+const rbEx = () => Object.entries(D.rehabex||{}).map(([id,x])=>({id,...x})).sort((a,b)=>(a.fase||9)-(b.fase||9)||String(a.name).localeCompare(String(b.name)));
+const rbPlan = injId => (D.rehab||{})[injId] || null;
+const rbDose = it => { const s=parseNum(it.s), r=String(it.r??"").trim(), t=String(it.t??"").trim();
+  return [s&&(r||t)?`${s}×${r||t}`:s?`${s} séries`:r||"", r&&t?t:(!s&&t?t:"")].filter(Boolean).join(" · "); };
+const rbFaseTag = f => f?`<span class="tag rbf rbf${f}" title="Fase ${f}: ${esc(RB_FASES[f])}">F${f}</span>`:"";
+const rbAtivas = () => injuries().filter(i=>i.status!=="alta" && P(i.pid));
+
+function rbSpark(log){ // dor das últimas sessões (0-10, mais baixo = melhor)
+  const v=log.filter(l=>parseNum(l.dor)!=null).slice(-10).map(l=>parseNum(l.dor)); if(v.length<2) return "";
+  const w=120,h=30, x=i=>4+i*(w-8)/(v.length-1), y=d=>4+(d/10)*(h-8);
+  return `<svg class="rbsp" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Dor nas últimas ${v.length} sessões: ${v.join(", ")}"><polyline points="${v.map((d,i)=>x(i)+","+y(d)).join(" ")}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>${v.map((d,i)=>`<circle cx="${x(i)}" cy="${y(d)}" r="2.6"/>`).join("")}</svg>`;
+}
+// linha curta usada no separador Lesões
+function rbResumo(i){
+  const pl=rbPlan(i.id); if(!pl) return "";
+  const last=(pl.log||[]).slice(-1)[0];
+  return `<div class="rbres small"><b>Reabilitação</b> — ${pl.fase?`fase ${pl.fase}`:"sem fase"} · ${plural((pl.items||[]).length,"exercício","exercícios")}${last?` · última sessão ${fmtD(last.d,{day:"numeric",month:"short"})}${parseNum(last.dor)!=null?` (dor ${last.dor})`:""}`:""}</div>`;
+}
+
+function rbCard(i){
+  const p=P(i.pid), pl=rbPlan(i.id)||{}, items=pl.items||[], log=(pl.log||[]).slice().sort((a,b)=>String(a.d).localeCompare(String(b.d)));
+  const days=validISO(i.date)?Math.max(0,dayDiff(i.date,todayISO())):0, last=log[log.length-1], wk=addDays(todayISO(),-6);
+  const nWk=log.filter(l=>l.d>=wk).length;
+  return `<section class="card rbcard" id="rb_${esc(i.id)}"><div class="card-h" style="gap:12px">${avatar(p)}<div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small muted">${esc(i.zone||"—")}${i.side&&i.side!=="—"?" "+esc(i.side.toLowerCase()):""} — ${esc(i.type||"")} — ${plural(days,"dia","dias")}${validISO(i.exp)?` — regresso previsto ${fmtD(i.exp)}`:""}</div></div><span class="tag ${INJ_ST[i.status].c}">${INJ_ST[i.status].l}</span></div>
+    <div class="card-b">
+      <div class="rbfases" role="group" aria-label="Fase da reabilitação">${[1,2,3,4].map(f=>`<button class="rbfb ${pl.fase===f?"on":""} rbf${f}" data-a="rbFase" data-id="${esc(i.id)}" data-f="${f}" aria-pressed="${pl.fase===f}"><b>F${f}</b><span>${esc(RB_FASES[f])}</span></button>`).join("")}</div>
+      ${items.length?`<ol class="rbitems">${items.map(it=>{ const x=(D.rehabex||{})[it.x]; const nm=x?x.name:(it.name||"(exercício apagado)");
+        return `<li><button class="rbit" data-a="rbItem" data-id="${esc(i.id)}" data-k="${esc(it.id)}"><span class="main"><b>${esc(nm)}</b>${it.n?`<small>${esc(it.n)}</small>`:x&&x.reg?`<small>${esc(x.reg)}</small>`:""}</span><span class="rbdose">${esc(rbDose(it)||"—")}</span></button></li>`; }).join("")}</ol>`
+        :`<div class="small muted" style="margin:6px 0">Ainda sem exercícios prescritos.</div>`}
+      <div class="rblast">${last?`<div><span class="small muted">Última sessão</span><b>${fmtD(last.d,{weekday:"short",day:"numeric",month:"short"})}${last.by?` · ${esc(last.by)}`:""}</b>${parseNum(last.dor)!=null?`<span class="tag ${last.dor>=6?"bad":last.dor>=3?"warn":"ok"}">Dor ${esc(last.dor)}/10</span>`:""}${last.n?`<small>${esc(last.n)}</small>`:""}</div>`:`<div><span class="small muted">Sessões</span><b>Nenhuma registada</b></div>`}
+        <div class="rbsum"><span class="small muted">${plural(log.length,"sessão","sessões")} · ${nWk} esta semana</span>${rbSpark(log)}</div></div>
+      <div class="rbacts"><button class="btn sm primary" data-a="rbSes" data-id="${esc(i.id)}">Registar sessão</button><button class="btn sm" data-a="rbAdd" data-id="${esc(i.id)}">+ Exercício</button>${log.length?`<button class="btn sm" data-a="rbLog" data-id="${esc(i.id)}">Sessões</button>`:""}${items.length?`<button class="btn sm" data-a="rbWa" data-id="${esc(i.id)}">Enviar ao atleta</button><button class="btn sm gold" data-a="rbPdf" data-id="${esc(i.id)}">PDF</button>`:""}</div>
+    </div></section>`;
+}
+
+function vReab(sub){
+  const act=rbAtivas(), lib=rbEx(), wk=addDays(todayISO(),-6);
+  const ses=act.reduce((s,i)=>s+((rbPlan(i.id)||{}).log||[]).filter(l=>l.d>=wk).length,0);
+  const fq=S.rbFase||0, rq=S.rbReg||"", list=lib.filter(x=>(!fq||x.fase===fq)&&(!rq||x.reg===rq));
+  const regs=RB_REG.filter(r=>lib.some(x=>x.reg===r));
+  return `<div class="bar"><h2>Clínico</h2><button class="btn primary" data-a="rbNew">+ Exercício na biblioteca</button></div>${sub}
+  <div class="kpis" style="margin-bottom:14px">
+    <div class="kpi"><span>Em reabilitação</span><b>${act.length}</b></div>
+    <div class="kpi"><span>Sessões esta semana</span><b>${ses}</b></div>
+    <div class="kpi"><span>Exercícios na biblioteca</span><b>${lib.length}</b></div>
+  </div>
+  ${act.length?`<div class="grid2">${act.map(rbCard).join("")}</div>`:`<div class="empty"><b>Ninguém em reabilitação</b>Quando houver uma lesão ativa ou um atleta condicionado, o plano dele aparece aqui.</div>`}
+  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Biblioteca de exercícios</h3><span class="sub">${lib.length} exercícios</span></div>
+    ${lib.length?`<div class="rbfilt"><input class="inp" id="rbSearch" placeholder="Procurar exercício…" autocomplete="off">
+      <div class="chips"><button class="chip ${!fq?"on":""}" data-a="rbFq" data-k="0">Todas as fases</button>${[1,2,3,4].map(f=>`<button class="chip ${fq===f?"on":""}" data-a="rbFq" data-k="${f}">F${f} ${esc(RB_FASES[f])}</button>`).join("")}</div>
+      ${regs.length>1?`<label class="fld" style="flex-direction:row;align-items:center;gap:8px;margin:0">Zona ${sel("",regs,rq,'data-c="rbReg" class="inp" style="width:auto"',"Todas")}</label>`:""}</div>
+    <div class="list" id="rbList">${list.length?list.map(x=>`<button class="li" data-a="rbEdit" data-id="${esc(x.id)}" data-name="${esc([x.name,x.reg,x.tipo,x.desc].join(" ").toLowerCase())}"><span class="main"><b>${esc(x.name)}</b><small>${[x.reg,x.tipo,rbDose(x)].filter(Boolean).map(esc).join(" — ")}</small></span>${rbFaseTag(x.fase)}</button>`).join(""):`<div class="empty"><b>Nenhum exercício com estes filtros</b></div>`}</div>
+    <p class="empty" id="rbNone" style="display:none"><b>Nenhum resultado</b></p>
+    ${(n=>n?`<div class="card-b"><button class="btn sm ghost" data-a="rbBase">Repor exercícios base (${n} em falta)</button></div>`:"")(RB_BASE.filter(b=>!D.rehabex[b[0]]).length)}`
+    :`<div class="empty"><b>Biblioteca vazia</b>Começa com ${RB_BASE.length} exercícios base (isquiotibiais, joelho, adutores, tornozelo, core, retorno ao campo) e edita-os à vontade.<div style="margin-top:12px"><button class="btn primary" data-a="rbBase">Juntar ${RB_BASE.length} exercícios base</button></div></div>`}
+  </section>`;
+}
+
+/* ---- formulários ---- */
+function rbExForm(id){
+  const x=id?clone(D.rehabex[id]):{name:"",reg:"",fase:2,tipo:"",s:3,r:"",t:"",desc:"",vid:""}; if(id&&!D.rehabex[id]) return;
+  const body=`<div class="form"><label class="fld full">Nome<input name="name" value="${esc(x.name)}" placeholder="Ex.: Ponte de isquiotibiais"></label>
+    <label class="fld">Zona${sel("reg",RB_REG,x.reg,"","—")}</label><label class="fld">Fase${sel("fase",[1,2,3,4].map(f=>({v:f,l:`F${f} — ${RB_FASES[f]}`})),x.fase,"","—")}</label>
+    <label class="fld">Tipo${sel("tipo",RB_TIPO,x.tipo,"","—")}</label><label class="fld">Séries<input name="s" inputmode="numeric" value="${esc(x.s??"")}"></label>
+    <label class="fld">Repetições<input name="r" value="${esc(x.r||"")}" placeholder="Ex.: 12 ou 8 cada perna"></label><label class="fld">Tempo / carga<input name="t" value="${esc(x.t||"")}" placeholder="Ex.: 30 s, 5 kg, elástico"></label>
+    <label class="fld full">Como se faz<textarea name="desc" placeholder="Posição, execução, progressão e o que evitar">${esc(x.desc||"")}</textarea></label>
+    <label class="fld full">Vídeo (link do YouTube, Drive…)<input name="vid" type="url" value="${esc(x.vid||"")}" placeholder="https://"></label>
+    ${x.vid?`<p class="small" style="margin:0"><a href="${esc(x.vid)}" target="_blank" rel="noopener">Abrir vídeo</a></p>`:""}</div>`;
+  const used=id?Object.values(D.rehab||{}).some(pl=>(pl.items||[]).some(it=>it.x===id)):false;
+  modal({title:id?"Exercício de reabilitação":"Novo exercício de reabilitação",body,foot:footSave("Guardar",id?"Eliminar":null),ctx:{
+    save:()=>{ const name=fv("name"); if(!name){ toast("Dá um nome ao exercício."); return; }
+      const vid=fv("vid"); if(vid&&!/^https?:\/\//i.test(vid)){ toast("O vídeo tem de ser um link (https://…)."); return; }
+      const o={...(id?clone(D.rehabex[id]):{}),name,reg:fv("reg"),fase:parseNum(fv("fase"))||null,tipo:fv("tipo"),s:parseNum(fv("s")),r:fv("r"),t:fv("t"),desc:fv("desc"),vid};
+      put("rehabex",id||uid("rx_"),o); closeModal(); toast("Exercício guardado"); },
+    del:()=>askConfirm(used?"Este exercício está no plano de algum atleta. Eliminar mesmo? Nos planos fica o nome.":"Eliminar este exercício da biblioteca?","Eliminar",true).then(ok=>{ if(!ok) return;
+      Object.entries(D.rehab||{}).forEach(([pid,pl])=>{ if((pl.items||[]).some(it=>it.x===id)){ const c=clone(pl); c.items=c.items.map(it=>it.x===id?{...it,name:D.rehabex[id].name}:it); put("rehab",pid,c); } });
+      del("rehabex",id); closeModal(); toast("Exercício eliminado"); })
+  }});
+}
+function rbPlanOf(injId){ const i=D.injuries[injId]; if(!i) return null; const cur=rbPlan(injId); return cur?clone(cur):{pid:i.pid,fase:null,items:[],log:[]}; }
+function rbPick(injId){
+  const i=D.injuries[injId]; if(!i) return; const pl=rbPlan(injId)||{}, have=new Set((pl.items||[]).map(it=>it.x)), lib=rbEx();
+  if(!lib.length){ toast("A biblioteca está vazia: junta os exercícios base primeiro."); return; }
+  const f=pl.fase||0;
+  const body=`<input class="inp" id="rbPickQ" placeholder="Procurar…" autocomplete="off" style="margin-bottom:10px">
+    <div class="chips" style="margin-bottom:8px"><button class="chip ${!f?"on":""}" data-a="rbPickF" data-k="0">Todas</button>${[1,2,3,4].map(k=>`<button class="chip ${f===k?"on":""}" data-a="rbPickF" data-k="${k}">F${k}</button>`).join("")}</div>
+    <div class="list" id="rbPickL">${lib.map(x=>`<label class="chk rbpick" data-f="${x.fase||0}" data-name="${esc([x.name,x.reg,x.tipo].join(" ").toLowerCase())}" ${f&&x.fase!==f?'style="display:none"':""}><input type="checkbox" value="${esc(x.id)}" ${have.has(x.id)?"checked disabled":""}><span><b>${esc(x.name)}</b><small class="muted"> — ${[x.reg,rbDose(x)].filter(Boolean).map(esc).join(" · ")}</small></span></label>`).join("")}</div>`;
+  modal({title:"Juntar exercícios ao plano",sub:esc(pname(i.pid)),body,foot:footSave("Juntar"),ctx:{pick:true,
+    save:()=>{ const ids=$$("#rbPickL input:checked:not(:disabled)").map(e=>e.value); if(!ids.length){ toast("Escolhe pelo menos um exercício."); return; }
+      const c=rbPlanOf(injId); if(!c){ closeModal(); return; }
+      ids.forEach(x=>{ const e=D.rehabex[x]; if(e) c.items.push({id:uid("ri"),x,s:e.s??null,r:e.r||"",t:e.t||"",n:""}); });
+      if(!c.fase){ const fs=ids.map(x=>(D.rehabex[x]||{}).fase).filter(Boolean); if(fs.length) c.fase=Math.min(...fs); }
+      put("rehab",injId,c); closeModal(); toast(ids.length===1?"Exercício juntado ao plano":`${ids.length} exercícios juntados ao plano`); }}});
+}
+function rbItemForm(injId,k){
+  const pl=rbPlan(injId); const it=pl&&(pl.items||[]).find(x=>x.id===k); if(!it) return;
+  const x=(D.rehabex||{})[it.x], idx=pl.items.indexOf(it);
+  const body=`<div class="form"><label class="fld">Séries<input name="s" inputmode="numeric" value="${esc(it.s??"")}"></label><label class="fld">Repetições<input name="r" value="${esc(it.r||"")}"></label>
+    <label class="fld">Tempo / carga<input name="t" value="${esc(it.t||"")}"></label><label class="fld">Ordem${sel("ord",pl.items.map((_,j)=>({v:j,l:String(j+1)})),idx)}</label>
+    <label class="fld full">Indicações para este atleta<input name="n" value="${esc(it.n||"")}" placeholder="Ex.: só até aos 60°, sem dor"></label>
+    ${x&&x.desc?`<p class="small muted full" style="margin:0">${esc(x.desc)}</p>`:""}${x&&x.vid?`<p class="small full" style="margin:0"><a href="${esc(x.vid)}" target="_blank" rel="noopener">Ver vídeo</a></p>`:""}</div>`;
+  modal({title:esc(x?x.name:it.name||"Exercício"),sub:esc(pname(pl.pid)),body,foot:footSave("Guardar","Tirar do plano"),ctx:{
+    save:()=>{ const c=clone(rbPlan(injId)); const j=c.items.findIndex(y=>y.id===k); if(j<0){ closeModal(); return; }
+      const o={...c.items[j],s:parseNum(fv("s")),r:fv("r"),t:fv("t"),n:fv("n")}; c.items.splice(j,1); const to=Math.max(0,Math.min(c.items.length,parseNum(fv("ord"))??j)); c.items.splice(to,0,o);
+      put("rehab",injId,c); closeModal(); toast("Plano atualizado"); },
+    del:()=>{ const c=clone(rbPlan(injId)); c.items=c.items.filter(y=>y.id!==k); put("rehab",injId,c); closeModal(); toast("Exercício tirado do plano"); }}});
+}
+function rbSesForm(injId,sid){
+  const i=D.injuries[injId]; if(!i) return; const pl=rbPlan(injId)||{items:[],log:[]};
+  const l=sid?(pl.log||[]).find(x=>x.id===sid):{d:todayISO(),by:rbQuem(),dor:"",ok:(pl.items||[]).map(it=>it.id),n:""}; if(!l) return;
+  const nm=it=>{ const x=(D.rehabex||{})[it.x]; return x?x.name:it.name||"Exercício"; };
+  const quem=[...new Set([...staff().filter(s=>/fisio|prepar|f[ií]sic|m[eé]dic|reab/i.test(s.role||"")).map(s=>s.name),l.by].filter(Boolean))];
+  const body=`<div class="form"><label class="fld">Data<input type="date" name="d" value="${esc(l.d)}"></label>
+    <label class="fld">Quem acompanhou<input name="by" list="rbQuemL" value="${esc(l.by||"")}" placeholder="Ex.: Fisioterapeuta"><datalist id="rbQuemL">${quem.map(q=>`<option value="${esc(q)}">`).join("")}</datalist></label>
+    <div class="fld full"><span>Dor durante a sessão (0 = nenhuma, 10 = máxima)</span><div class="rbdor" role="radiogroup" aria-label="Dor">${[0,1,2,3,4,5,6,7,8,9,10].map(v=>`<label><input type="radio" name="dor" value="${v}" ${String(l.dor)===String(v)?"checked":""}><span>${v}</span></label>`).join("")}</div></div>
+    ${(pl.items||[]).length?`<div class="fld full"><span>Exercícios feitos</span>${pl.items.map(it=>`<label class="chk"><input type="checkbox" name="ok" value="${esc(it.id)}" ${(l.ok||[]).includes(it.id)?"checked":""}><span>${esc(nm(it))} <small class="muted">${esc(rbDose(it))}</small></span></label>`).join("")}</div>`:""}
+    <label class="fld full">Notas / evolução<textarea name="n" placeholder="Ex.: Já faz o Nordic completo sem dor; amanhã corrida a 70%">${esc(l.n||"")}</textarea></label></div>`;
+  modal({title:sid?"Editar sessão":"Registar sessão de reabilitação",sub:esc(pname(i.pid)+" — "+(i.zone||i.type||"")),body,foot:footSave("Guardar",sid?"Eliminar":null),ctx:{
+    save:()=>{ const d=fv("d"); if(!validISO(d)){ toast("Indica a data."); return; } if(d>todayISO()){ toast("A data não pode ser no futuro."); return; }
+      const r=$('#dlg [name="dor"]:checked'), ok=$$('#dlg [name="ok"]:checked').map(e=>e.value);
+      const c=rbPlanOf(injId); if(!c){ closeModal(); return; } c.log=c.log||[];
+      const o={id:sid||uid("rs"),d,by:fv("by"),dor:r?+r.value:null,ok,n:fv("n")};
+      const j=c.log.findIndex(x=>x.id===o.id); if(j>=0) c.log[j]=o; else c.log.push(o);
+      c.log.sort((a,b)=>String(a.d).localeCompare(String(b.d)));
+      put("rehab",injId,c); closeModal(); toast("Sessão registada"); },
+    del:()=>askConfirm("Eliminar esta sessão?","Eliminar",true).then(ok=>{ if(!ok) return; const c=clone(rbPlan(injId)); c.log=(c.log||[]).filter(x=>x.id!==sid); put("rehab",injId,c); closeModal(); })
+  }});
+}
+const rbQuem = () => { const me=typeof meGet==="function"?meGet():{}; return me&&me.nome?me.nome:""; };
+function rbLogForm(injId){
+  const i=D.injuries[injId], pl=rbPlan(injId); if(!i||!pl) return;
+  const log=(pl.log||[]).slice().sort((a,b)=>String(b.d).localeCompare(String(a.d))), n=(pl.items||[]).length;
+  modal({title:"Sessões de reabilitação",sub:esc(pname(i.pid)),body:`<div class="list">${log.map(l=>`<button class="li" data-a="rbSesEdit" data-id="${esc(injId)}" data-k="${esc(l.id)}"><span class="main"><b>${fmtD(l.d,{weekday:"short",day:"numeric",month:"short"})}${l.by?" — "+esc(l.by):""}</b><small>${n?`${(l.ok||[]).filter(k=>pl.items.some(it=>it.id===k)).length}/${n} exercícios`:""}${l.n?(n?" — ":"")+esc(l.n):""}</small></span>${parseNum(l.dor)!=null?`<span class="tag ${l.dor>=6?"bad":l.dor>=3?"warn":"ok"}">Dor ${esc(l.dor)}</span>`:""}</button>`).join("")}</div>`,
+    foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="rbSes" data-id="${esc(injId)}">+ Sessão</button></span>`});
+}
+function rbText(injId){
+  const i=D.injuries[injId], pl=rbPlan(injId), p=P(i.pid);
+  return `*Plano de reabilitação — ${p?firstName(p.name):""}*\n${pl.fase?`Fase ${pl.fase}: ${RB_FASES[pl.fase]}\n`:""}\n`+(pl.items||[]).map((it,k)=>{ const x=(D.rehabex||{})[it.x]; const d=rbDose(it);
+    return `${k+1}. ${x?x.name:it.name||"Exercício"}${d?` — ${d}`:""}${it.n?`\n   ${it.n}`:""}${x&&x.vid?`\n   Vídeo: ${x.vid}`:""}`; }).join("\n")+`\n\nSe tiveres dor acima de 3/10, para e avisa o departamento clínico.`;
+}
+function rbPrint(injId){
+  const i=D.injuries[injId], pl=rbPlan(injId); if(!i||!pl) return; const p=P(i.pid)||{name:"—"};
+  const log=(pl.log||[]).slice().sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,12);
+  const rows=(pl.items||[]).map((it,k)=>{ const x=(D.rehabex||{})[it.x]||{};
+    return `<tr><td class="c">${k+1}</td><td><b>${esc(x.name||it.name||"Exercício")}</b>${x.desc?`<div class="note">${esc(x.desc)}</div>`:""}${it.n?`<div class="note"><b>Indicação:</b> ${esc(it.n)}</div>`:""}</td><td class="c">${esc(rbDose(it)||"—")}</td><td class="c">☐ ☐ ☐ ☐ ☐ ☐ ☐</td></tr>`; }).join("");
+  const body=`<div class="kv">${pRow("Atleta",p.name)}${pRow("Lesão",[i.zone,i.side&&i.side!=="—"?i.side.toLowerCase():"",i.type?"— "+i.type:""].filter(Boolean).join(" "))}${pRow("Desde",fmtD(i.date))}${pRow("Regresso previsto",validISO(i.exp)?fmtD(i.exp):"")}${pRow("Fase",pl.fase?`F${pl.fase} — ${RB_FASES[pl.fase]}`:"")}</div>
+    <h2>Exercícios</h2><table><thead><tr><th class="c">#</th><th>Exercício</th><th class="c">Dose</th><th class="c">Feito (7 dias)</th></tr></thead><tbody>${rows||`<tr><td colspan="4">Sem exercícios.</td></tr>`}</tbody></table>
+    <p class="note">Se a dor passar de 3 em 10 durante ou depois de um exercício, para e avisa o departamento clínico.</p>
+    ${log.length?`<h2>Últimas sessões</h2><table><thead><tr><th class="c">Data</th><th>Quem</th><th class="c">Dor</th><th>Notas</th></tr></thead><tbody>${log.map(l=>`<tr><td class="c">${fmtD(l.d,{day:"2-digit",month:"2-digit"})}</td><td>${esc(l.by||"—")}</td><td class="c">${parseNum(l.dor)!=null?esc(l.dor)+"/10":"—"}</td><td>${esc(l.n||"")}</td></tr>`).join("")}</tbody></table>`:""}`;
+  printDoc(`reabilitacao-${String(p.name).toLowerCase().replace(/\s+/g,"-")}`,`Plano de reabilitação — ${p.name}`,body);
+}
+
+Object.assign(A,{
+  csub: el => { S.csub=el.dataset.k||""; render(); },
+  rbNew: () => rbExForm(null),
+  rbEdit: el => rbExForm(el.dataset.id),
+  rbFq: el => { S.rbFase=+el.dataset.k||0; render(); },
+  rbBase: () => { let n=0; RB_BASE.forEach(([id,name,reg,fase,tipo,s,r,t,desc])=>{ if(D.rehabex[id]) return; put("rehabex",id,{name,reg,fase,tipo,s,r,t,desc,vid:""}); n++; }); toast(n===1?"1 exercício juntado à biblioteca":n?`${n} exercícios juntados à biblioteca`:"A biblioteca já tem os exercícios base."); },
+  rbFase: el => { const c=rbPlanOf(el.dataset.id); if(!c) return; const f=+el.dataset.f; c.fase=c.fase===f?null:f; put("rehab",el.dataset.id,c); },
+  rbAdd: el => rbPick(el.dataset.id),
+  rbPickF: el => { const f=+el.dataset.k||0; $$("#dlg [data-a=rbPickF]").forEach(b=>b.classList.toggle("on",b===el)); const q=($("#rbPickQ")||{}).value||""; rbPickFilter(f,q); },
+  rbItem: el => rbItemForm(el.dataset.id,el.dataset.k),
+  rbSes: el => rbSesForm(el.dataset.id,null),
+  rbSesEdit: el => rbSesForm(el.dataset.id,el.dataset.k),
+  rbLog: el => rbLogForm(el.dataset.id),
+  rbPdf: el => { if(!rbPlan(el.dataset.id)) return; printAsk("rehab",el.dataset.id); },
+  rbWa: el => { const i=D.injuries[el.dataset.id]; if(!i||!rbPlan(el.dataset.id)) return; const p=P(i.pid)||{}, tel=telWa(p.tel);
+    const u=`https://wa.me/${tel}?text=${encodeURIComponent(rbText(el.dataset.id))}`; try{ window.open(u,"_blank","noopener"); }catch(e){} if(!tel) toast("Sem telemóvel na ficha do atleta: escolhe o contacto no WhatsApp."); }
+});
+Object.assign(Cg,{ rbReg: el => { S.rbReg=el.value; render(); } });
+function rbPickFilter(f,q){ q=String(q).trim().toLowerCase(); $$("#rbPickL .rbpick").forEach(c=>{ c.style.display=(!f||+c.dataset.f===f)&&(!q||c.dataset.name.includes(q))?"":"none"; }); }
+document.addEventListener("input", e=>{
+  const el=e.target;
+  if(el.id==="rbSearch"){ const q=el.value.trim().toLowerCase(); let n=0; $$("#rbList [data-name]").forEach(c=>{ const ok=!q||c.dataset.name.includes(q); c.style.display=ok?"":"none"; if(ok) n++; }); const none=$("#rbNone"); if(none) none.style.display=n?"none":""; }
+  if(el.id==="rbPickQ"){ const on=$("#dlg [data-a=rbPickF].on"); rbPickFilter(on?+on.dataset.k||0:0,el.value); }
+});
+
 /* ================= só na versão do Estrela: dados e atualizações próprias da equipa (calendário, exercícios, modelo de jogo) ================= */
 // Cada atualização só acrescenta ou preenche campos vazios; ids fixos para não duplicar se duas pessoas abrirem ao mesmo tempo.
 const CAL_2627 = [
@@ -6040,7 +6285,7 @@ async function syncPing(){
 }
 
 /* recuperar registos apagados (o script guarda o último conteúdo dos apagados nos últimos 60 dias) */
-const COL_L = {events:"Treino/jogo",players:"Atleta",exercises:"Exercício",injuries:"Lesão",evals:"Avaliação",tests:"Testes físicos",scout:"Scouting",cycles:"Ciclo",principles:"Princípio",staff:"Staff",opponents:"Adversário",tactics:"Esquema tático",statdefs:"Estatística",meta:"Configuração"};
+const COL_L = {events:"Treino/jogo",players:"Atleta",exercises:"Exercício",injuries:"Lesão",evals:"Avaliação",tests:"Testes físicos",scout:"Scouting",cycles:"Ciclo",principles:"Princípio",staff:"Staff",opponents:"Adversário",tactics:"Esquema tático",rehab:"Reabilitação",rehabex:"Exercício de reabilitação",statdefs:"Estatística",meta:"Configuração"};
 function lixoNome(x){
   const d=x.d||{};
   if(x.c==="events") return (d.type==="jogo"?`Jogo ${d.venue==="F"?"@":"vs"} ${d.opp||""}`:`Treino${d.theme?" — "+d.theme:""}`)+(d.date?" · "+fmtD(d.date,{day:"numeric",month:"short",year:"numeric"}):"");

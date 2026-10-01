@@ -95,6 +95,9 @@ select pg_temp.check((select count(*) from public.docs where col='clinical') = 1
 insert into public.docs (team_id, col, id, data) select v::uuid, 'clinical', 'cl2', '{"diag":"entorse"}' from ctx where k='teamA';
 select pg_temp.check(pg_temp.fails(format($q$select public.patch_doc(%L,'events','tr1','[{"p":["notes"],"v":"x"}]')$q$, (select v from ctx where k='teamA'))) or
                      (select data->>'notes' from public.docs where id='tr1') = 'A secreto', 'fisio não altera treinos');
+insert into public.docs (team_id, col, id, data) select v::uuid, 'rehabex', 'rx1', '{"name":"Nordic"}' from ctx where k='teamA';
+insert into public.docs (team_id, col, id, data) select v::uuid, 'rehab', 'in1', '{"fase":2}' from ctx where k='teamA';
+select pg_temp.check((select count(*) from public.docs where col in ('rehab','rehabex')) = 2, 'fisio grava a reabilitação (plano e biblioteca)');
 
 -- A (admin): vê o histórico, o campo a campo manteve o resto do treino, apagado recuperável, não fica sem admin
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a','a@clube-a.pt');

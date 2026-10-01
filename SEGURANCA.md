@@ -6,7 +6,7 @@ A versão do Estrela (`dist/index.html`) não é afetada por nada disto.
 | Requisito | Onde está | Estado |
 |---|---|---|
 | HTTPS em tudo, domínio próprio | Netlify (certificado automático) + `_headers` (HSTS) | **código feito** · falta comprar o domínio e ligá-lo (passo 1) |
-| RLS em todas as tabelas + testes que tentam ler outro clube | `supabase/migrations`, `supabase/tests/rls_test.sql` (56 verificações), `supabase/verificar_rls.sql` | **feito** · corre em cada envio para o GitHub e todos os dias contra a produção |
+| RLS em todas as tabelas + testes que tentam ler outro clube | `supabase/migrations`, `supabase/tests/rls_test.sql` (57 verificações), `supabase/verificar_rls.sql` | **feito** · corre em cada envio para o GitHub e todos os dias contra a produção |
 | Só a chave pública na app | `config/ambientes.json` (só valores públicos) + `tools/seguranca/verificar_chaves.py` | **feito** · a verificação falha se aparecer uma chave secreta |
 | Cópias diárias + restauro testado todos os meses | `.github/workflows/copia-diaria.yml`, `restauro-mensal.yml`, `tools/copias/` | **feito** · faltam os Secrets no GitHub (passo 4) |
 | Ambiente de testes separado, com dados fictícios | `config/ambientes.json` → `testes`, `python3 build.py clubes-testes` | **feito** · falta criar o 2.º projeto Supabase (passo 3) |
