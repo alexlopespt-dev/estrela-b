@@ -52,6 +52,10 @@ with sync_playwright() as pw:
     # ficha do atleta
     pg.click('nav [data-t="plantel"]'); pg.click('[data-p="atleta"][data-id="p1"]'); pg.wait_for_timeout(300); chk(pg,"atleta")
     print("ficha Abbiati:", pg.inner_text('.card:has-text("Monitorização")')[:160].replace("\n"," | "))
+    c7=pg.inner_text('.kpi:has-text("Carga 7 dias") b'); print("carga 7 dias na ficha:", c7)
+    if "2520" not in c7: errs.append("carga 7 dias da ficha não usa a monitorização: "+c7)
+    pg.click('nav [data-t="stats"]'); pg.wait_for_timeout(200); chk(pg,"estatísticas")
+    if "2520" not in pg.inner_text("#main"): errs.append("carga 7d das estatísticas sem a monitorização")
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t16_atleta.png"), full_page=True)
     # convocatória com prontidão
     pg.click('nav [data-t="jogos"]'); pg.click('[data-p="jogo"][data-id="jg_2627_j2"]'); pg.wait_for_timeout(300); chk(pg,"jogo")

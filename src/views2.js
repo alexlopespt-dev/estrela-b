@@ -165,7 +165,7 @@ function pAtleta(id){
       <div class="kpi"><span>Golos — assist.</span><b>${s.g} — ${s.a}</b></div>
       <div class="kpi"><span>Nota média</span><b>${s.avg==null?"–":fmt1(s.avg)}<small> ${s.rs.length} jogos</small></b></div>
       <div class="kpi"><span>Assiduidade</span><b>${s.att==null?"–":s.att+"%"}<small> ${s.trTotal} treinos</small></b></div>
-      <div class="kpi"><span>Carga 7 dias</span><b>${Math.round(s.load7)}<small> UA</small></b></div>
+      ${(c7=>`<div class="kpi" title="${c7.src==="mon"?"Da monitorização (Sheets)":c7.src==="app"?"Das PSE registadas nos treinos da app":"Sem PSE nos últimos 7 dias"}"><span>Carga 7 dias</span><b>${c7.v==null?"–":Math.round(c7.v)}<small> UA</small></b></div>`)(carga7Of(id,s))}
     </div></div>
   </section>
   <div class="grid2" style="margin-top:14px">

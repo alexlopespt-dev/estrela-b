@@ -110,7 +110,7 @@ function vStats(){
   const defs=statDefs(), hl=defs.filter(d=>d.hl), sdCols=(hl.length?hl:defs);
   if(S.stSort.startsWith("cs:") && !D.statdefs[S.stSort.slice(3)]) S.stSort="min";
   const cols=[["n","N.º"],["conv","Conv."],["j","J"],["tit","Tit."],["min","Min"],["g","G"],["a","A"],["y","🟨"],["r","🟥"],["avg","Nota"],...sdCols.map(d=>["cs:"+d.id,d.code||d.title]),["att","Treinos %"],["load7","Carga 7d"]];
-  const val=(x,k)=>k==="n"?(x.p.n||99):k==="avg"?(x.s.avg??-1):k==="att"?(x.s.att??-1):k.startsWith("cs:")?(x.s.cs[k.slice(3)]||0):x.s[k];
+  const val=(x,k)=>k==="n"?(x.p.n||99):k==="avg"?(x.s.avg??-1):k==="att"?(x.s.att??-1):k.startsWith("cs:")?(x.s.cs[k.slice(3)]||0):k==="load7"?(carga7Of(x.p.id,x.s).v??-1):x.s[k];
   rows.sort((a,b)=>{ const d=(val(a,S.stSort)-val(b,S.stSort))*S.stDir; return d || BYPOS(a.p,b.p); });
   const avgTeam=avg(tm.rs);
   const sub=`<div class="seg">${[["por","Por atleta"],["grelha","Grelha da época"]].map(([k,l])=>`<button data-a="ssub" data-k="${k}" class="${(S.ssub||"por")===k?"on":""}">${l}</button>`).join("")}</div>`;
@@ -127,7 +127,7 @@ function vStats(){
   </div>
   <section class="card"><div class="card-h"><h3>Por atleta</h3><span class="sub">Toca num cabeçalho para ordenar</span></div>
   <div class="tscroll"><table class="tb"><thead><tr><th class="l stk">Atleta</th>${cols.map(([k,l])=>`<th><button data-a="stSort" data-k="${k}" class="${S.stSort===k?"on":""}">${l}${S.stSort===k?(S.stDir<0?" ↓":" ↑"):""}</button></th>`).join("")}</tr></thead><tbody>
-  ${rows.map(({p,s})=>`<tr><td class="l stk"><button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button></td><td class="muted">${esc(p.n||"")}</td><td>${s.conv}</td><td>${s.j}</td><td>${s.tit}</td><td class="num"><b>${s.min}</b></td><td>${s.g||"–"}</td><td>${s.a||"–"}</td><td>${s.y||"–"}</td><td>${s.r||"–"}</td><td>${badge(s.avg)}</td>${sdCols.map(d=>`<td class="num">${s.cs[d.id]||"–"}</td>`).join("")}<td class="num">${s.att==null?"–":s.att+"%"}</td><td class="num">${Math.round(s.load7)||"–"}</td></tr>`).join("")}
+  ${rows.map(({p,s})=>`<tr><td class="l stk"><button class="lnk pin" data-a="page" data-p="atleta" data-id="${esc(p.id)}">${avatar(p)}<b>${esc(p.name)}</b></button></td><td class="muted">${esc(p.n||"")}</td><td>${s.conv}</td><td>${s.j}</td><td>${s.tit}</td><td class="num"><b>${s.min}</b></td><td>${s.g||"–"}</td><td>${s.a||"–"}</td><td>${s.y||"–"}</td><td>${s.r||"–"}</td><td>${badge(s.avg)}</td>${sdCols.map(d=>`<td class="num">${s.cs[d.id]||"–"}</td>`).join("")}<td class="num">${s.att==null?"–":s.att+"%"}</td><td class="num">${(v=>v==null?"–":Math.round(v))(carga7Of(p.id,s).v)}</td></tr>`).join("")}
   </tbody></table></div></section>
   <p class="note">Jogos: contam os que já se realizaram (até hoje). Resultados, vitórias e golos contam só com o jogo fechado. Treinos %: presenças e atrasos sobre o total com faltas (lesões e dispensas não contam). Carga: RPE × minutos dos treinos dos últimos 7 dias.</p>`;
 }

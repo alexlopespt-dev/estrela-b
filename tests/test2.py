@@ -50,7 +50,7 @@ with sync_playwright() as pw:
     print("cycles:", pg.eval_on_selector_all(".li b","e=>e.map(x=>x.innerText)"))
     # agenda
     pg.click('nav [data-t="agenda"]'); pg.wait_for_timeout(100); chk(pg,"agenda")
-    pg.click('[data-a="calNav"][data-n="1"]'); pg.click('[data-a="calNav"][data-n="-1"]'); pg.locator('[data-a="calDay"]:not(.out)').nth(22).click();  # dia 23 do mês mostrado (o mês depende da data de hoje) pg.wait_for_timeout(100)
+    pg.click('[data-a="calNav"][data-n="1"]'); pg.click('[data-a="calNav"][data-n="-1"]'); pg.locator('[data-a="calDay"]:not(.out)').nth(22).click(); pg.wait_for_timeout(100)  # dia 23 do mês mostrado (o mês depende da data de hoje)
     print("day panel:", pg.inner_text(".card >> nth=1").split("\n")[:4])
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","s_agenda.png"), full_page=True)
     # plantel & athlete & eval

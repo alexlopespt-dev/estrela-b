@@ -65,6 +65,8 @@ function monMatch(){
   const miss=names.filter(n=>!(n in map));
   return {map,miss};
 }
+// carga dos últimos 7 dias: a da monitorização (PSE do formulário/app do atleta × duração) se houver; senão a das PSE escritas nos treinos da app
+function carga7Of(pid,s){ const j=monOf(pid); if(j&&j.carga7!=null) return {v:j.carga7,src:"mon"}; return s&&s.load7>0?{v:s.load7,src:"app"}:{v:null,src:""}; }
 function monOf(pid){ const d=MON.data; if(!d) return null; const {map}=monMatch(); const n=Object.keys(map).find(k=>map[k]===pid); return n?d.jogadores.find(j=>j.nome===n)||null:null; }
 
 /* cores iguais às do Sheets */

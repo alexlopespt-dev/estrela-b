@@ -14,7 +14,7 @@ with sync_playwright() as pw:
     pg.fill('input[data-c="test"][data-p="p1"][data-k="vel"]',"4,40"); pg.keyboard.press("Tab"); pg.click("h2"); pg.wait_for_timeout(200)
     print("delta:", pg.eval_on_selector('input[data-c="test"][data-p="p1"][data-k="vel"]',"e=>e.parentElement.innerText"))
     pg.fill('input[data-c="test"][data-p="p1"][data-k="salto"]',"230"); pg.keyboard.press("Tab"); pg.click("h2"); pg.wait_for_timeout(150)
-    pg.click('nav [data-t="agenda"]'); pg.click('[data-a="calDay"][data-d="2026-09-23"]'); pg.wait_for_timeout(100)
+    pg.click('nav [data-t="agenda"]'); pg.locator('[data-a="calDay"]:not(.out)').nth(22).click(); pg.wait_for_timeout(100)
     print(pg.inner_text(".card >> nth=1 >> h3"), "|", pg.inner_text(".bar h2"))
     pg.click('nav [data-t="plantel"]'); pg.click('[data-p="atleta"][data-id="p1"]'); pg.wait_for_timeout(150)
     print("atleta testes:", pg.inner_text(".card:has-text('Testes físicos') table").replace("\n"," | ").replace("\t"," "))

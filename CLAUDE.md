@@ -154,6 +154,7 @@ meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, sco
 
 ## Respostas do dia (mon.js, test34)
 - Monitorização → sub-aba "Respostas do dia" (`S.monV="resp"`, `monResp(d)`; dia em `S.monDia`, por omissão o mais recente): bem-estar (hora, sono/fadiga/dor/stress com o texto do formulário, total 4-20, estado como na folha: ≤12 Risco, 13-16 Atenção, 17+ OK — `monHooper`) e PSE (hora, sessão, duração, PSE, carga, sensação), "Sem resposta"/"Sem PSE" dos disponíveis/condicionados, "escreveu …" quando o nome veio escrito de outra forma.
+- **Carga 7 dias** (KPI da ficha do atleta e coluna das Estatísticas): `carga7Of(pid,s)` (mon.js) usa o `carga7` da monitorização (PSE do formulário/app do atleta) e só sem ela as PSE escritas nos treinos da app (`s.load7`) — antes dava 0 porque a equipa regista a PSE no Sheets (test16).
 - Vem do resumo do Sheets: `respostas:{bem:[{d,h,n,nb,i:[s,f,d,st],t:[textos]}],pse:[{d,h,n,nb,tipo,dur,rpe,c,sen}]}` (últimos `DIAS_RESP`=7 dias, `respostasApp_` no monitorizacao_completo.gs). Script antigo sem `respostas` → aviso a pedir para colar a versão nova.
 - No .gs: `quando_()` aceita carimbos em número de série (coluna com formato de número, ex. 46292,44449) e em texto — antes essas linhas eram ignoradas; `chaveNome_` trata a pontuação como espaço ("Luís.A." = "Luís A.").
 
