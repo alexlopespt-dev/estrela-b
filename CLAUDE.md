@@ -11,7 +11,7 @@ Contexto para o Claude Code. Lê isto antes de mexer no projeto.
 
 ## O que é
 Uma página HTML única (sem framework, JS "vanilla" dentro de um IIFE) com 11 separadores:
-Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-abas Convocatória e Bolas paradas; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias —, "Presenças", grelha mensal `vPresencas`, e "Esquema tático", `S.plsub`), Testes físicos, Clínico, Scouting, Adversários, Estatísticas (por atleta e grelha da época).
+Painel, Agenda, Treinos (sessões, planeamento, modelo de jogo, exercícios), Jogos (lista + sub-abas Convocatória e Bolas paradas; ficha: convocatória, onze, eventos, estatísticas de jogo, modo pós-jogo), Plantel (sub-abas "Atletas e equipa" — atletas, staff, configurações, cópias —, "Presenças", grelha mensal `vPresencas`, e "Esquema tático", `S.plsub`), Testes físicos, Clínico (sub-abas Lesões e Reabilitação), Scouting, Adversários, Estatísticas (por atleta e grelha da época).
 
 ## Estrutura
 ```
@@ -32,6 +32,7 @@ src/        código-fonte (concatenado por build.py na ordem abaixo)
   who.js       quem alterou: identificação do dispositivo, carimbo _by/_at em put(), "Última alteração" nas fichas, "Últimas alterações" no Plantel
   bp.js        bolas paradas: quadro tático (campo igual ao modelo da equipa, editor, passos/animação, PNG, PDF); acrescenta ações ao A
   tat.js       Plantel → Esquema tático (campo tipo Football Manager: formação, função/missão e atleta por posição, arrastar posições, PNG)
+  reab.js      Clínico → Reabilitação: biblioteca de exercícios de reabilitação, plano e sessões por lesão, PDF, WhatsApp
   atapp.js     app do atleta — lado da equipa técnica: link pessoal na ficha, lista no Plantel, publicar a convocatória
   atleta/      app do atleta (site próprio: shell.html, atleta.css, atleta.js, sw.js dos avisos) → dist/atleta
   conv.js      Jogos → Convocatória: dados do jogo, convocados com número/nome completo, horário de jogo; documentos SVG A4 (convocatória e cartaz "Horário de jogo") em PDF e imagem
@@ -118,7 +119,7 @@ No Claude Code na web (cloud) o Chromium já vem instalado: usar `pip install "p
 - "Relatório PDF" → `weekPrint(start,end)` (via `printAsk("week","start|end")`): resumo, carga (gráfico), treinos, momentos (circular), jogos, lesões, destaques, presenças (test27).
 
 ## Modelo de dados (coleções em COLS, um documento por registo)
-meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents, setpieces, tactics.
+meta (team, cfg), players, events (treinos e jogos), evals, tests, injuries, scout, exercises, cycles, statdefs, principles, staff, opponents, setpieces, tactics, rehab, rehabex.
 - Treino: `{type:"treino", date, time, dur, place, theme, int (Baixa|Média|Alta|Muito alta), ttype (fp|res|vel|pj|pos|rec — TR_TYPES), clima, mat, objG, objE, plan:[{ex,name,min,pr}], att:{pid:{s,rpe}}, satt:{staffId:{s}}, pev:{pid:{r,t}}, closed, notes}`
 - Jogo: `{type:"jogo", date, time, opp, venue C/F, comp, phase, dur, call:[], xi:[], ev:[{id,t,min,pid|in/out,of}], rt:{pid:nota}, minOv:{pid:min}, st:{pid:{statId:n}}, ga, closed, notes}`
   - Minutos calculados por `gameCalc` a partir de substituições/expulsões; `minOv` é o valor manual do modo pós-jogo.
