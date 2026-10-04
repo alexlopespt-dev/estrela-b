@@ -33,6 +33,15 @@ with sync_playwright() as pw:
     if "67%" not in pg.inner_text(".card-b > p.note"): errs.append("tempo com momento")
     print("fatias:", pg.eval_on_selector_all(".mpie >> nth=-1 >> svg path","e=>e.map(p=>p.getAttribute('fill'))"))
     if len(pg.eval_on_selector_all(".mpie >> nth=-1 >> svg path","e=>e")) !=3: errs.append("fatias")
+    # minutos por exercício em cada momento (toca no momento da legenda)
+    pg.click('.mleg >> nth=-1 >> details.mdx:has(b:text-is("OF")) summary'); pg.wait_for_timeout(150)
+    li=pg.eval_on_selector_all('.mleg >> nth=-1 >> details.mdx[open] .mxl li',"e=>e.map(x=>x.innerText.replace(/\\s+/g,' '))"); print("OF — exercícios:", li)
+    nm=LS()["exercises"]["exi131"]["name"]
+    if len(li)!=1 or nm not in li[0] or "10'" not in li[0] or "1 treino" not in li[0]: errs.append("exercícios do momento "+str(li))
+    pg.click('[data-a="tsub"][data-k="plan"]'); pg.wait_for_timeout(300)   # redesenha: continua aberto
+    if pg.eval_on_selector_all('.mleg >> nth=-1 >> details.mdx[open]',"e=>e.length")!=1: errs.append("lista fecha ao redesenhar")
+    od=pg.eval_on_selector_all('.mleg >> nth=-1 >> details.mdx',"e=>e.length"); print("momentos com lista:", od)
+    if od!=3: errs.append("só os momentos com tempo têm lista")
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t24_momentos.png"))
     # um só momento: círculo completo
     pg.evaluate(f"""(()=>{{ const d=JSON.parse(localStorage.getItem('{LSK}')); d.events['{tid}'].plan=[{{ex:'exi130',name:'Meinhos',min:10}}]; localStorage.setItem('{LSK}',JSON.stringify(d)); }})()""")

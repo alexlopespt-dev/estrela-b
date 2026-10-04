@@ -333,7 +333,7 @@ function vModelo(sub){
   <section class="card"><div class="card-h"><h3>Tempo de treino por momento do jogo</h3>
     <span class="chips"><button class="chip ${!S.mdl?"on":""}" data-a="mdlPer" data-k="">Época</button>${mesos.map(m=>`<button class="chip ${S.mdl===m.id?"on":""}" data-a="mdlPer" data-k="${esc(m.id)}">${esc(m.name)}</button>`).join("")}</span></div>
     <div class="card-b">
-      ${mt.total?`${momentPie(mt)}
+      ${mt.total?`${momentPie(mt,"mod|"+(S.mdl||""))}
       <p class="note">${plural(mt.sessions,"treino")} com plano — ${mt.total}' planeados, dos quais ${mt.linked}' (${pct(mt.linked,mt.total)}%) ligados a princípios. Um bloco pode trabalhar mais do que um momento.</p>`
       :`<div class="small muted">Ainda não há treinos realizados com plano${per?" neste mesociclo":""}. O tempo aparece quando os blocos do plano estiverem ligados a princípios.</div>`}
     </div></section>
@@ -372,7 +372,10 @@ function vPresencas(sub){   // Plantel → Presenças (grelha mensal de treinos 
 
 /* ================= distribuição por momentos ================= */
 // gráfico circular (anel) dos 5 momentos + legenda com sigla, nome, % e minutos (a cor nunca vai sozinha)
-function momentPie(mt){
+// momentos abertos na legenda (sobrevivem ao redesenho da página)
+const MDX_OPEN = new Set();
+document.addEventListener("toggle", e=>{ const d=e.target; if(!d||!d.matches||!d.matches("details.mdx[data-k]")) return; if(d.open) MDX_OPEN.add(d.dataset.k); else MDX_OPEN.delete(d.dataset.k); }, true);
+function momentPie(mt,key=""){
   const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
   if(!base) return `<div class="small muted">Sem tempo ligado a momentos — escolhe o momento nos exercícios ou liga os blocos a princípios.</div>`;
   const R=62, r=43, C=66, pt=(a,rad)=>[C+rad*Math.sin(a),C-rad*Math.cos(a)].map(v=>Math.round(v*100)/100).join(" ");
@@ -388,8 +391,14 @@ function momentPie(mt){
       <text x="${C}" y="${C+2}" text-anchor="middle" style="font:700 22px var(--fc);fill:var(--text)">${esc(top.ab)}</text>
       <text x="${C}" y="${C+16}" text-anchor="middle" style="font:600 9px var(--fb);fill:var(--muted)">mais trabalhado</text></svg>
     <div class="mleg">${MOMENTS.map(m=>{ const v=mt.byM[m.k]||0;
-      return `<div class="${v?"":"zero"}"><i style="background:var(--m-${m.k})"></i><b>${m.ab}</b><span>${esc(m.l)}</span><span class="num">${fmt1(v/base*100)}%</span><span class="mut">${Math.round(v)}'</span></div>`; }).join("")}</div></div>
-    <p class="note" style="margin-top:8px">Um bloco que trabalhe dois momentos divide o tempo pelos dois.</p>`;
+      const row=`<i style="background:var(--m-${m.k})"></i><b>${m.ab}</b><span>${esc(m.l)}</span><span class="num">${fmt1(v/base*100)}%</span><span class="mut">${Math.round(v)}'</span>`;
+      if(!v) return `<div class="mlr zero">${row}<span></span></div>`;
+      const ex=Object.values((mt.byMx||{})[m.k]||{}).sort((a,b)=>b.m-a.m||a.n.localeCompare(b.n)), top=ex.slice(0,8), rest=ex.slice(8), rm=rest.reduce((s,e)=>s+e.m,0);
+      const mm=x=>{ const r=Math.round(x*10)/10; return (r%1?fmt1(r):r)+"'"; };
+      const dk=key+"|"+m.k;
+      return `<details class="mdx" data-k="${esc(dk)}" ${MDX_OPEN.has(dk)?"open":""}><summary class="mlr" title="Ver os exercícios de ${esc(m.l)}">${row}<span class="chev" aria-hidden="true">▾</span></summary>
+        <ol class="mxl">${top.map(e=>`<li><span>${esc(e.n)}</span><small>${plural(e.s,"treino")}</small><b>${mm(e.m)}</b></li>`).join("")}${rest.length?`<li class="more"><span>+ ${plural(rest.length,"outro exercício","outros exercícios")}</span><small></small><b>${mm(rm)}</b></li>`:""}</ol></details>`; }).join("")}</div></div>
+    <p class="note" style="margin-top:8px">Toca num momento para ver os exercícios e os minutos de cada um. Um bloco que trabalhe dois momentos divide o tempo pelos dois.</p>`;
 }
 function momentBars(mt){
   const base = MOMENTS.reduce((s,m)=>s+(mt.byM[m.k]||0),0);
@@ -409,12 +418,13 @@ function vDistrib(){
   const per = sel && sel.period ? sel.period : "";
   const periodMicros = p => cycles("micro").filter(c=>(c.period||"")===p);
   const periodTime = p => { const cs=periodMicros(p); if(!cs.length) return null;
-    const out={byM:{},byP:{},total:0,linked:0,sessions:0};
+    const out={byM:{},byP:{},byMx:{},total:0,linked:0,sessions:0};
     cs.forEach(c=>{ const t=modelTime(c.start,c.end); out.total+=t.total; out.linked+=t.linked; out.sessions+=t.sessions;
-      MOMENTS.forEach(m=>out.byM[m.k]=(out.byM[m.k]||0)+(t.byM[m.k]||0)); });
+      MOMENTS.forEach(m=>{ out.byM[m.k]=(out.byM[m.k]||0)+(t.byM[m.k]||0);
+        Object.entries((t.byMx||{})[m.k]||{}).forEach(([key,e])=>{ const o=((out.byMx[m.k]=out.byMx[m.k]||{})[key]=out.byMx[m.k][key]||{n:e.n,m:0,s:0}); o.m+=e.m; o.s+=e.s; }); }); });
     return out; };
   const season = modelTime(null,null);
-  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentPie(mt):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
+  const col=(title,mt,sub)=>`<div><div class="small muted" style="font-weight:700;margin-bottom:6px">${esc(title)}${sub?` — <span style="font-weight:600">${esc(sub)}</span>`:""}</div>${mt&&mt.total?momentPie(mt,"pl|"+title):`<div class="small muted">Sem treinos com plano.</div>`}</div>`;
   const pt = per?periodTime(per):null;
   return `<section class="card"><div class="card-h"><h3>O que temos trabalhado</h3>
     ${micros.length?`<span class="chips">${micros.slice(0,8).map(c=>`<button class="chip ${selId===c.id?"on":""}" data-a="distSel" data-k="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</span>`:""}</div>

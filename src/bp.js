@@ -375,10 +375,11 @@ async function bpPng(){
   }catch(e){ console.error(e); toast("Não foi possível criar a imagem."); }
 }
 // id: "all", um id, ou vários separados por vírgulas (escolhidos em bpPrintForm); lay "2" = seguidas (dois campos por folha)
-function bpPrint(id,lay){
+function bpPrint(id,lay,o={}){
   const ids = id==="all" ? setpieces().map(b=>b.id) : String(id).split(",").filter(Boolean);
   const docs = ids.map(i=>D.setpieces[i]?{id:i,...D.setpieces[i]}:null).filter(Boolean);
   if(!docs.length) return toast("Sem bolas paradas para imprimir.");
+  if(o.o==="h"||(+o.z||100)>100) return bpPrintBig(docs,o.o==="h"?"h":"v",+o.z||150);
   const one=b=>`<section class="bpp"><h2>${esc(b.name||"")} <small style="color:#6b5a5f;text-transform:none;letter-spacing:0">— ${esc(BPT(b.type).l)}</small></h2>
     ${(b.fr||[]).map((f,i)=>`<div class="bpf">${(b.fr||[]).length>1?`<div class="note"><b>Passo ${i+1}</b></div>`:""}${bpSVG({...b,tt:b.tt},i)}</div>`).join("")}
     ${b.notes?`<div class="blk"><h3>Notas</h3><p>${esc(b.notes).replace(/\n/g,"<br>")}</p></div>`:""}</section>`;
@@ -387,23 +388,54 @@ function bpPrint(id,lay){
   const idx = many ? `<ol class="bpidx">${docs.map(b=>`<li><b>${esc(b.name||"")}</b> <span class="note">— ${esc(BPT(b.type).l)}</span></li>`).join("")}</ol>${lay==="2"?"":`<div style="page-break-after:always"></div>`}` : "";
   printDoc(many?"bolas-paradas":"bola-parada-"+(slug(docs[0].name)||"sem-nome"), many?"Bolas paradas":docs[0].name||"Bola parada", css+idx+docs.map(one).join(""));
 }
+// folha inteira: um passo por página. "h" = A4 deitado (campo a ocupar a folha); "v" = A4 ao alto com o campo rodado,
+// comprido pela altura da folha, a 125% ou 150% do tamanho normal (largura da folha ao alto ≈ 180 mm = 100%).
+function bpPrintBig(docs,ori,z){
+  const m=meta(), H=ori==="h", base=180, L=H?null:Math.min(268,Math.round(base*z/100));   // L = comprimento do campo em mm (ao alto)
+  const head=(b,i,n)=>`<div class="hd"><img src="${CREST}" alt=""><b>${esc(b.name||"Bola parada")}</b><span>${esc(BPT(b.type).l)}${n>1?` · Passo ${i+1} de ${n}`:""}</span><em>${esc(m.team||"")}</em></div>`;
+  const rot=svg=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BH} ${BW}" style="width:${Math.round(L*BH/BW)}mm;height:${L}mm"><g transform="translate(${BH} 0) rotate(90)">${svg.replace("<svg ",`<svg width="${BW}" height="${BH}" `)}</g></svg>`;
+  const pages=[]; docs.forEach(b=>{ const fr=b.fr&&b.fr.length?b.fr:[{it:[]}];
+    fr.forEach((_,i)=>{ const svg=bpSVG(b,i); pages.push(`<section class="pg">${head(b,i,fr.length)}<div class="fd">${H?svg:rot(svg)}</div></section>`); });
+    if(b.notes) pages.push(`<section class="pg nt">${head(b,0,1)}<h3>Notas</h3><p>${esc(b.notes).replace(/\n/g,"<br>")}</p></section>`); });
+  const title=docs.length>1?"Bolas paradas":docs[0].name||"Bola parada";
+  const html=`<!DOCTYPE html><html lang="pt-PT"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;700&family=Barlow+Condensed:wght@700;800&family=Open+Sans:wght@700&display=swap" rel="stylesheet">
+<style>@page{size:A4 ${H?"landscape":"portrait"};margin:7mm}*{box-sizing:border-box}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:"Barlow",Arial,sans-serif;color:#221418}
+.pg{width:${H?283:196}mm;height:${H?195:282}mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}
+.hd{flex:none;display:flex;align-items:center;gap:8px;height:9mm;padding:0 2mm;border-bottom:2px solid #6b1426;margin-bottom:2mm}.hd img{height:7mm}.hd b{font:800 15pt "Barlow Condensed",Arial Narrow,sans-serif;text-transform:uppercase;color:#6b1426;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hd span{font-size:10pt;color:#6b5a5f;white-space:nowrap}.hd em{margin-left:auto;font-style:normal;font-size:9pt;color:#6b5a5f;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.fd{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}.fd>svg{display:block;${H?"width:100%;height:100%;max-height:100%":""}}
+.nt h3{font:800 14pt "Barlow Condensed",sans-serif;color:#6b1426;margin:4mm 2mm 2mm;text-transform:uppercase}.nt p{margin:0 2mm;font-size:12pt;line-height:1.5}
+@media screen{body{background:#888}.pg{background:#fff;margin:10px auto;padding:7mm;width:${H?297:210}mm;height:${H?210:297}mm;box-shadow:0 2px 10px rgba(0,0,0,.3)}}</style></head><body>${pages.join("")}
+<script>window.onload=function(){setTimeout(function(){try{window.print();}catch(e){}},400);};<\/script></body></html>`;
+  openPrintable((docs.length>1?"bolas-paradas":"bola-parada-"+(slug(docs[0].name)||"sem-nome"))+(H?"-horizontal":`-vertical-${z}`), html);
+}
+// última escolha de folha/tamanho (por dispositivo)
+const bpPrPref = () => { try{ const o=JSON.parse(localStorage.getItem(LS+":bpprint")||"{}"); return {o:o.o==="h"?"h":"v",z:[100,125,150].includes(o.z)?o.z:100}; }catch(e){ return {o:"v",z:100}; } };
+const bpPrSave = () => { try{ if(M) localStorage.setItem(LS+":bpprint",JSON.stringify({o:M.bpO,z:M.bpZ})); }catch(e){} };
 // escolher que bolas paradas entram no PDF
 function bpPrintForm(){
+  const pf=bpPrPref();
   const all=setpieces(); if(!all.length) return toast("Sem bolas paradas para imprimir.");
   const pre=S.bpT?new Set(all.filter(b=>b.type===S.bpT).map(b=>b.id)):new Set(all.map(b=>b.id));
   const types=BP_TYPES.filter(t=>all.some(b=>b.type===t.k));
   const body=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><button class="btn sm" data-a="bpPrSel" data-k="*">Todas</button><button class="btn sm" data-a="bpPrSel" data-k="">Nenhuma</button>${types.map(t=>`<button class="btn sm ghost" data-a="bpPrSel" data-k="${t.k}">+ ${esc(t.l)}</button>`).join("")}</div>
     <div class="bpprl">${types.map(t=>`<div class="qlbl"><span>${esc(t.l)}</span></div>${all.filter(b=>b.type===t.k).map(b=>`<label class="bppri"><input type="checkbox" name="bpsel" value="${esc(b.id)}" data-t="${b.type}" ${pre.has(b.id)?"checked":""}>${bpSVG(b,0,{w:84})}<span><b>${esc(b.name||"Sem nome")}</b><small class="muted">${(b.fr||[]).length>1?`${(b.fr||[]).length} passos`:"1 passo"}${b.notes?" · com notas":""}</small></span></label>`).join("")}`).join("")}</div>
-    <div class="qlbl" style="margin-top:12px"><span>Folhas</span></div>
-    <div class="seg" style="margin-bottom:10px"><button data-a="bpPrLay" data-k="1" class="on">Uma por página</button><button data-a="bpPrLay" data-k="2">Seguidas (2 campos por folha)</button></div>
-    <div class="qlbl"><span>Tamanho da folha</span></div>
-    <div class="seg" style="margin-bottom:8px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>
+    <div class="qlbl" style="margin-top:12px"><span>Folha</span></div>
+    <div class="seg" style="margin-bottom:10px"><button data-a="bpPrO" data-k="v" class="${pf.o==="v"?"on":""}">Vertical</button><button data-a="bpPrO" data-k="h" class="${pf.o==="h"?"on":""}">Horizontal — campo na folha inteira</button></div>
+    <div id="bpPrV"><div class="qlbl"><span>Tamanho do campo</span></div>
+    <div class="seg" style="margin-bottom:10px">${[100,125,150].map(s=>`<button data-a="bpPrZ" data-k="${s}" class="${s===pf.z?"on":""}">${s}%</button>`).join("")}</div>
+    <div id="bpPrL"><div class="qlbl"><span>Folhas</span></div>
+    <div class="seg" style="margin-bottom:10px"><button data-a="bpPrLay" data-k="1" class="on">Uma por página</button><button data-a="bpPrLay" data-k="2">Seguidas (2 campos por folha)</button></div></div></div>
+    <p class="small muted" id="bpPrHint" style="margin:0 0 6px"></p>
     <p class="small muted" style="margin:0"><b id="bpPrN"></b> O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>`;
   modal({title:"Imprimir bolas paradas",sub:"Escolhe as que entram no PDF",body,
-    foot:`<button class="btn" data-a="bpPrGo" data-k="open">Abrir numa aba</button><span class="right"><button class="btn primary" data-a="bpPrGo" data-k="dl">Descarregar</button></span>`,ctx:{bpLay:"1",pick:true}});
-  bpPrCount();
+    foot:`<button class="btn" data-a="bpPrGo" data-k="open">Abrir numa aba</button><span class="right"><button class="btn primary" data-a="bpPrGo" data-k="dl">Descarregar</button></span>`,ctx:{bpLay:"1",bpO:pf.o,bpZ:pf.z,pick:true}});
+  bpPrCount(); bpPrOpts();
 }
 $("#dlg").addEventListener("change",e=>{ if(e.target && e.target.name==="bpsel") bpPrCount(); });
+function bpPrOpts(){ if(!M) return; const v=M.bpO!=="h", l=$("#bpPrL"), vv=$("#bpPrV"), h=$("#bpPrHint");
+  if(vv) vv.style.display=v?"":"none"; if(l) l.style.display=v&&M.bpZ===100?"":"none";
+  if(h) h.textContent=!v?"Um passo por folha A4 deitada, o campo ocupa a folha toda.":M.bpZ===100?"Campo à largura da folha, como até agora.":`Um passo por folha A4 ao alto, com o campo rodado (baliza à direita) a ${M.bpZ}% do tamanho normal.`; }
 function bpPrCount(){ const n=$$("#dlg [name=bpsel]:checked").length, el=$("#bpPrN"); if(el) el.textContent=n?`${plural(n,"bola parada selecionada","bolas paradas selecionadas")}.`:"Nenhuma selecionada."; }
 
 /* ---- ações ---- */
@@ -439,10 +471,12 @@ Object.assign(A,{
   bpPrintAll: () => bpPrintForm(),
   bpPrSel: el => { const k=el.dataset.k; $$("#dlg [name=bpsel]").forEach(c=>{ if(k==="*") c.checked=true; else if(k==="") c.checked=false; else if(c.dataset.t===k) c.checked=true; }); bpPrCount(); },
   bpPrLay: el => { if(!M) return; M.bpLay=el.dataset.k; $$("#dlg [data-a=bpPrLay]").forEach(b=>b.classList.toggle("on",b===el)); },
+  bpPrO: el => { if(!M) return; M.bpO=el.dataset.k; $$("#dlg [data-a=bpPrO]").forEach(b=>b.classList.toggle("on",b===el)); bpPrOpts(); bpPrSave(); },
+  bpPrZ: el => { if(!M) return; M.bpZ=+el.dataset.k; $$("#dlg [data-a=bpPrZ]").forEach(b=>b.classList.toggle("on",b===el)); bpPrOpts(); bpPrSave(); },
   bpPrGo: el => { if(!M) return; const ids=$$("#dlg [name=bpsel]:checked").map(c=>c.value), lay=M.bpLay;
     if(!ids.length) return toast("Escolhe pelo menos uma bola parada.");
-    closeModal(); PRINT_MODE=el.dataset.k; PRINT_WIN=null; if(PRINT_MODE==="open"){ try{ PRINT_WIN=window.open("","_blank"); }catch(e){} }
-    bpPrint(ids.join(","),lay); },
+    const o={o:M.bpO,z:M.bpZ}; closeModal(); PRINT_MODE=el.dataset.k; PRINT_WIN=null; if(PRINT_MODE==="open"){ try{ PRINT_WIN=window.open("","_blank"); }catch(e){} }
+    bpPrint(ids.join(","),lay,o); },
   bpCopy: el => { const s=D.setpieces[el.dataset.id]; if(!s) return toast("Esta bola parada já não existe."); const id=bpCopyDoc(s); toast(`Cópia criada: ${D.setpieces[id].name}`); bpEditor(id); },
   bpCopyEd: () => { if(!M||!M.bp) return; const src=M.bpId;
     const go=()=>{ if(!M||!M.bp) return; bpStop(); const id=bpCopyDoc(D.setpieces[src]||bpCollect()); bpEditor(id); toast("Cópia criada — estás a editar a cópia; o original ficou igual."); };

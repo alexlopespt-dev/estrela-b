@@ -290,7 +290,7 @@ function blockPrinciples(x){
   return [...out];
 }
 function modelTime(from,to){
-  const t=todayISO(), byP={}, byM={}; let total=0, linked=0, sessions=0;
+  const t=todayISO(), byP={}, byM={}, byMx={}; let total=0, linked=0, sessions=0;   // byMx[momento][exercício] = {n, m (minutos), s (treinos)}
   trainings().forEach(tr=>{
     if(tr.date>t) return; if(from&&tr.date<from) return; if(to&&tr.date>to) return;
     let any=false;
@@ -301,8 +301,9 @@ function modelTime(from,to){
       if(!moms.size) blockMoms(x).forEach(k=>moms.add(k));   // momento escolhido no treino (ou, se não, no exercício)
       if(moms.size) linked+=m;
       const share = moms.size ? m/moms.size : 0;
-      moms.forEach(k=>byM[k]=(byM[k]||0)+share); });
+      const ex=x.ex&&D.exercises[x.ex], key=ex?x.ex:"n:"+String(x.name||"").trim().toLowerCase(), nm=(ex&&ex.name)||String(x.name||"").trim()||"Bloco sem nome";
+      moms.forEach(k=>{ byM[k]=(byM[k]||0)+share; const e=((byMx[k]=byMx[k]||{})[key]=byMx[k][key]||{n:nm,m:0,s:0,tr:{}}); e.m+=share; if(!e.tr[tr.id]){ e.tr[tr.id]=1; e.s++; } }); });
     if(any) sessions++;
   });
-  return {byP,byM,total,linked,sessions};
+  return {byP,byM,byMx,total,linked,sessions};
 }

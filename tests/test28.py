@@ -172,6 +172,30 @@ with sync_playwright() as pw:
     if html.count("<svg")!=4 or len(names)!=2 or ".bpp{page-break-after:always}" in html: errs.append("pdf escolhidas")
     out=os.path.join(CAP,"t28_pdf2.html"); open(out,"w").write(html)
     p2=ctx.new_page(); p2.goto("file://"+out); p2.wait_for_timeout(800); p2.pdf(path=os.path.join(CAP,"t28_escolhidas.pdf"),format="A4",print_background=True); p2.close(); os.remove(out)
+    # horizontal (folha inteira) e vertical a 125% / 150%: um passo por folha
+    nfr=len(SP(pg)[lid]["fr"])
+    for o,z in [("h",None),("v","150"),("v","125")]:
+        pg.click('[data-a="bpPrintAll"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="bpPrSel"][data-k=""]'); pg.check(f'#dlg [name=bpsel][value="{lid}"]')
+        pg.click(f'#dlg [data-a="bpPrO"][data-k="{o}"]')
+        if z: pg.click(f'#dlg [data-a="bpPrZ"][data-k="{z}"]')
+        vis=(pg.is_visible("#bpPrV"), pg.is_visible("#bpPrL"))
+        with pg.expect_download() as dl: pg.click('#dlg [data-a="bpPrGo"][data-k="dl"]')
+        html=open(dl.value.path()).read(); fn=dl.value.suggested_filename
+        pags=html.count('<section class="pg">'); print("folha",o,z,"| páginas:",pags,"| opções visíveis:",vis,"|",fn)
+        if pags!=nfr: errs.append(f"um passo por folha {o}{z}")
+        if o=="h" and ("size:A4 landscape" not in html or "rotate(90)" in html or vis!=(False,False) or "horizontal" not in fn): errs.append("horizontal")
+        if o=="v" and ("size:A4 portrait" not in html or "rotate(90)" not in html or vis!=(True,False) or f"height:{min(268,180*int(z)//100)}mm" not in html): errs.append("vertical "+z)
+        out=os.path.join(CAP,f"t28_{o}{z or ''}.html"); open(out,"w").write(html)
+        p2=ctx.new_page(); p2.goto("file://"+out); p2.wait_for_timeout(600); p2.pdf(path=os.path.join(CAP,f"t28_{o}{z or ''}.pdf"),prefer_css_page_size=True,print_background=True)
+        n=p2.evaluate("document.querySelectorAll('.pg').length"); over=p2.evaluate("[...document.querySelectorAll('.fd>svg')].some(s=>{const r=s.getBoundingClientRect(),p=s.parentElement.getBoundingClientRect();return r.height>p.height+2||r.width>p.width+2})")
+        p2.close(); os.remove(out)
+        if over: errs.append(f"campo maior que a folha {o}{z}")
+    # a última escolha fica guardada neste dispositivo
+    pg.click('[data-a="bpPrintAll"]'); pg.wait_for_timeout(300)
+    if pg.get_attribute('#dlg [data-a="bpPrO"][data-k="v"]',"class")!="on" or pg.get_attribute('#dlg [data-a="bpPrZ"][data-k="125"]',"class")!="on": errs.append("escolha não guardada")
+    pg.click('#dlg [data-a="bpPrZ"][data-k="100"]')
+    if not pg.is_visible("#bpPrL"): errs.append("100% sem a escolha uma/seguidas")
+    pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(200)
     # eliminar
     cid=[i for i,x in SP(pg).items() if x["type"]=="cco"][0]
     pg.click(f'[data-a="bpOpen"][data-id="{cid}"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="mDel"]'); pg.click('#dlgAsk [data-ask="1"]'); pg.wait_for_timeout(300)
