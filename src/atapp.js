@@ -82,6 +82,19 @@ async function atFetchAtleta(tok){
   let d; try{ const r=await fetch(u); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }catch(e){ d=await monJsonp(u); }
   if(d&&d.erro) throw new Error(d.msg||d.erro); return d;
 }
+// onde a app lê/escreve as respostas (ficheiro e separador) e as respostas de hoje com a linha — para encontrar uma resposta na folha
+function atDiagOnde(rd){
+  const F=rd.fontes||{}, H=rd.hoje||[]; if(!F.bem&&!F.pse) return "";
+  const lbl={bem:"Bem-estar",pse:"PSE"}, dd=k=>k?fmtD(k,{day:"2-digit",month:"2-digit"}):"—";
+  const fonte=k=>{ const f=F[k]; if(!f) return ""; const out=(f.outros||[]).filter(o=>o.n);
+    return `<div class="li" style="align-items:flex-start"><span class="main"><b>${lbl[k]}: ficheiro "${esc(f.ficheiro)}", separador "${esc(f.separador)}"</b>
+      <small>${f.form?"É o separador ligado ao formulário — a app e o Painel leem e escrevem aqui.":"Nenhum separador está ligado ao formulário: a app usa o que tem a resposta mais recente."}${out.length?` Há mais ${out.length===1?"um separador":out.length+" separadores"} com respostas: ${out.map(o=>`"${esc(o.nome)}"${o.form?" (ligado ao formulário)":""} — ${o.n} respostas, última ${dd(o.ult)}`).join("; ")}.`:""}</small></span></div>`; };
+  return `<div class="card" style="padding:12px;margin:0 0 10px"><p style="margin:0 0 6px"><b>Onde estão as respostas</b></p>${fonte("bem")}${fonte("pse")}
+    ${H.length?`<p style="margin:10px 0 4px"><b>Respostas de hoje</b> — a linha é a da folha do Sheets (procura por esse número à esquerda)</p>
+    <div class="tscroll"><table class="tb"><thead><tr><th class="l">Atleta</th><th class="l">Escrito na folha</th><th class="l">Formulário</th><th>Hora</th><th>Linha</th></tr></thead><tbody>
+    ${H.slice().sort((a,b)=>(a.t+a.h).localeCompare(b.t+b.h)).map(r=>`<tr><td class="l">${r.pid&&P(r.pid)?esc(P(r.pid).name):`<span style="color:var(--r5)">sem atleta</span>`}</td><td class="l">${esc(r.escrito||"—")}</td><td class="l">${lbl[r.t]}</td><td class="num">${esc(r.h)}</td><td class="num"><b>${r.linha}</b></td></tr>`).join("")}
+    </tbody></table></div>`:`<p class="small muted" style="margin:8px 0 0">Ainda ninguém respondeu hoje.</p>`}</div>`;
+}
 async function atDiagForm(){
   const p=players().find(x=>x.atk); if(!p||!SYNC.cfg) return toast("Precisa da partilha ligada e de pelo menos um link criado.");
   modal({title:"O que os atletas veem",sub:"A comparar com o script da partilha…",body:`<div class="empty"><b>A perguntar ao Google…</b>Pode demorar uns segundos.</div>`,foot:`<span></span><span class="right"><button class="btn" data-a="mClose">Fechar</button></span>`});
@@ -113,6 +126,7 @@ async function atDiagForm(){
       ${sem.length?`<div class="card" style="padding:12px;margin:0 0 10px"><p style="margin:0 0 8px"><b>Nomes escritos nas folhas que não correspondem a nenhum atleta</b> — as respostas destes não aparecem na app do atleta. Diz a quem pertencem:</p>
         ${sem.map(([nm,c])=>`<div class="li" style="gap:8px"><span class="main"><b>${esc(nm)}</b><small>${c} resposta${c>1?"s":""}</small></span><select data-c="atNome" data-n="${esc(nm)}" aria-label="Atleta de ${esc(nm)}">${opts}</select></div>`).join("")}</div>`:""}
       ${(rd.erros||[]).length?`<p class="note">${rd.erros.map(esc).join(" · ")}</p>`:""}
+      ${atDiagOnde(rd)}
       <div class="tscroll"><table class="tb"><thead><tr><th class="l">Atleta</th><th class="l">Nome na folha</th><th>Bem-estar</th><th>PSE</th></tr></thead><tbody>
       ${pls.map(x=>{ const r=rd.atletas[x.id]; return `<tr><td class="l">${esc(x.name)}</td><td class="l small">${esc(r.nome)}</td><td class="num"${r.bem?"":' style="color:var(--r5);font-weight:700"'}>${r.bem}</td><td class="num">${r.pse}</td></tr>`; }).join("")}
       </tbody></table></div><p class="small muted">0 no bem-estar = a app do atleta não encontra as respostas dele: o nome na folha é diferente (liga-o acima) ou não tem respondido.</p>`;

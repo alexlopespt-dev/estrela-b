@@ -341,9 +341,13 @@ function candidatos_(ss, chaveObrigatoria) {
         if (d) { n++; if (!ultima || d > ultima) ultima = d; }
       });
     }
-    out.push({ folha: f, nome: f.getName(), ultima: ultima, n: n });
+    var form = false; try { form = !!f.getFormUrl(); } catch (e) {}
+    out.push({ folha: f, nome: f.getName(), ultima: ultima, n: n, form: form });
   });
+  // 1.º o separador ligado ao formulário (é onde o Google Forms escreve e onde a app do atleta também escreve — atSeparadores_
+  // no dados_app.gs usa esta mesma ordem); depois a resposta mais recente; depois o com mais respostas.
   out.sort(function (a, b) {
+    if (a.form !== b.form) return a.form ? -1 : 1;
     if (a.ultima && b.ultima && a.ultima.getTime() !== b.ultima.getTime()) return b.ultima - a.ultima;
     if (!!a.ultima !== !!b.ultima) return a.ultima ? -1 : 1;
     return b.n - a.n;

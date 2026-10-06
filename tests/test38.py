@@ -220,6 +220,10 @@ try:
     # respostas por atleta: nome na folha sem atleta → ligar à mão
     t=pa.inner_text("#dlg")
     if "Zé Ninguém" not in t or "Bem-estar e PSE nos últimos 14 dias" not in t: errs.append("verificar: nomes da folha sem atleta")
+    # onde estão as respostas: ficheiro/separador e as de hoje com a linha da folha
+    if "Onde estão as respostas" not in t or 'separador "Respostas ao formulário 1"' not in t or "Respostas de hoje" not in t: errs.append("verificar: onde estão as respostas")
+    lin=pa.eval_on_selector_all('#dlg table.tb:has(th:text-is("Linha")) tbody tr',"e=>e.map(r=>r.innerText.replace(/\\s+/g,' '))"); print("respostas de hoje:", lin)
+    if not any("Luís A." in x and "PSE" in x for x in lin): errs.append("verificar: resposta de hoje com a linha")
     pa.select_option('#dlg select[data-c="atNome"][data-n="Zé Ninguém"]',"ta3"); pa.wait_for_timeout(4500)
     rd=get({"a":"atletas_diag","k":KEY}); print("diag Rui:", rd["atletas"].get("ta3"), "sem atleta:", rd.get("semAtleta"))
     if "Zé Ninguém" in rd.get("semAtleta",{}) or rd["atletas"]["ta3"]["bem"]<2: errs.append("ligar nome da folha ao atleta")

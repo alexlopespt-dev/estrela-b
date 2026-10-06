@@ -12,7 +12,7 @@ const chain = o => new Proxy(o,{ get:(t,k)=> k in t ? t[k] : (typeof k==="string
 function a1(ref){ const m=/^([A-Z]+)(\d+)$/.exec(ref); if(!m) return null; let c=0; for(const ch of m[1]) c=c*26+ch.charCodeAt(0)-64; return [+m[2],c]; }
 function Sheet(name){ this.name=name; this.cells=[]; this.fmt={}; return chain(this); }
 Sheet.prototype = {
-  setName(n){ this.name=n; return this; }, getName(){ return this.name; },
+  setName(n){ this.name=n; return this; }, getName(){ return this.name; }, getFormUrl(){ return this.form||null; },
   setFrozenRows(){ return this; }, deleteRow(r){ this.cells.splice(r-1,1); return this; },
   insertRowAfter(r){ this.cells.splice(r,0,[]); return this; },
   getLastColumn(){ return this.cells.reduce((m,row)=>{ let n=(row||[]).length; while(n>0&&(row[n-1]===""||row[n-1]==null)) n--; return Math.max(m,n); },0); },
@@ -31,7 +31,7 @@ Sheet.prototype = {
   }
 };
 function SS(name,id){ this.id=id||uid("ss"); this.name=name; this.sheets=[new Sheet("Folha1")]; }
-SS.prototype = { getId(){ return this.id; }, getUrl(){ return "https://docs.google.com/spreadsheets/d/"+this.id; }, getSheets(){ return this.sheets; },
+SS.prototype = { getId(){ return this.id; }, getName(){ return this.name; }, getUrl(){ return "https://docs.google.com/spreadsheets/d/"+this.id; }, getSheets(){ return this.sheets; },
   getSheetByName(n){ return this.sheets.find(s=>s.name===n)||null; }, insertSheet(n){ const s=new Sheet(n); this.sheets.push(s); return s; }, toast(){} };
 const SSS = {};
 const props = {}, cache = {}, files = [], triggers = [], copies = [], pedidos = [];
@@ -92,6 +92,7 @@ http.createServer((req,res)=>{
     return send({m:"application/json", s: JSON.stringify({docs: sh? sh.cells.slice(1).filter(Boolean) : [], files: files.map(f=>({id:f.id,type:f.blob.type,n:f.blob.bytes.length,shared:f.shared})), props,
       lesoes: les ? les.cells.slice(4).filter(r=>r&&r.some(v=>v!==""&&v!=null)) : null, triggers: triggers.map(t=>t.fn),
       resp: Object.fromEntries(Object.entries(SSS).filter(([id,x])=>x.name==="respostas").map(([id,x])=>[id,x.sheets[0].cells])),
+      respTabs: Object.fromEntries(Object.entries(SSS).filter(([id,x])=>x.name==="respostas").map(([id,x])=>[id,Object.fromEntries(x.sheets.map(f=>[f.name,f.cells]))])),
       atletas: (dest&&dest.getSheetByName("· App atletas")) ? dest.getSheetByName("· App atletas").cells : null,
       copias: copies.filter(c=>!c.trashed).map(c=>({name:c.name,rows:c.rows.length}))})});
   }
@@ -116,7 +117,9 @@ http.createServer((req,res)=>{
       if(p.nomes){ const f=ctx.destino_(); const pl=f.insertSheet("· Plantel"); pl.getRange(4,1,1,2).setValues([["Jogador","Posição"]]);
         p.nomes.forEach((n,i)=>pl.getRange(5+i,1,1,2).setValues([[n,"Campo"]])); }
       if(p.respostas){ p.respostas.forEach(r=>{ const ss=new SS(r.nome||"respostas",r.id); ss.sheets[0].name=r.folha||"Respostas ao formulário 1";
-        ss.sheets[0].cells=r.linhas.map(l=>l.slice()); SSS[r.id]=ss; }); }
+        ss.sheets[0].cells=r.linhas.map(l=>l.slice()); if(r.form) ss.sheets[0].form="https://docs.google.com/forms/d/x/viewform";
+        (r.outros||[]).forEach(o=>{ const s=ss.insertSheet(o.folha); s.cells=o.linhas.map(l=>l.slice()); if(o.form) s.form="https://docs.google.com/forms/d/y/viewform"; });   // outros separadores (ex.: o ligado ao formulário)
+        SSS[r.id]=ss; }); }
       if(p.aliases){ const f=ctx.destino_(); const al=f.insertSheet("· Nomes"); p.aliases.forEach((r,i)=>al.getRange(4+i,1,1,2).setValues([r])); }
       if(p.manual){ const f=ctx.destino_(); const sh=ctx.folhaLesoes_(f);
         p.manual.forEach(r=>sh.getRange(sh.getLastRow()+1,1,1,5).setValues([r])); }

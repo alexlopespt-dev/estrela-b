@@ -442,21 +442,33 @@ function atAcha_(cab, chaves, usados) {
   return -1;
 }
 
-/** Separador das respostas (o que tem o carimbo e a coluna obrigatória; se houver vários, o com mais linhas). */
-function atFolha_(id, chave) {
-  var ss = SpreadsheetApp.openById(id), melhor = null, n = -1, cache = CacheService.getScriptCache(), ck = 'at_folha_' + id + '_' + chave[0];
-  try {
-    var h = cache.get(ck);
-    if (h) { h = JSON.parse(h); var fc = ss.getSheetByName(h.nome); if (fc) return { f: fc, cab: h.cab, c: h.c }; }
-  } catch (e) {}
+/** Separadores com o carimbo e a coluna obrigatória, pela ordem em que devem ser usados — a MESMA da monitorização
+ *  (candidatos_ no monitorizacao_completo.gs): 1.º o ligado ao formulário (é onde o Google Forms escreve), depois o com a
+ *  resposta mais recente, depois o com mais respostas. Antes ganhava o com mais respostas: com um separador antigo grande
+ *  e o formulário ligado a outro, a app escrevia no antigo e a resposta não aparecia onde a equipa olha. */
+function atSeparadores_(ss, chave) {
+  var out = [];
   ss.getSheets().forEach(function (f) {
     if (f.getLastRow() < 1) return;
     var cab = f.getRange(1, 1, 1, Math.max(1, f.getLastColumn())).getValues()[0];
     var ct = atAcha_(cab, ['carimbo', 'timestamp']);
     if (ct === -1 || atAcha_(cab, chave) === -1) return;
-    var cheias = f.getRange(1, ct + 1, f.getLastRow(), 1).getValues().filter(function (l) { return l[0] !== '' && l[0] !== null; }).length;
-    if (cheias > n) { melhor = f; n = cheias; }
+    var n = 0, ult = '';
+    if (f.getLastRow() > 1) f.getRange(2, ct + 1, f.getLastRow() - 1, 1).getValues().forEach(function (l) {
+      var d = atData_(l[0]); if (d) { n++; var k = atKey_(d); if (k > ult) ult = k; } });
+    var form = false; try { form = !!f.getFormUrl(); } catch (e) {}
+    out.push({ f: f, nome: f.getName(), form: form, ult: ult, n: n });
   });
+  out.sort(function (a, b) { return (b.form - a.form) || (a.ult === b.ult ? 0 : a.ult < b.ult ? 1 : -1) || (b.n - a.n); });
+  return out;
+}
+function atFolha_(id, chave) {
+  var ss = SpreadsheetApp.openById(id), cache = CacheService.getScriptCache(), ck = 'at_folha2_' + id + '_' + chave[0];
+  try {
+    var h = cache.get(ck);
+    if (h) { h = JSON.parse(h); var fc = ss.getSheetByName(h.nome); if (fc) return { f: fc, cab: h.cab, c: h.c, ss: ss }; }
+  } catch (e) {}
+  var cands = atSeparadores_(ss, chave), melhor = cands.length ? cands[0].f : null;
   if (!melhor) throw new Error('Não encontrei a folha de respostas (' + chave[0] + ').');
   var cab = melhor.getRange(1, 1, 1, melhor.getLastColumn()).getValues()[0], u = [], c = {};
   c.t = atAcha_(cab, ['carimbo', 'timestamp'], u); c.n = atAcha_(cab, ['nome do jogador', 'nome'], u);
@@ -465,8 +477,8 @@ function atFolha_(id, chave) {
   c.tipo = atAcha_(cab, ['tipo de sess', 'tipo'], u); c.dur = atAcha_(cab, ['duração', 'duracao'], u);
   c.rpe = atAcha_(cab, ['intenso', 'intens', 'rpe'], u); c.sen = atAcha_(cab, ['sentes', 'sensa'], u);
   if (c.n < 0) throw new Error('A folha de respostas não tem a coluna do nome.');
-  try { cache.put(ck, JSON.stringify({ nome: melhor.getName(), cab: cab, c: c }), 3600); } catch (e) {}
-  return { f: melhor, cab: cab, c: c };
+  try { cache.put(ck, JSON.stringify({ nome: melhor.getName(), cab: cab, c: c }), 600); } catch (e) {}   // 10 min: se o formulário mudar de separador, a app acompanha depressa
+  return { f: melhor, cab: cab, c: c, ss: ss };
 }
 /** Últimas linhas (até 800), com o número da linha. A última linha conta pela coluna do carimbo: colunas com fórmulas
  *  arrastadas até ao fim da folha ("Score Total", "Estado") fazem o getLastRow() dar 1000 e as respostas ficavam de fora. */
@@ -985,17 +997,22 @@ function atDiagTodos_() {
   try { var map = ligacoesNomes_(atNomesMon_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
   var ids = Object.keys(pl).filter(function (id) { return pl[id] && !pl[id].archived; }), out = {}, sem = {}, erros = [];
   var As = ids.map(function (id) { out[id] = { nome: nomeDe[id] || pl[id].name, bem: 0, pse: 0, ult: '' }; return { pid: id, p: pl[id], nome: nomeDe[id] || pl[id].name, man: man }; });
-  var desde = atKey_(new Date(Date.now() - 13 * 864e5));
+  var desde = atKey_(new Date(Date.now() - 13 * 864e5)), hoje = atKey_(new Date()), fontes = {}, deHoje = [];
   [['bem', ID_BEMESTAR, ['sono']], ['pse', ID_PSE, ['intens', 'sessão', 'sessao']]].forEach(function (x) {
     try {
       var F = atFolha_(x[1], x[2]);
+      fontes[x[0]] = { ficheiro: F.ss.getName(), separador: F.f.getName(),
+        outros: atSeparadores_(F.ss, x[2]).filter(function (s) { return s.nome !== F.f.getName(); })
+          .map(function (s) { return { nome: s.nome, form: s.form, ult: s.ult, n: s.n }; }) };
+      try { fontes[x[0]].form = !!F.f.getFormUrl(); } catch (e) {}
       atLinhas_(F).forEach(function (l) {
         var k = atKey_(l.d); if (k < desde) return;
         var b = l.v[F.c.n], A = As.filter(function (a) { return atEle_(b, a); })[0];
         if (A) { out[A.pid][x[0]]++; if (k > out[A.pid].ult) out[A.pid].ult = k; }
         else { b = String(b || '').trim(); if (b) sem[b] = (sem[b] || 0) + 1; }
+        if (k === hoje) deHoje.push({ t: x[0], linha: l.row, h: atHora_(l.d), escrito: String(b || '').trim(), pid: A ? A.pid : '' });
       });
     } catch (e) { erros.push(x[0] + ': ' + e.message); }
   });
-  return { ok: true, atletas: out, semAtleta: sem, erros: erros };
+  return { ok: true, atletas: out, semAtleta: sem, erros: erros, fontes: fontes, hoje: deHoje };
 }
