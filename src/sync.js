@@ -46,9 +46,9 @@ function syncQ(c,i,d,prev){
 const syncErr = e => e&&e.name==="AbortError" ? "O Google demorou demasiado a responder."
   : (e&&e.message&&!/fetch|network|load/i.test(e.message) ? e.message : "Sem ligação ao Google.");
 
-async function syncGet(params){
+async function syncGet(params,ms=30000){
   const u=SYNC.cfg.url.trim()+(SYNC.cfg.url.includes("?")?"&":"?")+"k="+encodeURIComponent(SYNC.cfg.key)+"&"+Object.entries(params).map(([k,v])=>k+"="+encodeURIComponent(v)).join("&")+"&_="+Date.now().toString(36);   // evita respostas guardadas pelo browser
-  const ctl=typeof AbortController!=="undefined"?new AbortController():null, tm=setTimeout(()=>ctl&&ctl.abort(),30000);
+  const ctl=typeof AbortController!=="undefined"?new AbortController():null, tm=setTimeout(()=>ctl&&ctl.abort(),ms);
   try{
     let d;
     // sem "cache:no-store": com esse cabeçalho o Google responde 404 e obrigava a ir pelo caminho lento (JSONP)

@@ -104,7 +104,7 @@ async function atDiagForm(){
     const all=await syncGet({a:"pull",since:0});
     (all.docs||[]).forEach(x=>{ if(!x) return; if(x.c==="events"){ if(x.x) srvDel.add(x.i); else if(x.d) srvE[x.i]=x.d; } if(x.c==="players"&&!x.x&&x.d) srvP[x.i]=x.d; });
     d=await atFetchAtleta((players().find(x=>x.atk&&srvP[x.id]&&srvP[x.id].atk===x.atk)||p).atk);
-    try{ rd=await syncGet({a:"atletas_diag"}); }catch(e){ rd={erro:e.message}; }
+    try{ rd=await syncGet({a:"atletas_diag"},90000); }catch(e){ rd={erro:e.message,lento:!!(e&&e.name==="AbortError")}; }   // lê as duas folhas inteiras: pode demorar
   }catch(e){ if($("#dlg").open) $("#dlg .dlg-b").innerHTML=`<div class="empty"><b>Não foi possível ler o script</b>${esc(e.message||String(e))}</div>`; return; }
   const t=todayISO(), ate=addDays(t,14), J=o=>JSON.stringify(o);
   const loc=events().filter(e=>(e.type==="treino"||e.type==="jogo")&&e.date>=t&&e.date<=ate).sort(byDT);
@@ -117,7 +117,9 @@ async function atDiagForm(){
   const row=e=>`<div class="li"><span class="main"><b>${e.type==="jogo"?"Jogo "+esc((e.venue==="F"?"@ ":"vs ")+(e.opp||"")):"Treino"+(e.theme?" · "+esc(e.theme):"")}</b><small>${esc(fmtD(e.date,{weekday:"short",day:"numeric",month:"short"}))}${e.time?" · "+esc(e.time):""}</small></span><span class="tag bad">${srvE[e.id]?"Diferente":"Não chegou"}</span></div>`;
   // respostas por atleta (bem-estar/PSE, 14 dias)
   let resp="";
-  if(rd&&rd.erro) resp=`<p class="note">Para ver as respostas por atleta, atualiza o script da partilha (dados_app.gs) e faz "Nova versão". (${esc(rd.erro)})</p>`;
+  if(rd&&rd.erro) resp=rd.lento?`<p class="note"><b>O script demorou mais de 90 segundos a ler as folhas do bem-estar e do PSE.</b> Fecha e carrega outra vez em "Verificar o que os atletas veem" — da 2.ª vez costuma ser mais rápido.</p>`
+    :/desconhecido/i.test(rd.erro)?`<p class="note">Para ver as respostas por atleta, atualiza o script da partilha (dados_app.gs) e faz "Nova versão".</p>`
+    :`<p class="note">Não foi possível ler as respostas por atleta: ${esc(rd.erro)}</p>`;
   else if(rd&&rd.atletas){
     const pls=players().filter(x=>rd.atletas[x.id]).sort((a,b)=>(rd.atletas[a.id].bem-rd.atletas[b.id].bem)||a.name.localeCompare(b.name));
     const sem=Object.entries(rd.semAtleta||{}).sort((a,b)=>b[1]-a[1]);

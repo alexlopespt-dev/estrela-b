@@ -466,9 +466,10 @@ function atFolha_(id, chave) {
   var ss = SpreadsheetApp.openById(id), cache = CacheService.getScriptCache(), ck = 'at_folha2_' + id + '_' + chave[0];
   try {
     var h = cache.get(ck);
-    if (h) { h = JSON.parse(h); var fc = ss.getSheetByName(h.nome); if (fc) return { f: fc, cab: h.cab, c: h.c, ss: ss }; }
+    if (h) { h = JSON.parse(h); var fc = ss.getSheetByName(h.nome); if (fc) return { f: fc, cab: h.cab, c: h.c, ss: ss, outros: h.outros || [], form: !!h.form }; }
   } catch (e) {}
   var cands = atSeparadores_(ss, chave), melhor = cands.length ? cands[0].f : null;
+  var outros = cands.slice(1).map(function (s) { return { nome: s.nome, form: s.form, ult: s.ult, n: s.n }; }), form = cands.length ? cands[0].form : false;
   if (!melhor) throw new Error('Não encontrei a folha de respostas (' + chave[0] + ').');
   var cab = melhor.getRange(1, 1, 1, melhor.getLastColumn()).getValues()[0], u = [], c = {};
   c.t = atAcha_(cab, ['carimbo', 'timestamp'], u); c.n = atAcha_(cab, ['nome do jogador', 'nome'], u);
@@ -477,8 +478,8 @@ function atFolha_(id, chave) {
   c.tipo = atAcha_(cab, ['tipo de sess', 'tipo'], u); c.dur = atAcha_(cab, ['duração', 'duracao'], u);
   c.rpe = atAcha_(cab, ['intenso', 'intens', 'rpe'], u); c.sen = atAcha_(cab, ['sentes', 'sensa'], u);
   if (c.n < 0) throw new Error('A folha de respostas não tem a coluna do nome.');
-  try { cache.put(ck, JSON.stringify({ nome: melhor.getName(), cab: cab, c: c }), 600); } catch (e) {}   // 10 min: se o formulário mudar de separador, a app acompanha depressa
-  return { f: melhor, cab: cab, c: c, ss: ss };
+  try { cache.put(ck, JSON.stringify({ nome: melhor.getName(), cab: cab, c: c, outros: outros, form: form }), 600); } catch (e) {}   // 10 min: se o formulário mudar de separador, a app acompanha depressa
+  return { f: melhor, cab: cab, c: c, ss: ss, outros: outros, form: form };
 }
 /** Últimas linhas (até 800), com o número da linha. A última linha conta pela coluna do carimbo: colunas com fórmulas
  *  arrastadas até ao fim da folha ("Score Total", "Estado") fazem o getLastRow() dar 1000 e as respostas ficavam de fora. */
@@ -997,17 +998,14 @@ function atDiagTodos_() {
   try { var map = ligacoesNomes_(atNomesMon_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
   var ids = Object.keys(pl).filter(function (id) { return pl[id] && !pl[id].archived; }), out = {}, sem = {}, erros = [];
   var As = ids.map(function (id) { out[id] = { nome: nomeDe[id] || pl[id].name, bem: 0, pse: 0, ult: '' }; return { pid: id, p: pl[id], nome: nomeDe[id] || pl[id].name, man: man }; });
-  var desde = atKey_(new Date(Date.now() - 13 * 864e5)), hoje = atKey_(new Date()), fontes = {}, deHoje = [];
+  var desde = atKey_(new Date(Date.now() - 13 * 864e5)), hoje = atKey_(new Date()), fontes = {}, deHoje = [], quem = {};
   [['bem', ID_BEMESTAR, ['sono']], ['pse', ID_PSE, ['intens', 'sessão', 'sessao']]].forEach(function (x) {
     try {
       var F = atFolha_(x[1], x[2]);
-      fontes[x[0]] = { ficheiro: F.ss.getName(), separador: F.f.getName(),
-        outros: atSeparadores_(F.ss, x[2]).filter(function (s) { return s.nome !== F.f.getName(); })
-          .map(function (s) { return { nome: s.nome, form: s.form, ult: s.ult, n: s.n }; }) };
-      try { fontes[x[0]].form = !!F.f.getFormUrl(); } catch (e) {}
+      fontes[x[0]] = { ficheiro: F.ss.getName(), separador: F.f.getName(), form: F.form, outros: F.outros };
       atLinhas_(F).forEach(function (l) {
         var k = atKey_(l.d); if (k < desde) return;
-        var b = l.v[F.c.n], A = As.filter(function (a) { return atEle_(b, a); })[0];
+        var b = l.v[F.c.n], kb = atChave_(b), A = kb in quem ? quem[kb] : (quem[kb] = As.filter(function (a) { return atEle_(b, a); })[0] || null);   // uma vez por nome escrito
         if (A) { out[A.pid][x[0]]++; if (k > out[A.pid].ult) out[A.pid].ult = k; }
         else { b = String(b || '').trim(); if (b) sem[b] = (sem[b] || 0) + 1; }
         if (k === hoje) deHoje.push({ t: x[0], linha: l.row, h: atHora_(l.d), escrito: String(b || '').trim(), pid: A ? A.pid : '' });
