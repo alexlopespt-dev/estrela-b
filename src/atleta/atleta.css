@@ -219,3 +219,36 @@ details.cfg summary::-webkit-details-marker{display:none}
 .now{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;background:var(--ok);color:#fff;font:700 11px var(--fb);vertical-align:2px}
 .now.off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
 .upd{text-align:center;font-size:12px;color:var(--muted);margin:16px 0 0}
+
+/* reabilitação (plano do departamento clínico) */
+.reab{border-left:4px solid #2f7fb8}
+.rx-mini{margin:8px 0 0;padding:0;list-style:none;counter-reset:rx}
+.rx-mini li{counter-increment:rx;display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.rx-mini li::before{content:counter(rx);flex:none;width:22px;height:22px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font:800 13px var(--fc);color:var(--muted)}
+.rx-mini li b{flex:1;min-width:0}.rx-mini li span{flex:none;font:700 14px var(--fc);color:var(--muted)}.rx-mini li.more{color:var(--muted);justify-content:flex-start}.rx-mini li.more::before{visibility:hidden}
+.rx{display:grid;gap:8px}
+.rx-it{border:1.5px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}.rx-it.on{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 7%,var(--surface))}
+.rx-ck{display:flex;gap:12px;align-items:flex-start;width:100%;padding:12px;border:0;background:none;color:inherit;font:inherit;text-align:left;min-height:56px}
+.rx-ck i{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-style:normal;font-weight:800;color:#fff}
+.rx-it.on .rx-ck i{background:var(--ok);border-color:var(--ok)}
+.rx-ck span{display:flex;flex-direction:column;gap:2px;min-width:0}.rx-ck b{font-size:15px}.rx-ck em{font:700 15px var(--fc);font-style:normal;color:var(--muted)}.rx-ck small{color:var(--muted);font-size:13px}
+.rx-it details{border-top:1px solid var(--line);padding:0 12px}.rx-it summary{padding:10px 0;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+.rx-it details p{margin:0 0 10px;font-size:14px;line-height:1.45}
+.rx-vid{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;font-weight:700;color:var(--grena)}.rx-vid svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.dorg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.dorg button{min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font:800 17px var(--fc);color:var(--text)}
+.dorg button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
+.q textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:16px var(--fb);background:var(--surface);color:var(--text);resize:vertical}
+@media (prefers-color-scheme:dark){ .rx-vid{color:var(--ouro)} }
+/* avaliações */
+.av{padding:14px 16px}.av.old{padding:0}.av.old>summary{list-style:none;padding:12px 16px;cursor:pointer}.av.old>summary::-webkit-details-marker{display:none}.av.old[open]>summary{border-bottom:1px solid var(--line)}
+.av.old>:not(summary){margin-left:16px;margin-right:16px}.av.old .av-t:last-child,.av.old .av-areas:last-child{margin-bottom:14px}
+.av-h{display:flex;align-items:center;justify-content:space-between;gap:10px}.av-h div{display:flex;flex-direction:column}.av-h div span{color:var(--muted);font-size:13px}
+.av-m{display:flex;align-items:baseline;gap:2px}.av-m b{font:800 30px/1 var(--fc);color:var(--grena)}.av-m small{color:var(--muted);font-weight:700}
+@media (prefers-color-scheme:dark){ .av-m b{color:var(--ouro)} }
+.av-areas{margin-top:10px}.av-a{display:grid;grid-template-columns:96px 1fr 34px;gap:10px;align-items:center;padding:6px 0}
+.av-a span{font-weight:700;font-size:14px}.av-a b{text-align:right;font:800 17px var(--fc)}
+.av-b{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}.av-b i{display:block;height:100%;background:var(--bar);border-radius:4px}
+.av-at{margin:0 0 4px 106px;font-size:13px}.av-at summary{color:var(--muted);cursor:pointer;font-weight:600}.av-at div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed var(--line)}
+.av-t{margin-top:10px}.av-t b{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.av-t p{margin:3px 0 0;font-size:14px;line-height:1.45;white-space:pre-line}
+.av-t.fin p{font-weight:700;font-style:italic}

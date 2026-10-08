@@ -29,20 +29,18 @@ with sync_playwright() as pw:
     if res: errs.append("svg "+str(res))
     pg.wait_for_timeout(500)
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t17_biblioteca.png"))
-    # ficha: alternar para a imagem original e voltar
+    # ficha: só o desenho vetorial (as imagens originais saíram da app), mesmo com a escolha antiga "o" guardada
+    pg.evaluate(f"localStorage.setItem('{LSK}:exv','o')"); pg.reload(); pg.wait_for_timeout(1200); pg.click('nav [data-t="treinos"]'); pg.click('[data-a="tsub"][data-k="ex"]'); pg.wait_for_timeout(600)
     xid=[k for k,x in DB()["exercises"].items() if x.get("imgk")=="exi014"][0]
     pg.click(f'[data-a="exView"][data-id="{xid}"]'); pg.wait_for_timeout(300)
-    s1=pg.get_attribute("#dlg img","src")[:26]; print("ficha:", s1)
+    s1=pg.get_attribute("#dlg img","src")[:26]; print("ficha:", s1, "| botões de alternar:", pg.locator('#dlg [data-a="exvMode"]').count())
     pg.screenshot(path=os.path.join(ROOT,"tests","capturas","t17_ficha.png"))
-    pg.click('#dlg [data-a="exvMode"][data-k="o"]'); pg.wait_for_timeout(300)
-    s2=pg.get_attribute("#dlg img","src")[:22]; print("original:", s2, "| guardado:", pg.evaluate(f"localStorage.getItem('{LSK}:exv')"))
-    if not s1.startswith("data:image/svg") or not s2.startswith("data:image/jpeg"): errs.append("alternar desenho")
+    if not s1.startswith("data:image/svg") or pg.locator('#dlg [data-a="exvMode"]').count(): errs.append("ficha: desenho vetorial sem alternar")
     pg.click('#dlg [data-a="mClose"]'); pg.wait_for_timeout(300)
-    print("biblioteca em originais:", pg.eval_on_selector_all(".exthumb img","e=>e.filter(x=>x.src.startsWith('data:image/jpeg')).length"))
-    pg.reload(); pg.wait_for_timeout(1200); pg.click('nav [data-t="treinos"]'); pg.click('[data-a="tsub"][data-k="ex"]'); pg.wait_for_timeout(600)
-    n_o=pg.eval_on_selector_all(".exthumb img","e=>e.filter(x=>x.src.startsWith('data:image/jpeg')).length"); print("mantém após recarregar:", n_o)
-    if n_o<100: errs.append("modo não guardado")
-    pg.click(f'[data-a="exView"][data-id="{xid}"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="exvMode"][data-k="v"]'); pg.wait_for_timeout(300); pg.click('#dlg [data-a="mClose"]')
+    nj=pg.eval_on_selector_all(".exthumb img","e=>e.filter(x=>x.src.startsWith('data:image/jpeg')).length"); print("biblioteca com JPEG:", nj)
+    if nj: errs.append("biblioteca ainda com imagens originais")
+    kb=os.path.getsize(os.path.join(DIST,"index.html"))//1024; print("dist/index.html:", kb, "KB")
+    if kb>3300: errs.append(f"index.html grande demais ({kb} KB)")
     # foto própria tem prioridade (sem botões de alternar)
     d=DB(); pid=[k for k,x in d["exercises"].items() if x.get("imgk")=="exi020"][0]; pname=d["exercises"][pid]["name"]
     d["exercises"][pid]["img"]=IM["exi001"]; pg.evaluate(f"localStorage.setItem('{LSK}',JSON.stringify({json.dumps(d)}))")

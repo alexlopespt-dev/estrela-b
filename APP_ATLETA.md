@@ -6,7 +6,9 @@ Site próprio (pasta `dist/atleta/`), pensado para o telemóvel. Cada atleta tem
 - **Hoje:** bem-estar da manhã (sono, fadiga, dores, stress — os mesmos textos do formulário), PSE depois do treino/jogo (sessão, minutos, 0–10, como se sente), o que vem a seguir e o aviso "Estás convocado".
 - **Agenda:** treinos e jogos dos próximos 10 dias (folgas incluídas).
 - **Jogo:** próximo jogo; a convocatória (convocado ou não, concentração, horário, lista com números) **só depois de a equipa técnica a publicar**.
-- **Eu:** jogos, minutos, titular, golos, assistências, presenças, bem-estar dos últimos 14 dias e últimos jogos. Não vê notas, avaliações, clínico nem dados de outros atletas.
+- **Eu:** jogos, minutos, titular, golos, assistências, presenças, bem-estar dos últimos 14 dias e últimos jogos. Não vê notas dos jogos, o clínico da equipa nem dados de outros atletas.
+- **A minha reabilitação** (em Hoje, só se estiver lesionado/condicionado e o fisio/preparador lhe tiver feito um plano em Clínico → Reabilitação): fase, exercícios com séries/repetições, "Como se faz" e vídeo; "Registar o que fiz hoje" (exercícios feitos, dor 0–10, notas) aparece logo no plano da equipa técnica como "Atleta (app)".
+- **As minhas avaliações** (em Eu): só as avaliações individuais em que a equipa técnica marcou "Mostrar esta avaliação na app do atleta" (opcional, por avaliação).
 - Sem rede: a resposta fica guardada no telemóvel e é enviada quando houver ligação (conta para a hora em que respondeu, até 36 h).
 - **Uma resposta por dia**, como no painel do Sheets: depois de responder ao bem-estar (ou ao PSE), pela app ou pelo formulário do Google, só volta a poder amanhã.
 

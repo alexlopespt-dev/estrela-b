@@ -23,19 +23,19 @@
   --fc:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   box-sizing:border-box; color-scheme:light;
   --card-hi:rgba(143,34,57,.035); --mp-bar:#dcb0ba;
-  --rb:var(--grena); --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
+  --cmpA:#8f2239; --cmpB:#b07800; --rb:var(--grena); --m-oo:#2a78d6; --m-od:#eb6834; --m-tro:#1baf7a; --m-trd:#eda100; --m-fbp:#e87ba4;   /* momentos (gráfico circular) */
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
-    --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
+    --cmpA:#e0607c; --cmpB:#bf8a2e; --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
     --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
     --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
   }
 }
 :root[data-theme="dark"]{ color-scheme:dark; --card-hi:rgba(255,255,255,.055); --mp-bar:rgba(214,120,140,.55);
-  --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
+  --cmpA:#e0607c; --cmpB:#bf8a2e; --rb:var(--ouro); --m-oo:#3987e5; --m-od:#d95926; --m-tro:#199e70; --m-trd:#c98500; --m-fbp:#d55181;
   --bg:#12080b; --surface:#1d1014; --surface-2:#27161b; --line:#382229;
   --text:#f4ecee; --muted:#b09aa0; --shadow:0 10px 30px -18px rgba(0,0,0,.8);
 }
@@ -789,6 +789,47 @@ html.sb-locked,html.sb-locked body{overflow:hidden}
 .rbpick small{font-weight:500}
 @media (max-width:520px){ .rbfb span{display:none} .rbfb{min-height:38px;align-items:center} .rbdor{grid-template-columns:repeat(6,1fr)} }
 
+/* Estado da app (estado.js) */
+.estop{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:15px;background:color-mix(in srgb,var(--r7) 14%,transparent)}
+.estop i{width:12px;height:12px;border-radius:50%;background:var(--r7);flex:none}
+.estop.warn{background:color-mix(in srgb,var(--r6) 16%,transparent)}.estop.warn i{background:var(--r6)}
+.estop.bad{background:color-mix(in srgb,var(--r5) 16%,transparent)}.estop.bad i{background:var(--r5)}
+.estsec{margin:0 0 14px}.estsec h4{margin:0 0 6px;font:800 13px var(--fc);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.estrow{display:grid;grid-template-columns:12px minmax(120px,190px) 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.estl{font-weight:700}.estv{min-width:0;overflow-wrap:anywhere}
+.estdot{width:10px;height:10px;border-radius:50%;background:var(--r7)}.estdot.warn{background:var(--r6)}.estdot.bad{background:var(--r5)}
+@media (max-width:620px){ .estrow{grid-template-columns:12px 1fr;row-gap:2px} .estv,.esta{grid-column:2} }
+
+/* copiar semana de treinos */
+.wcsec{display:flex;align-items:center;justify-content:space-between;gap:8px}.wcsec .btn{text-transform:none;letter-spacing:0}
+.wcopts{display:grid;gap:2px}.wclist{border:1px solid var(--line);border-radius:10px;max-height:min(46vh,420px);overflow:auto}
+.wcrow{gap:10px;align-items:flex-start;cursor:pointer}.wcrow input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--grena)}
+.wcrow.busy{background:color-mix(in srgb,var(--r6) 8%,transparent)}.wcwarn{color:#b85f0b;font-weight:600}
+:root[data-theme="dark"] .wcwarn{color:var(--r6)} @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .wcwarn{color:var(--r6)} }
+
+/* comparar atletas (cmp.js) — cores validadas com o dataviz: claro #8f2239/#b07800, escuro #e0607c/#bf8a2e */
+.cmppick{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-bottom:12px}.cmppick .fld{margin:0}
+.cmppick .fld span{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em}.cmpA span{color:var(--cmpA)}.cmpB span{color:var(--cmpB)}
+.cmppick select{border-width:2px}.cmpA select{border-color:var(--cmpA)}.cmpB select{border-color:var(--cmpB)}
+.cmpheads{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.cmphead{display:flex;align-items:center;gap:10px;padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--cmpA);min-width:0}
+.cmphead.b{border-top-color:var(--cmpB)}.cmphead>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.cmphead b{font-size:16px}
+.cmphead small{color:var(--muted)}.cmphead .tag{align-self:flex-start}
+.cmpk{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:800 15px var(--fc);color:#fff;background:var(--cmpA)}.cmphead.b .cmpk{background:var(--cmpB)}
+.cmphint{margin:0 0 12px}
+.cmprow{display:grid;grid-template-columns:52px 1fr minmax(96px,150px) 1fr 52px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}.cmprow:first-child{border-top:0}
+.cmpl{text-align:center;font-size:12.5px;font-weight:700;line-height:1.2}.cmpl small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.cmpv{font:700 15px var(--fc);font-variant-numeric:tabular-nums;color:var(--muted)}.cmpv.a{text-align:right}.cmpv.win{color:var(--text);font-weight:800}
+.cmpbar{height:10px;display:flex}.cmpbar.a{justify-content:flex-end}.cmpbar i{display:block;height:100%;border-radius:2px;opacity:.35}
+.cmpbar.a i{background:var(--cmpA);border-radius:4px 2px 2px 4px}.cmpbar.b i{background:var(--cmpB);border-radius:2px 4px 4px 2px}
+.cmprow:has(.cmpv.a.win) .cmpbar.a i,.cmprow:has(.cmpv.b.win) .cmpbar.b i{opacity:1}
+.cmpradarw{display:flex;flex-direction:column;align-items:center;margin-bottom:6px}.cmpradar{width:100%;max-width:380px}
+.cmpleg{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:12px;color:var(--muted)}.cmpleg i{display:inline-block;width:16px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.cmpleg .la{background:var(--cmpA)}.cmpleg .lb{background:repeating-linear-gradient(90deg,var(--cmpB) 0 5px,transparent 5px 8px)}
+@media (max-width:620px){ .cmpheads{grid-template-columns:1fr} .cmprow{grid-template-columns:40px 1fr minmax(78px,110px) 1fr 40px;gap:5px} .cmpv{font-size:14px} .cmphead .btn{display:none} }
+
+.avpub{margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}.avpub small{font-weight:500}
+
 </style>
 </head>
 <body>
@@ -917,7 +958,7 @@ const sel = (name,opts,val,attrs="",empty) => `<select name="${name}" ${attrs}>$
 function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
 
 /* ================= dados ================= */
-const BUILD = "06/10/2026 14:41";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
+const BUILD = "08/10/2026 09:21";   // data da versão (build.py), mostrada no Plantel para confirmar se o dispositivo tem a versão nova
 const COLS = ["meta","players","events","evals","tests","injuries","scout","exercises","cycles","statdefs","principles","staff","opponents","setpieces","tactics","rehab","rehabex"];
 const D = {}; COLS.forEach(c=>D[c]={});
 let db=null, assets=null, MODE="loading", VER=0;
@@ -1260,10 +1301,9 @@ function vecSVG(d,opts={}){
   return `<svg viewBox="0 0 ${w} ${h}"${opts.img?` width="${w}" height="${h}"`:""} style="width:100%;height:auto;display:block;border-radius:${opts.r??10}px" role="img" aria-label="Desenho do exercício" xmlns="http://www.w3.org/2000/svg">${vecDefs(uid)}${d.fld?vecField(d.fld,w,h,uid):`<rect width="${w}" height="${h}" fill="${d.bgc||VEC_GRASS[0]}"/>`}${its.map(({it})=>vecItem(it,uid)).join("")}</svg>`;
 }
 
-/* desenho a mostrar para um exercício da biblioteca: vetorial (predefinido) ou a imagem original (escolha guardada neste dispositivo) */
-let EXV_MODE="v"; try{ if(localStorage.getItem(LS+":exv")==="o") EXV_MODE="o"; }catch(e){}
+/* desenho de um exercício da biblioteca: sempre o vetorial (as imagens originais saíram da app para ficar mais leve) */
+const EXV_MODE="v";
 const EXV_URL={};
-function setExvMode(m){ EXV_MODE=m==="o"?"o":"v"; try{ localStorage.setItem(LS+":exv",EXV_MODE); }catch(e){} }
 // desenho vetorial em uso para o exercício (null se tiver foto própria, se não houver desenho ou se estiver a ver as originais)
 // o desenho do próprio exercício (vec, feito ou alterado no editor) ganha ao da biblioteca (imgk)
 const exVecOf = x => (x && !(x.imgA||x.imgL||x.imgG||x.img) && (x.vec || (x.imgk && EXV_MODE!=="o" && EXVEC[x.imgk]))) || null;
@@ -1462,9 +1502,10 @@ function vTreinos(){
   const upc=all.filter(e=>e.date>=t), past=all.filter(e=>e.date<t).reverse();
   const group = arr => { const g={}; arr.forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; };
   const block = (arr,asc) => { const g=group(arr); const ks=Object.keys(g).sort(); if(!asc) ks.reverse();
-    return ks.map(w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `<div class="gsec" style="padding:10px 16px 0">Semana de ${fmtD(w)} a ${fmtD(addDays(w,6))}${mi?" — "+esc(mi.name):""}</div><div class="list">${g[w].map(eventRow).join("")}</div>`; }).join(""); };
+    return ks.map(w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `<div class="gsec wcsec" style="padding:10px 16px 0"><span>Semana de ${fmtD(w)} a ${fmtD(addDays(w,6))}${mi?" — "+esc(mi.name):""}</span>${g[w].some(e=>e.type==="treino")?`<button class="btn sm ghost" data-a="weekCopy" data-w="${w}" title="Copiar os treinos desta semana para outra">Copiar semana</button>`:""}</div><div class="list">${g[w].map(eventRow).join("")}</div>`; }).join(""); };
   return `
   <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span>
+    <button class="btn" data-a="weekCopy">Copiar semana</button>
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
     <button class="btn primary" data-a="newEvent" data-type="treino">+ Novo treino</button></div>
   <section class="card"><div class="card-h"><h3>Próximos</h3><span class="sub">${upc.length}</span></div>${upc.length?block(upc,true):`<div class="empty"><b>Sem treinos agendados</b>Cria um treino ou gera a semana-tipo (3.ª a 6.ª).</div>`}</section>
@@ -2058,7 +2099,7 @@ function vPlantel(){
   const list=players().filter(p=>!S.plGroup||GROUP(p.pos)===S.plGroup);
   const arch=allPlayers().filter(p=>p.archived);
   return `
-  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn" data-a="mesRel">Relatórios mensais</button><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
   <div class="chips" style="margin-bottom:12px"><button class="chip ${!S.plGroup?"on":""}" data-a="plGroup" data-k="">Todos (${players().length})</button>${["GR","DEF","MED","ATA"].map(k=>`<button class="chip ${S.plGroup===k?"on":""}" data-a="plGroup" data-k="${k}">${GNAME[k]}</button>`).join("")}</div>
   <section class="card"><div class="list">${list.length?list.map(p=>{ const s=st.pl[p.id], av=avail(p.id);
     return playerLine(p,`${av!=="ok"?`<span class="tag ${AV[av].c}">${AV[av].l}</span>`:""}<span class="small muted num" style="text-align:right">${s.j} J — ${s.min}'<br>${s.att==null?"–":s.att+"%"} treinos</span>${badge(s.avg)}`); }).join(""):`<div class="empty"><b>Sem atletas</b></div>`}</div></section>
@@ -2067,7 +2108,7 @@ function vPlantel(){
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
   ${vWho()}
   ${EDITION==="clubes"?sbAccount():""}
-  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span></div><div class="card-b">
+  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span><button class="btn sm" data-a="estado">Estado da app</button></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
       <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: ${EDITION==="clubes"?"GD Exemplo — Sub-19":"CF Estrela da Amadora — Equipa B"}"></label>
@@ -2107,7 +2148,7 @@ function pAtleta(id){
   <section class="card">
     <div class="ahead">${avatar(p,`data-a="photo" data-id="${esc(id)}" aria-label="Mudar foto" title="Mudar foto"`)}
       <div><h2>${esc(p.name)}</h2><p><span class="tag gold">${esc(p.pos||"—")}</span>${p.n?`<span>N.º ${esc(p.n)}</span>`:""}${p.foot?`<span>— Pé ${esc(p.foot.toLowerCase())}</span>`:""}${age!=null?`<span>— ${age} anos</span>`:""}${p.height?`<span>— ${esc(p.height)} cm</span>`:""}${p.weight?`<span>— ${esc(p.weight)} kg</span>`:""}<span class="tag ${AV[av].c}">${AV[av].l}</span></p></div>
-      <div class="acts"><button class="btn sm" data-a="plEdit" data-id="${esc(id)}">Editar dados</button><button class="btn sm" data-a="evalNew" data-id="${esc(id)}">Nova avaliação</button><button class="btn sm" data-a="injNew" data-id="${esc(id)}">Registar lesão</button><button class="btn sm gold" data-a="prAth" data-id="${esc(id)}">Relatório em PDF</button></div></div>
+      <div class="acts"><button class="btn sm" data-a="plEdit" data-id="${esc(id)}">Editar dados</button><button class="btn sm" data-a="evalNew" data-id="${esc(id)}">Nova avaliação</button><button class="btn sm" data-a="injNew" data-id="${esc(id)}">Registar lesão</button><button class="btn sm" data-a="cmpWith" data-id="${esc(id)}">Comparar</button><button class="btn sm" data-a="mesRel" data-id="${esc(id)}">Relatório mensal</button><button class="btn sm gold" data-a="prAth" data-id="${esc(id)}">Relatório em PDF</button></div></div>
     <div class="card-b"><div class="kpis">
       <div class="kpi"><span>Jogos (titular)</span><b>${s.j}<small> (${s.tit})</small></b></div>
       <div class="kpi"><span>Minutos</span><b>${s.min}'</b></div>
@@ -2123,7 +2164,7 @@ function pAtleta(id){
     <section class="card"><div class="card-h"><h3>Avaliação</h3><button class="btn sm primary" data-a="evalNew" data-id="${esc(id)}">+ Avaliação</button></div><div class="card-b">
       ${last?`${radarSVG(la,pa)}<div class="areas" style="margin-top:8px">${Object.entries(evalCfg()).map(([k,a])=>`<div class="area"><span>${esc(a.l)}</span><b>${la[k]==null?"–":fmt1(la[k])}</b>${pa&&la[k]!=null&&pa[k]!=null?deltaHTML(la[k],pa[k],false,1):""}</div>`).join("")}</div>
         ${prev?`<p class="note">Linha tracejada: avaliação anterior (${fmtD(prev.date)}).</p>`:""}`:`<div class="empty"><b>Sem avaliações</b>Avalia técnica, tática, física e psicológica de 0 a 10.</div>`}
-    </div>${evs.length?`<div class="list" style="border-top:1px solid var(--line)">${evs.slice().reverse().map(e=>`<button class="li" data-a="evalEdit" data-id="${esc(e.id)}"><span class="main"><b>${fmtD(e.date,{day:"numeric",month:"long",year:"numeric"})}</b><small>${esc(e.by||"Sem responsável")}${e.fin?" — "+esc(e.fin):""}</small></span>${badge(evalScore(e))}</button>`).join("")}</div>`:""}</section>
+    </div>${evs.length?`<div class="list" style="border-top:1px solid var(--line)">${evs.slice().reverse().map(e=>`<button class="li" data-a="evalEdit" data-id="${esc(e.id)}"><span class="main"><b>${fmtD(e.date,{day:"numeric",month:"long",year:"numeric"})}</b><small>${esc(e.by||"Sem responsável")}${e.fin?" — "+esc(e.fin):""}</small></span>${e.pub?`<span class="tag blue" title="O atleta vê esta avaliação na app dele">Na app do atleta</span>`:""}${badge(evalScore(e))}</button>`).join("")}</div>`:""}</section>
     <section class="card"><div class="card-h"><h3>Testes físicos</h3><button class="btn sm" data-a="tab" data-t="testes">Registar</button></div>
       ${ms.length?`<div class="tscroll"><table class="tb"><thead><tr><th class="l">Teste</th>${ms.map(mo=>`<th>${esc(mo.label||fmtD(mo.date))}</th>`).join("")}</tr></thead><tbody>${testRows}</tbody></table></div>`:`<div class="empty"><b>Sem momentos de avaliação</b></div>`}</section>
     <section class="card"><div class="card-h"><h3>Jogos</h3><span class="sub">${s.games.length} convocatórias</span></div>
@@ -2284,8 +2325,9 @@ function vStats(){
   const val=(x,k)=>k==="n"?(x.p.n||99):k==="avg"?(x.s.avg??-1):k==="att"?(x.s.att??-1):k.startsWith("cs:")?(x.s.cs[k.slice(3)]||0):k==="load7"?(carga7Of(x.p.id,x.s).v??-1):x.s[k];
   rows.sort((a,b)=>{ const d=(val(a,S.stSort)-val(b,S.stSort))*S.stDir; return d || BYPOS(a.p,b.p); });
   const avgTeam=avg(tm.rs);
-  const sub=`<div class="seg">${[["por","Por atleta"],["grelha","Grelha da época"]].map(([k,l])=>`<button data-a="ssub" data-k="${k}" class="${(S.ssub||"por")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const sub=`<div class="seg">${[["por","Por atleta"],["grelha","Grelha da época"],["cmp","Comparar atletas"]].map(([k,l])=>`<button data-a="ssub" data-k="${k}" class="${(S.ssub||"por")===k?"on":""}">${l}</button>`).join("")}</div>`;
   if((S.ssub||"por")==="grelha") return `<div class="bar"><h2>Estatísticas</h2>${sub}</div>`+vGrid();
+  if(S.ssub==="cmp") return `<div class="bar"><h2>Estatísticas</h2>${sub}</div>`+vCmp();
   return `
   <div class="bar"><h2>Estatísticas</h2>${sub}${comps.length?`<label class="fld" style="flex-direction:row;align-items:center;gap:8px">Competição ${sel("",comps,S.stComp,'data-c="stComp" class="inp" style="width:auto"',"Todas")}</label>`:""}</div>
   <div class="kpis" style="margin-bottom:14px">
@@ -3062,6 +3104,56 @@ function newEventForm(type,date){
   }}});
 }
 
+/* ================= copiar uma semana de treinos =================
+   Escolhe a semana de origem (com treinos) e a segunda-feira de destino; cada treino vai para o mesmo dia da semana
+   com hora, duração, local, tema, tipo, intensidade, material, objetivos e (opcional) o plano de exercícios.
+   Presenças, PSE, avaliações e notas não se copiam. Dias que já têm treino ficam desmarcados (podes marcar na mesma). */
+const WD_PT=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+function wcWeeks(){ const g={}; trainings().forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; }
+function weekCopyForm(src){
+  const W=wcWeeks(), ks=Object.keys(W).sort().reverse(); if(!ks.length){ toast("Ainda não há treinos para copiar."); return; }
+  const t=todayISO(); src=src&&W[src]?src:(ks.find(w=>w<=mondayOf(t))||ks[0]);
+  const dst=addDays(src<mondayOf(t)?mondayOf(t):src,7);
+  const lbl=w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `${fmtD(w)} a ${fmtD(addDays(w,6))} · ${plural(W[w].length,"treino")}${mi?" · "+mi.name:""}`; };
+  const body=`<div class="form">
+    <label class="fld full">Semana a copiar${sel("src",ks.map(w=>({v:w,l:lbl(w)})),src,'data-c="wcUpd"')}</label>
+    <label class="fld">Para a semana de (segunda-feira)<input type="date" name="dst" value="${dst}" data-c="wcUpd"></label>
+    <div class="fld full wcopts"><label class="chk"><input type="checkbox" name="plan" checked data-c="wcUpd"><span>Copiar o plano (exercícios e minutos)</span></label>
+      <label class="chk"><input type="checkbox" name="obj" checked><span>Copiar objetivos e material</span></label>
+      <label class="chk"><input type="checkbox" name="mc" checked><span>Criar o microciclo da semana, se ainda não existir</span></label></div></div>
+    <div id="wcPrev"></div>`;
+  modal({title:"Copiar semana de treinos",sub:"Presenças, PSE, avaliações e notas não se copiam",body,foot:footSave("Copiar"),ctx:{wc:true,save:wcSave}});
+  wcPreview();
+}
+function wcPlan(){ const src=fv("src"), dst0=fv("dst"); if(!src||!validISO(dst0)) return null; const dst=mondayOf(dst0), W=wcWeeks();
+  const evs=events(); return {src,dst,rows:(W[src]||[]).slice().sort(byDT).map(e=>{ const o=dayDiff(src,e.date), date=addDays(dst,o);
+    const ocup=evs.filter(x=>x.type==="treino"&&x.date===date); return {e,date,o,ocup}; })}; }
+function wcPreview(){
+  const el=$("#wcPrev"); if(!el) return; const P=wcPlan();
+  if(!P){ el.innerHTML=`<p class="small muted">Escolhe a semana de destino.</p>`; return; }
+  if(P.src===P.dst){ el.innerHTML=`<p class="note" style="color:var(--r5)">A semana de destino é a mesma que a de origem.</p>`; return; }
+  const withPlan=fv("plan");
+  el.innerHTML=`<p class="small" style="margin:12px 0 6px"><b>${plural(P.rows.length,"treino")}</b> de ${fmtD(P.src)} → semana de <b>${fmtD(P.dst)} a ${fmtD(addDays(P.dst,6))}</b>${P.dst<mondayOf(todayISO())?` <span class="tag warn">semana passada</span>`:""}</p>
+    <div class="list wclist">${P.rows.map((r,i)=>{ const e=r.e, nb=(e.plan||[]).length, mins=(e.plan||[]).reduce((s,x)=>s+(+x.min||0),0);
+      return `<label class="li wcrow ${r.ocup.length?"busy":""}"><input type="checkbox" name="wc${i}" ${r.ocup.length?"":"checked"}><span class="main"><b>${WD_PT[r.o]} ${fmtD(r.date,{day:"numeric",month:"short"})}${e.time?" · "+esc(e.time):""}${e.theme?" · "+esc(e.theme):""}</b>
+        <small>${[TR_TYPES.find(t=>t.k===e.ttype)?.l,e.int,e.dur?e.dur+" min":"",withPlan&&nb?`${plural(nb,"bloco")} (${mins}')`:""].filter(Boolean).map(esc).join(" · ")||"Sem detalhes"}</small>
+        ${r.ocup.length?`<small class="wcwarn">Já há treino neste dia${r.ocup[0].time?" às "+esc(r.ocup[0].time):""}${r.ocup[0].theme?" ("+esc(r.ocup[0].theme)+")":""} — marca para copiar na mesma</small>`:""}</span></label>`; }).join("")}</div>`;
+}
+function wcSave(){
+  const P=wcPlan(); if(!P){ toast("Escolhe a semana de destino."); return; }
+  if(P.src===P.dst){ toast("A semana de destino é a mesma que a de origem."); return; }
+  const withPlan=fv("plan"), withObj=fv("obj"); let n=0;
+  P.rows.forEach((r,i)=>{ if(!fv("wc"+i)) return; const e=r.e;
+    put("events",uid("tr_"),{type:"treino",date:r.date,time:e.time||"",dur:e.dur||90,place:e.place||"",theme:e.theme||"",int:e.int||"",ttype:e.ttype||"",clima:"",
+      mat:withObj?e.mat||"":"",objG:withObj?e.objG||"":"",objE:withObj?e.objE||"":"",plan:withPlan?clone(e.plan||[]):[],att:{},closed:false,notes:""}); n++; });
+  let mc=false;
+  if(n && fv("mc") && !cycles("micro").some(c=>c.start<=addDays(P.dst,6)&&c.end>=P.dst)){
+    const om=cycleAt("micro",P.src)||cycleAt("micro",addDays(P.src,3));
+    put("cycles",uid("cy_"),{kind:"micro",name:`Microciclo ${fmtD(P.dst)}`,start:P.dst,end:addDays(P.dst,6),period:om&&om.period||"",obj:om&&om.obj||"",notes:""}); mc=true; }
+  if(!n){ toast("Marca pelo menos um treino para copiar."); return; }
+  closeModal(); S.day=P.dst; S.cal=P.dst.slice(0,7);
+  toast(`${plural(n,"treino copiado","treinos copiados")} para a semana de ${fmtD(P.dst)}${mc?" (e o microciclo)":""}.`);
+}
 function weekGenForm(){
   const t=todayISO(), wd=(toD(t).getDay()+6)%7;
   const mon = wd<=1 ? mondayOf(t) : addDays(mondayOf(t),7);
@@ -3117,7 +3209,7 @@ function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px;white-space:pre-line"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
-    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!x.vec&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
+    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px"></div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
     foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.vec||(x.imgk&&EXVEC[x.imgk])||(x.drw&&(x.drw.it||[]).length)?"Editar desenho":"Desenhar"}</button><button class="btn" data-a="exFrom" data-id="${esc(id)}" title="Cria um exercício novo igual a este, para alterares">⧉ Novo a partir deste</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
@@ -3209,12 +3301,15 @@ function evalForm(pid,evalId){
     <div class="form" style="margin-top:14px">
       <label class="fld full">Principais qualidades<textarea name="str">${esc(ev.str||"")}</textarea></label>
       <label class="fld full">Aspetos a melhorar<textarea name="weak">${esc(ev.weak||"")}</textarea></label>
-      <label class="fld full">Avaliação final<input name="fin" value="${esc(ev.fin||"")}" placeholder="Ex.: Titular indiscutível, a subir de forma"></label></div>`;
+      <label class="fld full">Avaliação final<input name="fin" value="${esc(ev.fin||"")}" placeholder="Ex.: Titular indiscutível, a subir de forma"></label>
+      ${EDITION==="estrela"?`<label class="chk full avpub"><input type="checkbox" name="pub" ${ev.pub?"checked":""}><span><b>Mostrar esta avaliação na app do atleta</b><small class="muted"> — opcional. ${esc(firstName(p.name))} vê as notas por área e critério, os pontos fortes, o que melhorar e a avaliação final. Podes tirar quando quiseres.</small></span></label>`:""}</div>`;
   modal({title:esc(p.name),sub:evalId?"Editar avaliação":"Nova avaliação",big:true,body,foot:footSave("Guardar avaliação",evalId?"Eliminar":null),ctx:{v:clone(v),areaAvg,
     save:()=>{ const date=fv("date"); if(!validISO(date)){ toast("Indica a data."); return; }
       const has=Object.values(M.v).some(o=>Object.values(o||{}).some(x=>parseNum(x)!=null));
       if(!has){ toast("Avalia pelo menos um atributo."); return; }
-      put("evals",evalId||uid("av_"),{pid,date,by:fv("by"),v:M.v,str:fv("str"),weak:fv("weak"),fin:fv("fin")}); closeModal(); toast("Avaliação guardada"); },
+      const pub=EDITION==="estrela"&&!!fv("pub");
+      put("evals",evalId||uid("av_"),{pid,date,by:fv("by"),v:M.v,str:fv("str"),weak:fv("weak"),fin:fv("fin"),pub}); closeModal();
+      toast(pub?(P(pid)&&P(pid).atk?"Avaliação guardada — já aparece na app do atleta":"Avaliação guardada. Para a ver, o atleta precisa do link da app (ficha → App do atleta)."):"Avaliação guardada"); },
     del:()=>askConfirm("Eliminar esta avaliação?","Eliminar",true).then(ok=>{ if(ok){ del("evals",evalId); closeModal(); } })
   }});
   Object.keys(evalCfg()).forEach(k=>{ const a=areaAvg(k); $("#av_"+k).textContent=a==null?"–":fmt1(a); });
@@ -3490,6 +3585,7 @@ const A = {
   calNav: el => { const [y,m]=S.cal.split("-").map(Number); const d=new Date(y,m-1+(+el.dataset.n),1); S.cal=d.getFullYear()+"-"+pad(d.getMonth()+1); render(); },
   calToday: () => { S.day=todayISO(); S.cal=S.day.slice(0,7); render(); },
   weekGen: () => weekGenForm(),
+  weekCopy: el => weekCopyForm(el.dataset.w||""),
   newEvent: el => newEventForm(el.dataset.type, el.dataset.d),
   tsub: el => { S.tsub=el.dataset.k; render(); },
   plsub: el => { S.plsub=el.dataset.k; render(); },
@@ -3632,7 +3728,6 @@ const A = {
   syncTrash: () => syncLixo(),
   syncRestore: el => syncRestore(+el.dataset.j),
   theme: () => { const i=THEMES.findIndex(t=>t[0]===THEME); THEME=THEMES[(i+1)%THEMES.length][0]; try{ localStorage.setItem(LS+":theme",THEME); }catch(e){} applyTheme(); toast(THEMES.find(t=>t[0]===THEME)[1]); },
-  exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },
   catCfg: () => catCfgForm(),
@@ -3656,6 +3751,7 @@ const A = {
 
 /* ================= alterações em campos ================= */
 const Cg = {
+  wcUpd: () => wcPreview(),
   cargaMc: el => { S.cargaMc=el.value; render(); },
   f: el => { const {col,id,f,t}=el.dataset; if(!D[col]||!D[col][id]) return; const o=clone(D[col][id]);
     let v = el.value; if(typeof v==="string") v=v.trim();
@@ -5365,6 +5461,307 @@ document.addEventListener("input", e=>{
   const el=e.target;
   if(el.id==="rbSearch"){ const q=el.value.trim().toLowerCase(); let n=0; $$("#rbList [data-name]").forEach(c=>{ const ok=!q||c.dataset.name.includes(q); c.style.display=ok?"":"none"; if(ok) n++; }); const none=$("#rbNone"); if(none) none.style.display=n?"none":""; }
   if(el.id==="rbPickQ"){ const on=$("#dlg [data-a=rbPickF].on"); rbPickFilter(on?+on.dataset.k||0:0,el.value); }
+});
+
+/* ================= ESTADO DA APP =================
+   Um só ecrã para ver se está tudo a funcionar neste dispositivo: versão, partilha, monitorização, app do atleta,
+   espaço no browser e os dados. Cada linha tem o estado (ok / atenção / problema), o que quer dizer e o botão para resolver.
+   "Copiar relatório" junta tudo num texto para mandar a quem dá apoio. */
+const EST_LIM = 5*1024*1024;   // o Safari (iPhone/iPad) dá ~5 MB ao localStorage de cada site
+function estLsBytes(){ let n=0; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||""; n+=(k.length+(localStorage.getItem(k)||"").length)*2; } }catch(e){} return n; }
+const estMB = b => (b/1048576).toFixed(b<1048576?2:1).replace(".",",")+" MB";
+const estAgo = t => t ? ago(new Date(t).toISOString()) : "nunca";
+function estItens(){
+  const out=[], t=todayISO(), add=(sec,lvl,l,v,a)=>out.push({sec,lvl,l,v,a:a||""});
+  // --- versão e dispositivo
+  add("Esta app","ok","Versão",BUILD);
+  add("Esta app","ok","Este dispositivo",typeof meLabel==="function"?meLabel():"—");
+  add("Esta app",navigator.onLine===false?"bad":"ok","Rede",navigator.onLine===false?"Sem rede — as alterações ficam guardadas e seguem quando houver":"Com rede");
+  if(MODE==="local"){ const b=estLsBytes(), p=b/EST_LIM;
+    add("Esta app",p>.85?"bad":p>.65?"warn":"ok","Espaço no browser",`${estMB(b)} de ~5 MB (${Math.round(p*100)}%)${p>.65?" — exporta uma cópia e apaga fotos grandes":""}`); }
+  // --- partilha (versão Netlify)
+  if(MODE==="local"){
+    if(!syncOn()) add("Partilha com a equipa técnica","warn","Ligação","Não está ligada: o que fazes aqui só fica neste dispositivo",`<button class="btn sm" data-a="syncCfg">Ligar</button>`);
+    else { const g=SYNC.diag, n=syncN();
+      add("Partilha com a equipa técnica",SYNC.err?"bad":"ok","Ligação",SYNC.err?SYNC.err:SYNC.at?`Última sincronização ${estAgo(SYNC.at)}`:"Ligada (ainda sem sincronizar nesta sessão)",`<button class="btn sm" data-a="estSync">Sincronizar agora</button>`);
+      add("Partilha com a equipa técnica",n>20?"bad":n?"warn":"ok","Por enviar",n?`${plural(n,"alteração","alterações")} ainda não chegaram ao Sheets`:"Nada por enviar");
+      if(g.push) add("Partilha com a equipa técnica",g.push.ms>20000?"warn":"ok","Último envio",`${(g.push.ms/1000).toFixed(1).replace(".",",")} s — ${plural(g.push.n,"registo")} ${estAgo(g.push.at)}`);
+      if(g.pull) add("Partilha com a equipa técnica",g.pull.ms>20000?"warn":"ok","Última receção",`${(g.pull.ms/1000).toFixed(1).replace(".",",")} s — ${plural(g.pull.n,"registo")} ${estAgo(g.pull.at)}`);
+      if(g.jsonp) add("Partilha com a equipa técnica","warn","Leitura direta bloqueada",`${g.jsonp}× — a app usa o caminho alternativo (mais lento). Bloqueador de anúncios?`);
+      if(g.pushErr) add("Partilha com a equipa técnica","bad","Último erro ao enviar",`${g.pushErr.m} (${estAgo(g.pushErr.at)})`);
+    }
+  }
+  // --- monitorização
+  const mc=monCfg();
+  if(!mc.url) add("Monitorização","warn","Ligação","Não está ligada ao Sheets da monitorização",`<button class="btn sm" data-a="monCfg">Ligar</button>`);
+  else if(!MON.data) add("Monitorização",MON.err?"bad":"warn","Resumo",MON.err||"Ainda não foi lido neste dispositivo",`<button class="btn sm" data-a="monRefresh">Atualizar</button>`);
+  else { const d=MON.data, at=d.atualizado?new Date(d.atualizado):null, h=at&&!isNaN(at)?(Date.now()-at)/36e5:null, {miss}=monMatch();
+    add("Monitorização",MON.err?"bad":h!=null&&h>30?"warn":"ok","Resumo do Sheets",MON.err?MON.err:monAge(),`<button class="btn sm" data-a="monRefresh">Atualizar</button>`);
+    add("Monitorização",d.diasAtraso>1?"warn":"ok","Respostas",d.diasAtraso>0?`Sem respostas novas há ${plural(d.diasAtraso,"dia")}`:`${plural((d.jogadores||[]).length,"atleta")} no resumo`);
+    add("Monitorização",miss.length?"warn":"ok","Nomes",miss.length?`${plural(miss.length,"nome")} do Sheets sem atleta ligado: ${miss.slice(0,4).join(", ")}${miss.length>4?"…":""}`:"Todos os nomes ligados a um atleta",miss.length?`<button class="btn sm" data-a="monCfg">Ligar nomes</button>`:"");
+  }
+  // --- app do atleta (só Estrela)
+  if(EDITION==="estrela"){
+    const pls=players(), comLink=pls.filter(p=>p.atk).length, site=typeof atSite==="function"?atSite():"";
+    add("App do atleta",site?"ok":"warn","Endereço do site",site||"Por definir (Plantel → App do atleta)",`<button class="btn sm" data-a="atLinks">Links</button>`);
+    add("App do atleta",comLink<pls.length?"warn":"ok","Links pessoais",`${comLink} de ${pls.length} atletas com link`);
+    const g=events().filter(e=>e.type==="jogo"&&!e.closed&&e.date>=t).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")))[0];
+    if(g){ const dias=dayDiff(t,g.date), call=(g.call||[]).length;
+      add("App do atleta",!g.convPub&&call&&dias<=2?"warn":"ok","Convocatória do próximo jogo",`${g.venue==="F"?"@ ":"vs "}${g.opp||""} (${fmtD(g.date,{day:"numeric",month:"short"})}): ${!call?"ainda sem convocados":g.convPub?"publicada na app":"não publicada"}`); }
+    if(syncOn()) add("App do atleta","ok","O que os atletas veem","Compara esta app com o que chega aos atletas",`<button class="btn sm" data-a="atDiag">Verificar</button>`);
+  }
+  // --- dados
+  const tr=events().filter(e=>e.type==="treino"), jg=events().filter(e=>e.type==="jogo");
+  const semPlano=tr.filter(e=>e.date<t&&e.date>=addDays(t,-14)&&!(e.plan||[]).length).length;
+  const semPres=tr.filter(e=>e.date<t&&e.date>=addDays(t,-14)&&!Object.keys(e.att||{}).length).length;
+  const porFechar=jg.filter(e=>e.date<t&&!e.closed).length;
+  add("Dados","ok","Registos",`${plural(players().length,"atleta")} · ${plural(tr.length,"treino")} · ${plural(jg.length,"jogo")} · ${plural(Object.keys(D.exercises).length,"exercício")}`);
+  add("Dados",semPres?"warn":"ok","Presenças (14 dias)",semPres?`${plural(semPres,"treino passado","treinos passados")} sem presenças marcadas`:"Todos os treinos com presenças");
+  add("Dados",semPlano?"warn":"ok","Plano de treino (14 dias)",semPlano?`${plural(semPlano,"treino passado","treinos passados")} sem plano (não contam para os momentos do jogo)`:"Todos os treinos com plano");
+  add("Dados",porFechar?"warn":"ok","Jogos",porFechar?`${plural(porFechar,"jogo passado","jogos passados")} por fechar (não contam para as estatísticas)`:"Todos os jogos passados fechados");
+  return out;
+}
+const EST_C={ok:{c:"ok",l:"OK"},warn:{c:"warn",l:"Atenção"},bad:{c:"bad",l:"Problema"}};
+function estadoForm(){
+  const it=estItens(), secs=[...new Set(it.map(x=>x.sec))], nb=it.filter(x=>x.lvl==="bad").length, nw=it.filter(x=>x.lvl==="warn").length;
+  const top=nb?["bad",`${plural(nb,"problema")}${nw?` e ${plural(nw,"aviso")}`:""}`]:nw?["warn",`Tudo a funcionar, com ${plural(nw,"aviso")}`]:["ok","Tudo a funcionar"];
+  modal({title:"Estado da app",sub:`Versão de ${esc(BUILD)} · ${esc(new Date().toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}`,big:true,
+    body:`<div class="estop ${top[0]}" role="status"><i></i><b>${esc(top[1])}</b></div>
+      ${secs.map(s=>`<section class="estsec"><h4>${esc(s)}</h4>${it.filter(x=>x.sec===s).map(x=>`<div class="estrow"><span class="estdot ${x.lvl}" aria-label="${EST_C[x.lvl].l}" title="${EST_C[x.lvl].l}"></span><span class="estl">${esc(x.l)}</span><span class="estv">${esc(x.v)}</span>${x.a?`<span class="esta">${x.a}</span>`:""}</div>`).join("")}</section>`).join("")}`,
+    foot:`<button class="btn" data-a="estCopy">Copiar relatório</button><span class="right"><button class="btn" data-a="estAgain">Atualizar</button><button class="btn primary" data-a="mClose">Fechar</button></span>`});
+}
+function estTexto(){
+  const it=estItens(); let s=`Estado da app — ${new Date().toLocaleString("pt-PT")}\n`, sec="";
+  it.forEach(x=>{ if(x.sec!==sec){ sec=x.sec; s+=`\n[${sec}]\n`; } s+=`${x.lvl==="ok"?"✓":x.lvl==="warn"?"!":"✗"} ${x.l}: ${x.v}\n`; });
+  return s;
+}
+Object.assign(A,{
+  estado: () => estadoForm(),
+  estAgain: () => estadoForm(),
+  estSync: async () => { toast("A sincronizar…"); try{ await syncPush(); await syncPull(true); }catch(e){} if($("#dlg").open) estadoForm(); toast(SYNC.err||"Sincronizado"); },
+  estCopy: async () => { const t=estTexto(); try{ await navigator.clipboard.writeText(t); toast("Relatório copiado — cola-o na mensagem"); }
+    catch(e){ modal({title:"Relatório do estado da app",body:`<textarea class="inp" style="width:100%;min-height:280px;font:12px/1.4 monospace" readonly>${esc(t)}</textarea>`,foot:`<span></span><span class="right"><button class="btn primary" data-a="estado">Voltar</button></span>`}); } }
+});
+
+/* ================= COMPARAR DOIS ATLETAS =================
+   Estatísticas → "Comparar atletas" (S.ssub="cmp", atletas em S.cmpA / S.cmpB; também a partir da ficha do atleta).
+   Lado a lado: identificação, época (barras espelhadas por métrica, o melhor de cada linha a cheio), avaliação (radar
+   sobreposto + áreas), testes físicos (última medição de cada), monitorização e presenças.
+   Cores: A = --cmpA (grená), B = --cmpB (ocre), validadas com o skill dataviz nos dois temas; a identidade nunca é só
+   a cor (nome e letra A/B em cada coluna). */
+function cmpNum(v,d=0){ if(v==null||isNaN(v)) return "–"; return d?fmt1(v):String(Math.round(v)); }
+// linha com barras espelhadas: A para a esquerda, B para a direita, escala = maior dos dois
+function cmpRow(l,a,b,o={}){
+  const va=a==null||isNaN(a)?null:+a, vb=b==null||isNaN(b)?null:+b, mx=Math.max(Math.abs(va||0),Math.abs(vb||0))||1;
+  const win = va==null||vb==null||va===vb||o.neutral ? "" : (o.low ? (va<vb?"a":"b") : (va>vb?"a":"b"));
+  const fa=o.f?o.f(va):cmpNum(va,o.d), fb=o.f?o.f(vb):cmpNum(vb,o.d);
+  return `<div class="cmprow" role="row"><span class="cmpv a ${win==="a"?"win":""}" role="cell">${fa}</span>
+    <span class="cmpbar a" aria-hidden="true"><i style="width:${va==null?0:Math.max(2,Math.abs(va)/mx*100)}%"></i></span>
+    <span class="cmpl" role="rowheader">${esc(l)}${o.sub?`<small>${esc(o.sub)}</small>`:""}</span>
+    <span class="cmpbar b" aria-hidden="true"><i style="width:${vb==null?0:Math.max(2,Math.abs(vb)/mx*100)}%"></i></span>
+    <span class="cmpv b ${win==="b"?"win":""}" role="cell">${fb}</span></div>`;
+}
+function cmpRadar(ea,eb){
+  const EC=evalCfg(), keys=Object.keys(EC); if(keys.length<3) return "";
+  const cx=180, cy=128, R=92, pt=(i,v)=>{ const a=-Math.PI/2+i*2*Math.PI/keys.length, r=R*(Math.max(0,Math.min(10,v||0))/10); return [cx+r*Math.cos(a),cy+r*Math.sin(a)]; };
+  const poly=vals=>keys.map((k,i)=>pt(i,vals[k]).map(n=>n.toFixed(1)).join(",")).join(" ");
+  let s=`<svg class="radar cmpradar" viewBox="0 0 360 262" role="img" aria-label="Avaliação por área: ${keys.map(k=>`${EC[k].l} ${ea?cmpNum(ea[k],1):"–"} contra ${eb?cmpNum(eb[k],1):"–"}`).join(", ")}">`;
+  [2,4,6,8,10].forEach(l=>{ s+=`<polygon points="${keys.map((k,i)=>pt(i,l).map(n=>n.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="var(--line)" stroke-width="1"/>`; });
+  keys.forEach((k,i)=>{ const [x,y]=pt(i,10), [lx,ly]=pt(i,11.4), c=Math.cos(-Math.PI/2+i*2*Math.PI/keys.length), anc=c>.3?"start":c<-.3?"end":"middle";
+    s+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/><text x="${lx.toFixed(1)}" y="${(ly+(Math.abs(c)>.3?4:ly<cy?-2:12)).toFixed(1)}" text-anchor="${anc}" font-size="12" font-weight="700" fill="var(--muted)" font-family="Barlow, sans-serif">${esc(EC[k].l)}</text>`; });
+  if(eb) s+=`<polygon points="${poly(eb)}" fill="color-mix(in srgb, var(--cmpB) 18%, transparent)" stroke="var(--cmpB)" stroke-width="2" stroke-dasharray="5 3"/>`;
+  if(ea) s+=`<polygon points="${poly(ea)}" fill="color-mix(in srgb, var(--cmpA) 22%, transparent)" stroke="var(--cmpA)" stroke-width="2"/>`;
+  [[ea,"var(--cmpA)"],[eb,"var(--cmpB)"]].forEach(([e,c])=>{ if(e) keys.forEach((k,i)=>{ if(e[k]==null) return; const [x,y]=pt(i,e[k]); s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`; }); });
+  return s+`</svg>`;
+}
+function cmpData(pid){
+  const p=P(pid); if(!p) return null;
+  const s=stats().pl[pid], evs=evalsOf(pid), ev=evs[evs.length-1]||null, ms=testMoments(), mon=typeof monOf==="function"?monOf(pid):null;
+  const tests={}; TESTS.forEach(t=>{ for(let i=ms.length-1;i>=0;i--){ const v=parseNum(((ms[i].res||{})[pid]||{})[t.k]); if(v!=null){ tests[t.k]={v,m:ms[i].label||fmtD(ms[i].date)}; break; } } });
+  const injs=injuries().filter(i=>i.pid===pid), dias=injs.reduce((n,i)=>{ if(!validISO(i.date)) return n; const end=i.status==="alta"&&validISO(i.ret)?i.ret:todayISO(); return n+Math.max(0,dayDiff(i.date,end)); },0);
+  return {p,s,ev,ea:ev?evalAreas(ev):null,tests,mon,injs,dias,c7:carga7Of(pid,s)};
+}
+function vCmp(){
+  const pls=players(); if(pls.length<2) return `<div class="empty"><b>São precisos pelo menos dois atletas</b></div>`;
+  if(!S.cmpA||!P(S.cmpA)) S.cmpA=pls[0].id;
+  if(!S.cmpB||!P(S.cmpB)||S.cmpB===S.cmpA) S.cmpB=(pls.find(p=>p.id!==S.cmpA&&GROUP(p.pos)===GROUP(P(S.cmpA).pos))||pls.find(p=>p.id!==S.cmpA)).id;
+  const A=cmpData(S.cmpA), B=cmpData(S.cmpB), a=A.s, b=B.s;
+  const opt=cur=>pls.map(p=>`<option value="${esc(p.id)}" ${p.id===cur?"selected":""}>${esc((p.n?p.n+" — ":"")+p.name)}${p.pos?" ("+esc(p.pos)+")":""}</option>`).join("");
+  const head=(X,k)=>{ const p=X.p, age=ageOf(p.birth), av=avail(p.id); return `<div class="cmphead ${k}"><span class="cmpk">${k.toUpperCase()}</span>${avatar(p)}<div><b>${esc(p.name)}</b><small>${[p.pos,p.n?"N.º "+p.n:"",age!=null?age+" anos":"",p.foot?"pé "+p.foot.toLowerCase():""].filter(Boolean).map(esc).join(" · ")}</small><span class="tag ${AV[av].c}">${AV[av].l}</span></div><button class="btn sm ghost" data-a="page" data-p="atleta" data-id="${esc(p.id)}">Ficha</button></div>`; };
+  const per90=(x,s)=>s.min?x/s.min*90:null, mpj=s=>s.j?s.min/s.j:null;
+  const sec=(t,rows,note)=>`<section class="card cmpsec"><div class="card-h"><h3>${t}</h3></div><div class="card-b" role="table" aria-label="${esc(t)}">${rows}${note?`<p class="note">${note}</p>`:""}</div></section>`;
+  const defs=statDefs();
+  const epoca=[cmpRow("Jogos",a.j,b.j,{sub:"convocado "+a.conv+" · "+b.conv}),cmpRow("Titular",a.tit,b.tit),cmpRow("Minutos",a.min,b.min),cmpRow("Minutos por jogo",mpj(a),mpj(b)),
+    cmpRow("Golos",a.g,b.g),cmpRow("Assistências",a.a,b.a),cmpRow("Golos + assist. por 90'",per90(a.g+a.a,a),per90(b.g+b.a,b),{d:1}),
+    cmpRow("Nota média",a.avg,b.avg,{d:1,sub:`${a.rs.length} · ${b.rs.length} jogos`}),cmpRow("Amarelos",a.y,b.y,{low:true}),cmpRow("Vermelhos",a.r,b.r,{low:true}),
+    ...defs.filter(d=>(a.cs[d.id]||0)||(b.cs[d.id]||0)).map(d=>cmpRow(d.title,a.cs[d.id]||0,b.cs[d.id]||0,{low:!!d.neg,sub:"por jogo "+(a.j?fmt1((a.cs[d.id]||0)/a.j):"–")+" · "+(b.j?fmt1((b.cs[d.id]||0)/b.j):"–")}))].join("");
+  const treinos=[cmpRow("Assiduidade",a.att,b.att,{f:v=>v==null?"–":v+"%",sub:`${a.trTotal} · ${b.trTotal} treinos`}),cmpRow("Faltas injustificadas",a.tr.FI,b.tr.FI,{low:true}),
+    cmpRow("Carga 7 dias",A.c7.v,B.c7.v,{neutral:true,sub:"UA (sem melhor/pior)"}),cmpRow("Dias de lesão na época",A.dias,B.dias,{low:true,sub:`${A.injs.length} · ${B.injs.length} lesões`})].join("");
+  const EC=evalCfg();
+  const aval=`<div class="cmpradarw">${cmpRadar(A.ea,B.ea)}<div class="cmpleg"><span><i class="la"></i>${esc(A.p.name)}${A.ev?` · ${fmtD(A.ev.date)}`:" · sem avaliação"}</span><span><i class="lb"></i>${esc(B.p.name)}${B.ev?` · ${fmtD(B.ev.date)}`:" · sem avaliação"}</span></div></div>
+    ${Object.entries(EC).map(([k,ar])=>cmpRow(ar.l,A.ea&&A.ea[k],B.ea&&B.ea[k],{d:1})).join("")}${cmpRow("Média",A.ev?evalScore(A.ev):null,B.ev?evalScore(B.ev):null,{d:1})}`;
+  const tests=TESTS.map(t=>cmpRow(t.l,A.tests[t.k]&&A.tests[t.k].v,B.tests[t.k]&&B.tests[t.k].v,{low:t.low,f:v=>v==null?"–":String(v).replace(".",","),sub:`${t.u}${t.low?" · menos é melhor":""}`})).join("");
+  const hasT=TESTS.some(t=>A.tests[t.k]||B.tests[t.k]);
+  const mon=A.mon||B.mon?[cmpRow("Prontidão",A.mon&&A.mon.prontidao,B.mon&&B.mon.prontidao),cmpRow("Condição",A.mon&&A.mon.condicao,B.mon&&B.mon.condicao),
+    cmpRow("Bem-estar (3 dias)",A.mon&&A.mon.bem3,B.mon&&B.mon.bem3,{f:v=>v==null?"–":fmt1(v),sub:"1 a 5"}),cmpRow("ACWR",A.mon&&A.mon.acwr,B.mon&&B.mon.acwr,{neutral:true,f:v=>v==null?"–":String(Math.round(v*100)/100).replace(".",","),sub:"zona boa 0,8–1,3"})].join(""):"";
+  return `<div class="cmppick"><label class="fld cmpA"><span>Atleta A</span><select data-c="cmpSel" data-k="A" aria-label="Atleta A">${opt(S.cmpA)}</select></label>
+      <button class="btn" data-a="cmpSwap" title="Trocar A e B" aria-label="Trocar A e B">⇄</button>
+      <label class="fld cmpB"><span>Atleta B</span><select data-c="cmpSel" data-k="B" aria-label="Atleta B">${opt(S.cmpB)}</select></label></div>
+    <div class="cmpheads">${head(A,"a")}${head(B,"b")}</div>
+    <p class="small muted cmphint">Em cada linha, o valor melhor fica a cheio. Barras: A para a esquerda, B para a direita.</p>
+    <div class="grid2">${sec("Época",epoca)}${sec("Treinos, carga e lesões",treinos)}
+      ${sec("Avaliação",aval,!A.ev&&!B.ev?"Nenhum dos dois tem avaliação.":"Última avaliação de cada um (0 a 10).")}
+      ${sec("Testes físicos",hasT?tests:`<div class="small muted">Sem testes registados.</div>`,hasT?"Última medição de cada atleta.":"")}
+      ${mon?sec("Monitorização (hoje)",mon,"Do resumo do Sheets."):""}</div>`;
+}
+Object.assign(A,{
+  cmpSwap: () => { [S.cmpA,S.cmpB]=[S.cmpB,S.cmpA]; render(); },
+  cmpWith: el => { S.cmpA=el.dataset.id; S.cmpB=""; S.ssub="cmp"; go("stats"); }
+});
+Object.assign(Cg,{ cmpSel: el => { const k=el.dataset.k, v=el.value; if(k==="A"){ if(v===S.cmpB) S.cmpB=S.cmpA; S.cmpA=v; } else { if(v===S.cmpA) S.cmpA=S.cmpB; S.cmpB=v; } render(); } });
+
+/* ================= RELATÓRIO MENSAL POR ATLETA =================
+   Ficha do atleta → "Relatório mensal" (ou Plantel → "Relatórios mensais", um atleta ou todos, uma página cada).
+   Do mês escolhido: presenças, jogos/minutos/golos/notas, carga e bem-estar diários (gráficos separados, nunca dois eixos),
+   semanas, avaliações, testes físicos, lesões e reabilitação, e um espaço para as notas da conversa com o atleta.
+   Bem-estar e PSE vêm do Sheets (pedido "mensal" ao script da partilha, folhas inteiras); sem partilha, a carga usa as
+   PSE escritas nos treinos da app e o bem-estar fica de fora (avisado no relatório). */
+const MES_N = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const mesNome = m => { const [y,mm]=m.split("-").map(Number); return `${MES_N[mm-1]} de ${y}`; };
+const mesFim = m => { const [y,mm]=m.split("-").map(Number); return isoOf(new Date(y,mm,0)); };
+function mesLista(){ const t=todayISO(), out=[]; let [y,m]=t.split("-").map(Number);
+  for(let i=0;i<12;i++){ out.push(`${y}-${pad(m)}`); m--; if(!m){ m=12; y--; } } return out; }
+function mesForm(pid){
+  const t=todayISO(), ms=mesLista(), def=+t.slice(8)<=7?ms[1]:ms[0];   // na primeira semana do mês, por omissão o mês anterior
+  const pls=players();
+  modal({title:"Relatório mensal",sub:"Uma página A4 por atleta, para imprimir ou guardar em PDF",
+    body:`<div class="form"><label class="fld">Mês${sel("mes",ms.map(m=>({v:m,l:cap1(mesNome(m))})),def)}</label>
+      <label class="fld">Atleta${sel("pid",[{v:"*",l:`Todos os atletas (${pls.length} páginas)`},...pls.map(p=>({v:p.id,l:(p.n?p.n+" — ":"")+p.name}))],pid||"*")}</label></div>
+      <p class="note">${EDITION!=="estrela"?"A carga conta as PSE escritas nos treinos (presenças → PSE).":syncOn()?"O bem-estar e a carga (PSE) vêm das respostas no Sheets: o relatório demora alguns segundos a preparar.":"Sem a partilha ligada, o relatório não tem o bem-estar e a carga só conta as PSE escritas nos treinos desta app."}</p>`,
+    foot:`<button class="btn" data-a="mesGo" data-k="open">Abrir numa aba</button><span class="right"><button class="btn primary" data-a="mesGo" data-k="dl">Descarregar</button></span>`,ctx:{pick:true}});
+}
+async function mesGo(el){
+  const mes=fv("mes"), pid=fv("pid"); if(!/^\d{4}-\d{2}$/.test(mes)) return;
+  closeModal(); PRINT_MODE=el.dataset.k; PRINT_WIN=null; if(PRINT_MODE==="open"){ try{ PRINT_WIN=window.open("","_blank"); }catch(e){} }
+  let srv=null, aviso="";
+  if(EDITION==="estrela"&&syncOn()){ toast("A ler o bem-estar e a carga do Sheets…");
+    try{ srv=await syncGet({a:"mensal",mes},90000); if(srv&&srv.erros&&srv.erros.length) aviso="Não foi possível ler parte das respostas: "+srv.erros.join("; "); }
+    catch(e){ srv=null; aviso=/desconhecido/i.test(e.message||"")?"O script da partilha ainda não tem a versão nova: sem bem-estar e com a carga só da app.":"Não foi possível ler o Sheets ("+(e&&e.name==="AbortError"?"demorou demasiado":e.message)+"): sem bem-estar e com a carga só da app."; } }
+  else if(EDITION==="estrela") aviso="Partilha não ligada: sem bem-estar e com a carga só das PSE escritas nos treinos da app.";
+  const ids = pid==="*" ? players().map(p=>p.id) : [pid];
+  mesPrint(ids, mes, srv, aviso);
+}
+// números de um atleta num mês
+function mesDados(pid, mes, srv){
+  const ini=mes+"-01", fim=mesFim(mes), t=todayISO(), ate=fim<t?fim:t, dias=[], inM=d=>d>=ini&&d<=fim;
+  for(let d=ini; d<=fim; d=addDays(d,1)) dias.push(d);
+  const trs=trainings().filter(e=>inM(e.date)&&e.date<=t), att={P:0,AT:0,FJ:0,FI:0,L:0,D:0}, falt=[];
+  const appC={}; trs.forEach(e=>{ const a=(e.att||{})[pid]; if(!a||!a.s) return; att[a.s]=(att[a.s]||0)+1; if(a.s!=="P"&&a.s!=="AT") falt.push({d:e.date,s:a.s});
+    const r=parseNum(a.rpe); if(r!=null&&(a.s==="P"||a.s==="AT")) appC[e.date]=(appC[e.date]||0)+r*(+e.dur||0); });
+  const marc=att.P+att.AT+att.FJ+att.FI, pres=marc?Math.round((att.P+att.AT)/marc*100):null;
+  const gms=events().filter(e=>e.type==="jogo"&&inM(e.date)&&e.date<=t).sort(byDT), jogos=[]; let poss=0;
+  gms.forEach(g=>{ const c=gameCalc(g), x=c.res[pid]; poss+=c.dur; if(!x) return; jogos.push({g,c,x,nota:parseNum((g.rt||{})[pid])}); });
+  const sum=k=>jogos.reduce((s,j)=>s+(j.x[k]||0),0), jogou=jogos.filter(j=>j.x.min>0||j.x.st);
+  const notas=jogos.map(j=>j.nota).filter(v=>v!=null);
+  // carga e bem-estar por dia
+  const sp=srv&&srv.pse&&srv.pse[pid]||null, sb=srv&&srv.bem&&srv.bem[pid]||null, fonte=srv?"sheets":"app";
+  const carga={}, sess={}; dias.forEach(d=>{ if(srv){ const l=(sp&&sp[d])||[]; if(l.length){ carga[d]=l.reduce((s,x)=>s+(x.c||0),0); sess[d]=l.length; } } else if(appC[d]){ carga[d]=appC[d]; sess[d]=1; } });
+  const bem={}; if(sb) dias.forEach(d=>{ if(sb[d]) bem[d]=sb[d].t; });
+  const cT=Object.values(carga).reduce((s,v)=>s+v,0), nS=Object.values(sess).reduce((s,v)=>s+v,0), bv=Object.values(bem);
+  // semanas (segunda a domingo) que tocam o mês
+  const sem=[]; for(let w=mondayOf(ini); w<=fim; w=addDays(w,7)){ const ds=[...Array(7)].map((_,i)=>addDays(w,i)).filter(inM);
+    const c=ds.reduce((s,d)=>s+(carga[d]||0),0), n=ds.reduce((s,d)=>s+(sess[d]||0),0), b=ds.map(d=>bem[d]).filter(v=>v!=null);
+    sem.push({w,ds,c,n,b:b.length?avg(b):null,tr:trs.filter(e=>ds.includes(e.date)).length,jg:gms.filter(e=>ds.includes(e.date)).length}); }
+  const evs=evalsOf(pid).filter(e=>inM(e.date));
+  const ms=testMoments(), tst=ms.map((m,i)=>({m,i})).filter(o=>inM(o.m.date)&&(o.m.res||{})[pid]);
+  const injs=injuries().filter(i=>i.pid===pid&&validISO(i.date)&&i.date<=fim&&!(i.status==="alta"&&validISO(i.ret)&&i.ret<ini));
+  const diasLes=injs.reduce((n,i)=>{ const a=i.date>ini?i.date:ini, b0=i.status==="alta"&&validISO(i.ret)?i.ret:ate, b=b0<ate?b0:ate; return n+Math.max(0,dayDiff(a,b)+(b>=a?1:0)); },0);
+  const reab=injs.map(i=>({i,pl:(D.rehab||{})[i.id]})).filter(o=>o.pl).map(o=>{ const lg=(o.pl.log||[]).filter(l=>inM(l.d)), dr=lg.map(l=>parseNum(l.dor)).filter(v=>v!=null);
+    return {i:o.i,n:lg.length,app:lg.filter(l=>l.app).length,dor:dr.length?avg(dr):null,fase:o.pl.fase}; });
+  return {pid,mes,ini,fim,ate,dias,trs,att,falt,marc,pres,gms,jogos,jogou,poss,min:sum("min"),g:sum("g"),a:sum("a"),y:sum("y"),r:sum("r"),tit:jogos.filter(j=>j.x.st).length,
+    nota:notas.length?avg(notas):null,nNotas:notas.length,carga,sess,bem,cT,nS,bMed:bv.length?avg(bv):null,nB:bv.length,fonte,sem,evs,tst,ms,injs,diasLes,reab};
+}
+// gráfico de barras por dia (carga) e de pontos ligados (bem-estar): eixos próprios, mesma largura e mesmos dias (alinhados)
+function mesBars(M,ref){
+  const W=700,H=96,l=34,r=8,tp=8,bt=18,n=M.dias.length,cw=(W-l-r)/n, mx=Math.max(1,ref||0,...Object.values(M.carga))*1.08;
+  const y=v=>tp+(H-tp-bt)*(1-v/mx), jg=new Set(M.gms.map(g=>g.date)), tk=[0,mx/2,mx].map(v=>Math.round(v/50)*50);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Carga diária (UA)">`;
+  tk.forEach(v=>{ s+=`<line x1="${l}" x2="${W-r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="#eee"/><text x="${l-4}" y="${(y(v)+3).toFixed(1)}" font-size="8" text-anchor="end" fill="#8a7a80">${v}</text>`; });
+  if(ref) s+=`<line x1="${l}" x2="${W-r}" y1="${y(ref).toFixed(1)}" y2="${y(ref).toFixed(1)}" stroke="#b07800" stroke-dasharray="4 3"/><text x="${W-r}" y="${(y(ref)-3).toFixed(1)}" font-size="8" text-anchor="end" fill="#8a5d00">média diária do plantel ${Math.round(ref)}</text>`;
+  M.dias.forEach((d,i)=>{ const v=M.carga[d]||0, x=l+i*cw;
+    if(v) s+=`<rect x="${(x+cw*.16).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(cw*.68).toFixed(1)}" height="${(H-bt-y(v)).toFixed(1)}" rx="1.5" fill="#8f2239"/>`;
+    if(jg.has(d)) s+=`<path d="M${(x+cw/2).toFixed(1)} ${H-bt+2} l3.2 5 h-6.4z" fill="#b07800"/>`;
+    if(i%2===0||n<=16) s+=`<text x="${(x+cw/2).toFixed(1)}" y="${H-4}" font-size="7.5" text-anchor="middle" fill="#8a7a80">${+d.slice(8)}</text>`; });
+  return s+`</svg>`;
+}
+function mesBem(M){
+  const W=700,H=64,l=34,r=8,tp=6,bt=8,n=M.dias.length,cw=(W-l-r)/n, y=v=>tp+(H-tp-bt)*(1-(v-4)/16);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Bem-estar diário (4 a 20)">`;
+  [4,12,20].forEach(v=>{ s+=`<line x1="${l}" x2="${W-r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="#eee"/><text x="${l-4}" y="${(y(v)+3).toFixed(1)}" font-size="8" text-anchor="end" fill="#8a7a80">${v}</text>`; });
+  let seg=[]; const segs=[]; M.dias.forEach((d,i)=>{ const v=M.bem[d]; if(v==null){ if(seg.length) segs.push(seg); seg=[]; } else seg.push([l+i*cw+cw/2,y(v)]); }); if(seg.length) segs.push(seg);
+  segs.forEach(sg=>{ if(sg.length>1) s+=`<polyline points="${sg.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="#2f6fa0" stroke-width="1.6"/>`; });
+  M.dias.forEach((d,i)=>{ const v=M.bem[d]; if(v==null) return; s+=`<circle cx="${(l+i*cw+cw/2).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.6" fill="${v<=12?"#c62828":"#2f6fa0"}"/>`; });
+  return s+`</svg>`;
+}
+function mesPagina(M,ctx){
+  const p=P(M.pid), ST={P:"Presente",AT:"Atraso",FJ:"Falta justificada",FI:"Falta injustificada",L:"Lesionado",D:"Dispensado"};
+  const kpi=(l,v,s)=>`<div><b>${esc(l)}</b>${v}${s?`<small>${s}</small>`:""}</div>`;
+  const plCarga=ctx.plCarga;
+  const resumo=`<div class="mk">${kpi("Presenças",M.pres==null?"–":M.pres+"%",`${M.att.P+M.att.AT} de ${M.marc} treinos`)}${kpi("Jogos",`${M.jogou.length}`,`${M.tit} titular · ${M.gms.length} da equipa`)}
+    ${kpi("Minutos",`${M.min}'`,M.poss?`${Math.round(M.min/M.poss*100)}% dos possíveis`:"")}${kpi("Golos · Assist.",`${M.g} · ${M.a}`,M.y||M.r?`${M.y} am. · ${M.r} verm.`:"")}
+    ${kpi("Nota média (jogos)",M.nota==null?"–":fmt1(M.nota),M.nNotas?`${M.nNotas} jogo${M.nNotas>1?"s":""}`:"")}
+    ${kpi("Carga do mês",M.cT?`${Math.round(M.cT)} UA`:"–",`${M.nS} sessões${plCarga!=null?` · plantel ${Math.round(plCarga)}`:""}`)}
+    ${kpi("Bem-estar médio",M.bMed==null?"–":fmt1(M.bMed)+"/20",M.nB?`${M.nB} respostas`:M.fonte==="sheets"?"sem respostas":"sem dados")}${kpi("Dias de lesão",String(M.diasLes),M.injs.length?`${M.injs.length} lesão${M.injs.length>1?"ões":""}`:"")}</div>`;
+  const grafs=`<h2>Carga diária (UA = PSE × minutos)</h2>${M.cT?mesBars(M,ctx.plDia):`<p class="note">Sem PSE registadas neste mês.</p>`}
+    ${M.fonte==="sheets"?`<h2>Bem-estar diário (4 a 20)</h2>${M.nB?mesBem(M):`<p class="note">Sem respostas de bem-estar neste mês.</p>`}`:""}
+    <p class="note">▲ dia de jogo · bem-estar a vermelho = 12 ou menos.${M.fonte==="app"?" Carga só das PSE escritas nos treinos da app.":""}</p>`;
+  const semanas=`<table class="msem"><thead><tr><th>Semana</th><th class="c">Treinos</th><th class="c">Jogos</th><th class="c" title="sessões com PSE">Sessões</th><th class="c">Carga UA</th>${M.fonte==="sheets"?`<th class="c">Bem-estar</th>`:""}</tr></thead><tbody>
+    ${M.sem.map(w=>`<tr><td style="white-space:nowrap">${fmtD(w.ds[0],{day:"2-digit",month:"2-digit"})}–${fmtD(w.ds[w.ds.length-1],{day:"2-digit",month:"2-digit"})}</td><td class="c">${w.tr}</td><td class="c">${w.jg}</td><td class="c">${w.n||"–"}</td><td class="c"><b>${w.c?Math.round(w.c):"–"}</b></td>${M.fonte==="sheets"?`<td class="c">${w.b==null?"–":fmt1(w.b)}</td>`:""}</tr>`).join("")}</tbody></table>`;
+  const jogos=M.jogos.length?`<table><thead><tr><th>Data</th><th>Jogo</th><th class="c">Res.</th><th class="c">Min</th><th class="c">G</th><th class="c">A</th><th class="c">Cart.</th><th class="c">Nota</th></tr></thead><tbody>
+    ${M.jogos.map(j=>`<tr><td>${fmtD(j.g.date,{day:"2-digit",month:"2-digit"})}</td><td>${j.g.venue==="F"?"@ ":"vs "}${esc(j.g.opp||"")}</td><td class="c">${j.c.ga!=null?esc(scoreTxt(j.g,j.c)):"—"}</td><td class="c"><b>${j.x.min}'</b>${j.x.st?"":" <span class='note'>(S)</span>"}</td><td class="c">${j.x.g||""}</td><td class="c">${j.x.a||""}</td><td class="c">${j.x.y?"🟨".repeat(j.x.y):""}${j.x.r?"🟥":""}</td><td class="c">${j.nota==null?"":fmt1(j.nota)}</td></tr>`).join("")}</tbody></table>`:`<p class="note">Não foi convocado neste mês${M.gms.length?` (${M.gms.length} jogo${M.gms.length>1?"s":""} da equipa)`:""}.</p>`;
+  const pres=M.marc?`<p style="margin:0 0 4px;font-size:11px">${Object.entries(M.att).filter(([,n])=>n).map(([k,n])=>`<b>${n}</b> ${esc(ST[k].toLowerCase())}`).join(" · ")}</p>
+    ${M.falt.length?`<p class="note" style="margin:0">${M.falt.map(f=>`${fmtD(f.d,{day:"2-digit",month:"2-digit"})} ${ST[f.s].toLowerCase()}`).join(" · ")}</p>`:""}`:`<p class="note">Sem presenças marcadas neste mês.</p>`;
+  const EC=evalCfg();
+  const aval=M.evs.length?M.evs.map(e=>{ const a=evalAreas(e); return `<div class="mev"><b>${fmtD(e.date,{day:"numeric",month:"short"})}${e.by?" · "+esc(e.by):""}</b> — ${Object.entries(EC).map(([k,x])=>`${esc(x.l)} <b>${a[k]==null?"–":fmt1(a[k])}</b>`).join(" · ")} · média <b>${evalScore(e)==null?"–":fmt1(evalScore(e))}</b>
+      ${e.str?`<div><i>Fortes:</i> ${esc(e.str)}</div>`:""}${e.weak?`<div><i>A melhorar:</i> ${esc(e.weak)}</div>`:""}${e.fin?`<div><i>Final:</i> ${esc(e.fin)}</div>`:""}</div>`; }).join(""):`<p class="note">Sem avaliações neste mês.</p>`;
+  const nv=v=>v==null?"–":String(v).replace(".",",");
+  const tests=M.tst.length?M.tst.map(o=>{ const r=o.m.res[M.pid]||{}, pv=o.i?(M.ms[o.i-1].res||{})[M.pid]||{}:{};
+      const it=TESTS.filter(tt=>parseNum(r[tt.k])!=null).map(tt=>{ const v=parseNum(r[tt.k]), pr=parseNum(pv[tt.k]);
+        return `${esc(tt.l)} <b>${nv(v)} ${esc(tt.u)}</b>${pr!=null?` <span class="note">(antes ${nv(pr)})</span>`:""}`; });
+      return it.length?`<div class="mev"><b>${esc(o.m.label||fmtD(o.m.date))}</b> — ${it.join(" · ")}</div>`:""; }).join(""):"";
+  const clin=M.injs.length?M.injs.map(i=>{ const rb=M.reab.find(x=>x.i.id===i.id); return `<div class="mev"><b>${esc([i.zone,i.side&&i.side!=="—"?i.side.toLowerCase():""].filter(Boolean).join(" ")||i.type||"Lesão")}</b> — ${esc(i.type||"")} · desde ${fmtD(i.date,{day:"2-digit",month:"2-digit"})} · ${esc(INJ_ST[i.status]?.l||"")}${i.status==="alta"&&i.ret?" "+fmtD(i.ret,{day:"2-digit",month:"2-digit"}):""}
+      ${rb?`<div>Reabilitação: ${rb.n} sess${rb.n===1?"ão":"ões"} no mês${rb.app?` (${rb.app} registada${rb.app>1?"s":""} pelo atleta)`:""}${rb.dor!=null?` · dor média ${fmt1(rb.dor)}/10`:""}${rb.fase?` · fase ${rb.fase}`:""}</div>`:""}</div>`; }).join(""):`<p class="note">Sem lesões neste mês.</p>`;
+  const monH=ctx.atual&&typeof monOf==="function"?monOf(M.pid):null;
+  return `<section class="mes">
+    <div class="mh"><div><b>${esc(p.name)}</b><span>${[p.n?"N.º "+p.n:"",p.pos,cap1(mesNome(M.mes))].filter(Boolean).map(esc).join(" · ")}</span></div>${monH&&monH.prontidao!=null?`<span class="mt">Hoje: prontidão <b>${monH.prontidao}</b>${monH.condicao!=null?` · condição <b>${monH.condicao}</b>`:""}</span>`:""}</div>
+    ${resumo}<div class="mpres">${pres}</div>${grafs}
+    ${p2(`<h2>Semanas</h2>${semanas}`,`<h2>Jogos</h2>${jogos}`)}
+    ${p2(`<h2>Avaliações</h2>${aval}`,`<h2>Clínico</h2>${clin}${tests?`<h2>Testes físicos</h2>${tests}`:""}`)}
+    <h2>Notas da conversa / objetivos para o próximo mês</h2><div class="mlines"><i></i><i></i><i></i></div>
+  </section>`;
+}
+function mesPrint(ids, mes, srv, aviso){
+  const pls=ids.map(id=>P(id)).filter(Boolean); if(!pls.length){ toast("Sem atletas."); return; }
+  // referência do plantel: carga média do mês por atleta com PSE, e por dia
+  const todos=players().map(p=>mesDados(p.id,mes,srv)), com=todos.filter(m=>m.cT>0);
+  const plCarga=com.length?avg(com.map(m=>m.cT)):null, diasMes=todos[0]?todos[0].dias.filter(d=>d<=todos[0].ate).length:0;
+  const plDia=plCarga&&diasMes?plCarga/diasMes:null, atual=mes===todayISO().slice(0,7);
+  const css=`<style>.mes+.mes{page-break-before:always;break-before:page}.mpres{margin:2px 0 0}.mpres p{margin:0!important}
+    .mes table th,.mes table td{padding:2px 4px;font-size:10px}.mes table th{font-size:8.5px}
+    .mh{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid #6b1426;padding:2px 0 5px;margin:0 0 8px}
+    .mh b{display:block;font:800 19px "Barlow Condensed",Arial Narrow,sans-serif;text-transform:uppercase;color:#6b1426}.mh span{font-size:11px;color:#6b5a5f}.mh .mt{font-size:10.5px}
+    .mk{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0 0 4px}.mk div{background:#f8f3f4;border:1px solid #ede3e5;border-radius:7px;padding:3px 8px;font:800 15px "Barlow Condensed",sans-serif;color:#221418;line-height:1.12}
+    .mk b{display:block;font:700 8.5px Barlow,sans-serif;color:#8a6a72;text-transform:uppercase;letter-spacing:.06em}.mk small{display:block;font:500 9.5px Barlow,sans-serif;color:#7a666c}
+    .mes svg{display:block;margin:2px 0}.mev{font-size:10.5px;margin:0 0 5px;line-height:1.35}.mev div{color:#4a3a3f}
+    .mlines i{display:block;height:15px;border-bottom:1px solid #d8cdd0}.mes h2{margin-top:8px;margin-bottom:4px}</style>`;
+  const head=aviso?`<p class="note" style="border:1px solid #f0d9a8;background:#fff8e6;padding:5px 8px;border-radius:6px">${esc(aviso)}</p>`:"";
+  const body=css+head+pls.map(p=>mesPagina(todos.find(m=>m.pid===p.id)||mesDados(p.id,mes,srv),{plCarga,plDia,atual})).join("");
+  const one=pls.length===1;
+  printDoc(one?`relatorio-mensal-${slug(pls[0].name)}-${mes}`:`relatorios-mensais-${mes}`, one?`Relatório mensal — ${pls[0].name}`:`Relatórios mensais — ${cap1(mesNome(mes))}`, body);
+}
+Object.assign(A,{
+  mesRel: el => mesForm(el.dataset.id||""),
+  mesGo: el => mesGo(el)
 });
 
 /* ================= versão para clubes: login e dados na Supabase ================= */

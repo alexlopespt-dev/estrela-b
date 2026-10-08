@@ -186,9 +186,10 @@ function vTreinos(){
   const upc=all.filter(e=>e.date>=t), past=all.filter(e=>e.date<t).reverse();
   const group = arr => { const g={}; arr.forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; };
   const block = (arr,asc) => { const g=group(arr); const ks=Object.keys(g).sort(); if(!asc) ks.reverse();
-    return ks.map(w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `<div class="gsec" style="padding:10px 16px 0">Semana de ${fmtD(w)} a ${fmtD(addDays(w,6))}${mi?" — "+esc(mi.name):""}</div><div class="list">${g[w].map(eventRow).join("")}</div>`; }).join(""); };
+    return ks.map(w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `<div class="gsec wcsec" style="padding:10px 16px 0"><span>Semana de ${fmtD(w)} a ${fmtD(addDays(w,6))}${mi?" — "+esc(mi.name):""}</span>${g[w].some(e=>e.type==="treino")?`<button class="btn sm ghost" data-a="weekCopy" data-w="${w}" title="Copiar os treinos desta semana para outra">Copiar semana</button>`:""}</div><div class="list">${g[w].map(eventRow).join("")}</div>`; }).join(""); };
   return `
   <div class="bar"><h2>Treinos</h2>${sub}<span class="sp"></span>
+    <button class="btn" data-a="weekCopy">Copiar semana</button>
     <button class="btn" data-a="weekGen">Gerar semana-tipo</button>
     <button class="btn primary" data-a="newEvent" data-type="treino">+ Novo treino</button></div>
   <section class="card"><div class="card-h"><h3>Próximos</h3><span class="sub">${upc.length}</span></div>${upc.length?block(upc,true):`<div class="empty"><b>Sem treinos agendados</b>Cria um treino ou gera a semana-tipo (3.ª a 6.ª).</div>`}</section>

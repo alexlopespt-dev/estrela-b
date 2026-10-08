@@ -134,10 +134,9 @@ function vecSVG(d,opts={}){
   return `<svg viewBox="0 0 ${w} ${h}"${opts.img?` width="${w}" height="${h}"`:""} style="width:100%;height:auto;display:block;border-radius:${opts.r??10}px" role="img" aria-label="Desenho do exercício" xmlns="http://www.w3.org/2000/svg">${vecDefs(uid)}${d.fld?vecField(d.fld,w,h,uid):`<rect width="${w}" height="${h}" fill="${d.bgc||VEC_GRASS[0]}"/>`}${its.map(({it})=>vecItem(it,uid)).join("")}</svg>`;
 }
 
-/* desenho a mostrar para um exercício da biblioteca: vetorial (predefinido) ou a imagem original (escolha guardada neste dispositivo) */
-let EXV_MODE="v"; try{ if(localStorage.getItem(LS+":exv")==="o") EXV_MODE="o"; }catch(e){}
+/* desenho de um exercício da biblioteca: sempre o vetorial (as imagens originais saíram da app para ficar mais leve) */
+const EXV_MODE="v";
 const EXV_URL={};
-function setExvMode(m){ EXV_MODE=m==="o"?"o":"v"; try{ localStorage.setItem(LS+":exv",EXV_MODE); }catch(e){} }
 // desenho vetorial em uso para o exercício (null se tiver foto própria, se não houver desenho ou se estiver a ver as originais)
 // o desenho do próprio exercício (vec, feito ou alterado no editor) ganha ao da biblioteca (imgk)
 const exVecOf = x => (x && !(x.imgA||x.imgL||x.imgG||x.img) && (x.vec || (x.imgk && EXV_MODE!=="o" && EXVEC[x.imgk]))) || null;

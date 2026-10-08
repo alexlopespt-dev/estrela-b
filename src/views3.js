@@ -115,8 +115,9 @@ function vStats(){
   const val=(x,k)=>k==="n"?(x.p.n||99):k==="avg"?(x.s.avg??-1):k==="att"?(x.s.att??-1):k.startsWith("cs:")?(x.s.cs[k.slice(3)]||0):k==="load7"?(carga7Of(x.p.id,x.s).v??-1):x.s[k];
   rows.sort((a,b)=>{ const d=(val(a,S.stSort)-val(b,S.stSort))*S.stDir; return d || BYPOS(a.p,b.p); });
   const avgTeam=avg(tm.rs);
-  const sub=`<div class="seg">${[["por","Por atleta"],["grelha","Grelha da época"]].map(([k,l])=>`<button data-a="ssub" data-k="${k}" class="${(S.ssub||"por")===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const sub=`<div class="seg">${[["por","Por atleta"],["grelha","Grelha da época"],["cmp","Comparar atletas"]].map(([k,l])=>`<button data-a="ssub" data-k="${k}" class="${(S.ssub||"por")===k?"on":""}">${l}</button>`).join("")}</div>`;
   if((S.ssub||"por")==="grelha") return `<div class="bar"><h2>Estatísticas</h2>${sub}</div>`+vGrid();
+  if(S.ssub==="cmp") return `<div class="bar"><h2>Estatísticas</h2>${sub}</div>`+vCmp();
   return `
   <div class="bar"><h2>Estatísticas</h2>${sub}${comps.length?`<label class="fld" style="flex-direction:row;align-items:center;gap:8px">Competição ${sel("",comps,S.stComp,'data-c="stComp" class="inp" style="width:auto"',"Todas")}</label>`:""}</div>
   <div class="kpis" style="margin-bottom:14px">

@@ -90,7 +90,7 @@ async function send(item){
   try{ const r=await apiPost(item); return r; }
   catch(e){
     if(e.srv){ throw e; }
-    S.fila=S.fila.filter(x=>!(x.a===item.a&&x.a==="atleta_bem"&&x.d===item.d)); S.fila.push(item); ls.set(":fila",S.fila); return {fila:true};
+    S.fila=S.fila.filter(x=>!(x.a===item.a&&(x.a==="atleta_bem"||x.a==="atleta_reab")&&x.d===item.d)); S.fila.push(item); ls.set(":fila",S.fila); return {fila:true};
   }
 }
 async function flush(){
@@ -172,7 +172,49 @@ const I = {
   cup:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M9 20h6M12 14v6"/></svg>',
   bus:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="13" rx="3"/><path d="M4 11h16M8 20v-3M16 20v-3"/></svg>',
   heart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
-  bolt:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>'};
+  bolt:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>',
+  cross:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg>',
+  star:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>'};
+/* ---- reabilitação (plano da lesão ativa, feito pelo fisio/preparador físico na app da equipa técnica) ---- */
+const DOR_COR = n => n<=2?"#1f7a3d":n<=4?"#7a9a1f":n<=6?"#c9a400":n<=8?"#e0702a":"#c62828";
+function reabCard(){
+  const R=S.data&&S.data.reab; if(!R) return "";
+  const t=today(), pend=S.fila.find(x=>x.a==="atleta_reab"&&x.d===t), h=R.hoje, n=R.items.length;
+  const lesao=[R.zona,R.lado?R.lado.toLowerCase():""].filter(Boolean).join(" ")||R.tipo||"Lesão";
+  const sub=[R.fase?`Fase ${R.fase} · ${R.faseNome}`:"",R.previsto?`regresso previsto ${fmt(R.previsto,{day:"numeric",month:"short"})}`:""].filter(Boolean).join(" · ");
+  return `<section class="card task reab"><div class="task-h"><span class="ico" style="--c:#2f7fb8">${I.cross}</span><div><p class="k">A tua recuperação · ${esc(lesao)}</p>
+      <h2>${!n?"Plano a ser preparado":h?"Sessão de hoje registada":pend?"Guardada no telemóvel":`${n} exercício${n>1?"s":""} para hoje`}</h2></div></div>
+    ${sub?`<p class="sub">${esc(cap(sub))}</p>`:""}
+    ${!n?`<p class="note">O departamento clínico ainda está a preparar os teus exercícios. Aparecem aqui assim que estiverem prontos.</p>`
+      :h?`<div class="done"><span class="tick" style="background:${h.dor==null?"var(--ok)":DOR_COR(h.dor)}">${h.dor==null?"✓":esc(h.dor)}</span><div><b>${(h.ok||[]).length} de ${n} exercícios feitos</b><div class="sub">${h.dor==null?"":"Dor "+esc(h.dor)+"/10"}${h.n?` · ${esc(h.n)}`:""}</div></div></div>
+        <button class="cta sec" data-a="reab">Ver exercícios / corrigir</button>`
+      :pend?`<span class="pend">Guardada no telemóvel — envia quando houver rede</span>`
+      :`<ol class="rx-mini">${R.items.slice(0,4).map(it=>`<li><b>${esc(it.nome)}</b>${it.dose?`<span>${esc(it.dose)}</span>`:""}</li>`).join("")}${n>4?`<li class="more">+ ${n-4} mais</li>`:""}</ol>
+        <button class="cta" data-a="reab">Fazer a sessão de hoje</button>`}
+    ${R.hojeStaff?`<p class="note">Hoje já tiveste sessão com o departamento clínico.</p>`:""}</section>`;
+}
+function vReabForm(){
+  const R=S.data.reab, f=S.form, nOk=f.ok.length;
+  return `<div class="sheet"><div class="sheet-in"><div class="sheet-h"><h2>Sessão de recuperação</h2><button class="x" data-a="fechar" aria-label="Fechar">✕</button></div>
+    ${R.fase?`<p class="sub" style="margin:-4px 0 12px">Fase ${R.fase} · ${esc(R.faseNome)}</p>`:""}
+    <section class="q"><h3>O que fizeste?<small>Toca em cada exercício que fizeste</small></h3><div class="rx">
+      ${R.items.map(it=>{ const on=f.ok.includes(it.id); return `<div class="rx-it ${on?"on":""}"><button class="rx-ck" data-a="reabOk" data-id="${esc(it.id)}" aria-pressed="${on}"><i>${on?"✓":""}</i><span><b>${esc(it.nome)}</b>${it.dose?`<em>${esc(it.dose)}</em>`:""}${it.n?`<small>${esc(it.n)}</small>`:""}</span></button>
+        ${it.desc||it.vid?`<details data-id="${esc(it.id)}" ${(f.open||[]).includes(it.id)?"open":""}><summary>Como se faz</summary>${it.desc?`<p>${esc(it.desc)}</p>`:""}${it.vid?`<a class="rx-vid" href="${esc(it.vid)}" target="_blank" rel="noopener noreferrer">${I.play}Ver vídeo</a>`:""}</details>`:""}</div>`; }).join("")}</div></section>
+    <section class="q"><h3>Dor durante a sessão<small>0 = nenhuma · 10 = máxima · se passar de 3, para e avisa</small></h3><div class="dorg" role="group" aria-label="Dor">
+      ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-a="reabDor" data-n="${n}" aria-pressed="${f.dor===n}" style="--c:${DOR_COR(n)}">${n}</button>`).join("")}</div></section>
+    <section class="q"><h3>Notas<small>Opcional — como correu, o que sentiste</small></h3><textarea id="reabN" maxlength="300" rows="2">${esc(f.n||"")}</textarea></section>
+    <button class="cta" data-a="reabEnviar" ${nOk&&!f.busy?"":"disabled"}>${f.busy?"A enviar…":nOk?`Registar sessão (${nOk} de ${R.items.length})`:"Marca os exercícios que fizeste"}</button></div></div>`;
+}
+/* ---- avaliações que a equipa técnica decidiu mostrar ---- */
+function avalCard(a,first){
+  const bar=v=>`<span class="av-b"><i style="width:${v==null?0:v*10}%"></i></span>`;
+  const inner=`<div class="av-areas">${a.areas.filter(x=>x.v!=null).map(x=>`<div class="av-a"><span>${esc(x.l)}</span>${bar(x.v)}<b>${String(x.v).replace(".",",")}</b></div>
+      ${x.at.length?`<details class="av-at"><summary>${x.at.length} critério${x.at.length>1?"s":""}</summary>${x.at.map(c=>`<div><span>${esc(c.l)}</span><b>${String(c.v).replace(".",",")}</b></div>`).join("")}</details>`:""}`).join("")}</div>
+    ${a.str?`<div class="av-t"><b>Pontos fortes</b><p>${esc(a.str)}</p></div>`:""}${a.weak?`<div class="av-t"><b>A melhorar</b><p>${esc(a.weak)}</p></div>`:""}${a.fin?`<div class="av-t fin"><p>${esc(a.fin)}</p></div>`:""}`;
+  const head=`<div class="av-h"><div><b>${esc(cap(fmt(a.date,{day:"numeric",month:"long",year:"numeric"})))}</b><span>${a.by?esc(a.by):"Equipa técnica"}</span></div>${a.media!=null?`<span class="av-m"><b>${String(a.media).replace(".",",")}</b><small>/10</small></span>`:""}</div>`;
+  return first?`<section class="card av">${head}${inner}</section>`:`<details class="card av old"><summary>${head}</summary>${inner}</details>`;
+}
 function top(sub){
   const d=S.data, nm=d&&d.me?first(d.me.name):"";
   const h=new Date().getHours(), ola=h<13?"Bom dia":h<20?"Boa tarde":"Boa noite";
@@ -228,7 +270,7 @@ function vHoje(){
   else if(prox&&diasAte(prox.date)<=7) cJogo=`<button class="plain" data-a="tab" data-t="jogo">${matchCard(prox,{chip:`<span class="chip-s">${esc(quando(prox.date))}</span>`,foot:prox.place?`<span>${I.pin}${esc(prox.place)}</span>`:""})}</button>`;
   let seg=((d&&d.agenda)||[]).filter(a=>a.date>t||(a.date===t&&!acabou(a))).slice(0,3);
   if(!seg.length&&d&&(d.proximos||[])[0]) seg=[{...d.proximos[0],tipo:"jogo"}];   // nada nos próximos 15 dias: mostra o próximo jogo
-  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${cJogo}${cBem}${cPse}${pushCard("hoje")}
+  return top(esc(cap(new Date().toLocaleDateString("pt-PT",{weekday:"long",day:"numeric",month:"long"}))))+`<main>${offline()}${reabCard()}${cJogo}${cBem}${cPse}${pushCard("hoje")}
     <h3 class="sec-t">A seguir</h3>${seg.length?seg.map(a=>`<div class="ag-day">${esc(dayName(a.date))}</div>${evCard(a)}`).join(""):`<div class="card empty"><b>Sem treinos nem jogos marcados</b></div>`}</main>`;
 }
 function vAgenda(){
@@ -315,7 +357,8 @@ function vEu(){
     return `<i title="${esc(fmt(x,{day:"numeric",month:"short"}))}: ${v==null?"sem resposta":v+"/20"}" style="height:${v==null?4:Math.max(10,(v-4)/16*100)}%;background:${v==null?"var(--line)":"var(--bar)"}">${v==null?"":`<em>${v}</em>`}</i>`; }).join("")}</div>
     <div class="bars-x">${days.map((x,i)=>`<span>${i%2?"":toD(x).getDate()}</span>`).join("")}</div>`;
   const cBem=`<h3 class="sec-t">O meu bem-estar · 14 dias</h3><section class="card">${med!=null?`<p class="sub" style="margin-bottom:4px">Média <b>${med.toFixed(1)}</b>/20 · ${vals.length} resposta${vals.length>1?"s":""}</p>`:""}${bars}</section>`;
-  return top("A minha época")+`<main>${offline()}${card}${cPres}${cJogos}${cBem}${pushCard("eu")?`<h3 class="sec-t">Avisos</h3>${pushCard("eu")}`:""}
+  const av=d.avals||[], cAv=av.length?`<h3 class="sec-t">As minhas avaliações</h3>${av.map((a,i)=>avalCard(a,i===0)).join("")}`:"";
+  return top("A minha época")+`<main>${offline()}${card}${cPres}${cAv}${cJogos}${cBem}${pushCard("eu")?`<h3 class="sec-t">Avisos</h3>${pushCard("eu")}`:""}
     <details class="card cfg"><summary>Este telemóvel</summary><p class="sub">Para abrires a app como as outras: no iPhone, Partilhar → "Adicionar ao ecrã principal"; no Android, menu ⋮ → "Adicionar ao ecrã principal".</p>
       <button class="cta sec" data-a="refresh">${S.loading?"A atualizar…":"Atualizar"}</button><button class="cta sec" data-a="sair">Desligar este telemóvel</button></details></main>`;
 }
@@ -357,7 +400,7 @@ function render(){
   if(!S.data){ app.innerHTML=top()+`<main><div class="card empty"><b>${S.err==="rede"?"Sem ligação":"A carregar…"}</b>${S.err==="rede"?"Liga os dados móveis ou o Wi-Fi e tenta de novo.":""}${S.err==="rede"?`<button class="cta" data-a="refresh">Tentar de novo</button>`:""}</div></main>`; return; }
   const v={hoje:vHoje,agenda:vAgenda,jogo:vJogo,eu:vEu}[S.tab]().replace("</main>",atualizado()+"</main>");
   const nav=`<nav class="tabs" aria-label="Secções">${[["hoje","Hoje"],["agenda","Agenda"],["jogo","Jogos"],["eu","Eu"]].map(([k,l])=>`<button data-a="tab" data-t="${k}" ${S.tab===k?'aria-current="page"':""}>${IC[k]}${l}</button>`).join("")}</nav>`;
-  const sheet=S.view==="bem"?vBemForm():S.view==="pse"?vPseForm():S.view&&S.view.t?vObrigado():"";
+  const sheet=S.view==="bem"?vBemForm():S.view==="pse"?vPseForm():S.view==="reab"&&S.data.reab?vReabForm():S.view&&S.view.t?vObrigado():"";
   app.innerHTML=v+nav+sheet;
   document.documentElement.style.overflow=sheet?"hidden":"";
   if(!sheet) window.scrollTo(0,sy);
@@ -403,6 +446,17 @@ const A={
     const pick=w=>tipos.find(x=>x.toLowerCase().startsWith(w))||(w==="jogo"?"Jogo":"Treino");
     const tipo=g?pick("jogo"):tr?pick("treino"):null, dur=g?(g.dur||90):tr?(tr.dur||90):60;
     S.form={tipo,dur,rpe:null,sen:null}; S.view="pse"; render(); $(".sheet").scrollTop=0; },
+  reab:()=>{ const R=S.data&&S.data.reab; if(!R||!R.items.length) return; const h=R.hoje;
+    S.form={ok:h?(h.ok||[]).filter(id=>R.items.some(it=>it.id===id)):[],dor:h?h.dor:null,n:h?h.n||"":""}; S.view="reab"; render(); $(".sheet").scrollTop=0; },
+  reabOk:el=>{ const id=el.dataset.id, f=S.form; f.open=[...document.querySelectorAll(".rx-it details[open]")].map(d=>d.dataset.id); f.n=($("#reabN")||{}).value||f.n; f.ok=f.ok.includes(id)?f.ok.filter(x=>x!==id):f.ok.concat(id); keep(); },
+  reabDor:el=>{ const f=S.form; f.open=[...document.querySelectorAll(".rx-it details[open]")].map(d=>d.dataset.id); f.n=($("#reabN")||{}).value||f.n; const n=+el.dataset.n; f.dor=f.dor===n?null:n; keep(); },
+  reabEnviar:async()=>{ const f=S.form; if(!f||!f.ok.length||f.busy) return; f.n=($("#reabN")||{}).value||""; f.busy=true; render();
+    const tot=S.data.reab.items.length;
+    try{ const r=await send({a:"atleta_reab",ok:f.ok,dor:f.dor,n:f.n,d:today()});
+      S.view = r.fila ? {t:"Guardada no telemóvel",s:"Sem rede agora — enviamos assim que houver ligação."} : {t:"Sessão registada",s:`${f.ok.length} de ${tot} exercícios${f.dor==null?"":" · dor "+f.dor+"/10"}.${f.dor!=null&&f.dor>3?" Avisa o departamento clínico.":""}`};
+      if(!r.fila) load();
+    }catch(e){ f.busy=false; if(e.link){ S.err="link"; S.view=null; } else { toast(e.message||"Não foi possível enviar."); S.view=null; load(); } }
+    S.form=null; render(); },
   pseTipo:el=>{ S.form.tipo=el.dataset.v; keep(); },
   pseDur:el=>{ const i=$("#pseDur"); S.form.dur=Math.max(5,Math.min(300,(parseInt(i.value,10)||0)+ +el.dataset.n)); keep(); },
   pseRpe:el=>{ S.form.rpe=+el.dataset.n; keep(); },

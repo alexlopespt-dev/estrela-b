@@ -37,6 +37,7 @@ function doGet(e) {
   else if (prm.a === 'aviso') body = JSON.stringify(atResposta_(function () { return atAviso_(prm.t); }));   // o telemóvel recebeu um aviso
   else if (String(prm.k || '') !== CHAVE_APP) body = JSON.stringify({ erro: 'chave' });
   else if (prm.a === 'atletas_diag') body = JSON.stringify(atResposta_(function () { return atDiagTodos_(); }));   // app técnica: respostas por atleta
+  else if (prm.a === 'mensal') body = JSON.stringify(atResposta_(function () { return atMensal_(prm.mes); }));   // app técnica: relatório mensal
   else if (prm.a === 'pull' || prm.a === 'lixo') {
     try { body = JSON.stringify(prm.a === 'lixo' ? dadosLixo_() : dadosPull_(Number(prm.since || 0))); }
     catch (err) { body = JSON.stringify({ erro: String(err && err.message || err) }); }
@@ -243,6 +244,7 @@ function doPost(e) {
   try {
     var p = JSON.parse(e && e.postData ? e.postData.contents : '{}');
     if (p.a === 'atleta_bem' || p.a === 'atleta_pse') out = atResposta_(function () { return atResponder_(p); });   // app do atleta
+    else if (p.a === 'atleta_reab') out = atResposta_(function () { return atReabSessao_(p); });   // sessão de reabilitação feita pelo atleta
     else if (p.a === 'atleta_push' || p.a === 'atleta_push_teste') out = atResposta_(function () { return atPush_(p); });   // avisos no telemóvel
     else if (String(p.k || '') !== CHAVE_APP) out = { erro: 'chave' };
     else if (p.a === 'push') out = dadosPush_(p.ops || []);
@@ -534,7 +536,7 @@ function atReg_() {
       if (s !== null) return JSON.parse(s);
     }
   } catch (e) {}
-  var reg = dadosTodos_(['players', 'events', 'meta', 'staff']);
+  var reg = dadosTodos_(['players', 'events', 'meta', 'staff', 'injuries', 'rehab', 'rehabex', 'evals']);
   try {
     var js = JSON.stringify(reg), m = Math.ceil(js.length / TAM);
     if (m <= 60) { for (var j = 0; j < m; j++) cache.put(k + '_' + j, js.substr(j * TAM, TAM), 21600); cache.put(k + '_n', String(m), 21600); }
@@ -695,6 +697,7 @@ function atleta_(tok) {
     push: (function () { try { return { key: avChaves_().pub }; } catch (e) { return null; } })(),
     equipa: { nome: tm.full || tm.team || '', curto: tm.team || '' },
     agenda: agenda, conv: conv, numeros: numeros, jogos: jogos.slice(0, 10),
+    reab: atReab_(A), avals: atAvals_(A),
     respostas: { bem: hojeBem, pse: hojePse, hist: Object.keys(hist).sort().map(function (k) { return { d: k, t: hist[k] }; }) },
     opcoes: {
       bem: { sono: atOpcoes_(lb, B.c.sono, AT_BEM.sono), fadiga: atOpcoes_(lb, B.c.fadiga, AT_BEM.fadiga),
@@ -778,6 +781,132 @@ function atResposta_(fn) {
     var m = String(err && err.message || err);
     return m === 'link' ? { erro: 'link', msg: 'Este link já não é válido. Pede um novo à equipa técnica.' } : { erro: m };
   }
+}
+
+// ============================================================ REABILITAÇÃO E AVALIAÇÕES NA APP DO ATLETA
+/*
+ * Reabilitação: o plano da lesão ativa/condicionada do atleta (Clínico → Reabilitação na app da equipa técnica:
+ * coleções "rehab" — id = id da lesão — e "rehabex" = biblioteca). O atleta vê os exercícios (dose, indicações,
+ * como se faz, vídeo) e regista a sessão do dia (feitos + dor 0-10), que entra no registo de sessões do plano
+ * (by "Atleta (app)", app:1; uma por dia — registar outra vez no mesmo dia corrige a anterior).
+ * Avaliações: só as que a equipa técnica marcou "Mostrar na app do atleta" (pub:true) e só as do próprio.
+ */
+var AT_FASES = { 1: 'Proteção e controlo da dor', 2: 'Mobilidade e ativação', 3: 'Força e controlo', 4: 'Retorno ao campo' };
+var AT_EVAL = [['tec', 'Técnica'], ['tat', 'Tática'], ['fis', 'Física'], ['psi', 'Psicológica']];
+function atDose_(it) {
+  var s = Number(it.s) || 0, r = String(it.r === null || it.r === undefined ? '' : it.r).trim(), t = String(it.t === null || it.t === undefined ? '' : it.t).trim();
+  var a = s && (r || t) ? s + '×' + (r || t) : s ? s + ' séries' : r;
+  return [a, r && t ? t : (!s && t ? t : '')].filter(function (x) { return x; }).join(' · ');
+}
+/** Lesão ativa/condicionada mais recente do atleta (com o plano, se houver). */
+function atLesaoAtiva_(A) {
+  var inj = A.reg.injuries || {}, best = null;
+  Object.keys(inj).forEach(function (id) {
+    var i = inj[id]; if (!i || i.pid !== A.pid || i.status === 'alta') return;
+    if (!best || String(i.date || '') > String(best.i.date || '')) best = { id: id, i: i };
+  });
+  return best;
+}
+function atReab_(A) {
+  var L = atLesaoAtiva_(A); if (!L) return null;
+  var i = L.i, pl = (A.reg.rehab || {})[L.id] || {}, lib = A.reg.rehabex || {}, hoje = atKey_(new Date());
+  var items = (pl.items || []).map(function (it) {
+    var x = lib[it.x] || {}, vid = String(x.vid || '');
+    return { id: it.id, nome: x.name || it.name || 'Exercício', dose: atDose_(it), n: it.n || '', desc: x.desc || '', vid: /^https:\/\//i.test(vid) ? vid : '' };
+  });
+  var log = (pl.log || []).slice().sort(function (a, b) { return String(b.d).localeCompare(String(a.d)); });
+  var hj = log.filter(function (l) { return l.d === hoje; });
+  var meu = hj.filter(function (l) { return l.app; })[0] || null;
+  return {
+    inj: L.id, zona: i.zone || '', lado: i.side && i.side !== '—' ? i.side : '', tipo: i.type || '', desde: i.date || '', previsto: i.exp || '',
+    estado: i.status === 'condicionado' ? 'condicionado' : 'ativa', fase: pl.fase || null, faseNome: pl.fase ? AT_FASES[pl.fase] || '' : '',
+    items: items,
+    hoje: meu ? { dor: meu.dor, ok: meu.ok || [], n: meu.n || '' } : null,
+    hojeStaff: hj.some(function (l) { return !l.app; }),
+    ult: log.slice(0, 6).map(function (l) { return { d: l.d, dor: l.dor === undefined ? null : l.dor, feitos: (l.ok || []).length, total: items.length, app: !!l.app, by: l.app ? '' : (l.by || '') }; })
+  };
+}
+/** Sessão de reabilitação registada pelo atleta: {t, ok:[ids dos exercícios], dor 0-10, n}. */
+function atReabSessao_(p) {
+  var A = atAtleta_(p.t), L = atLesaoAtiva_(A);
+  if (!L) return { erro: 'reab', msg: 'Não tens nenhuma lesão em recuperação.' };
+  // sem lock aqui: o dadosPush_ já o pede (e só o registo de sessões muda — o resto do plano fica como está no Sheets)
+  {
+    var pl = dadosTodos_(['rehab']).rehab[L.id];   // o plano atual (não o da cache: pode ter mudado agora mesmo)
+    if (!pl || !(pl.items || []).length) return { erro: 'reab', msg: 'O teu plano de reabilitação ainda não tem exercícios.' };
+    var ids = (pl.items || []).map(function (it) { return it.id; });
+    var ok = (Array.isArray(p.ok) ? p.ok : []).map(String).filter(function (x, j, a) { return ids.indexOf(x) !== -1 && a.indexOf(x) === j; });
+    var dor = p.dor === null || p.dor === undefined || p.dor === '' ? null : Number(p.dor);
+    if (dor !== null && !(dor >= 0 && dor <= 10)) throw new Error('Dor de 0 a 10.');
+    if (!ok.length) return { erro: 'reab', msg: 'Marca pelo menos um exercício que fizeste.' };
+    var agora = new Date(), q = p.quando ? new Date(p.quando) : null;   // sem rede: conta para o dia em que a fez (até 36 h)
+    if (q && !isNaN(q.getTime()) && q <= agora && agora - q < 36 * 3600 * 1000) agora = q;
+    var hoje = atKey_(agora);
+    var log = (pl.log || []).filter(function (l) { return !(l.app && l.d === hoje); });   // registar outra vez hoje corrige
+    log.push({ id: 'ra' + Date.now().toString(36), d: hoje, by: 'Atleta (app)', dor: dor === null ? null : Math.round(dor), ok: ok, n: String(p.n || '').slice(0, 300), app: 1 });
+    log.sort(function (a, b) { return String(a.d).localeCompare(String(b.d)); });
+    var by = 'App do atleta (' + (A.p.name || '') + ')', at = new Date().toISOString(), doc = JSON.parse(JSON.stringify(pl));
+    doc.log = log; doc._by = by; doc._at = at;
+    var r = dadosPush_([{ c: 'rehab', i: L.id, d: doc, p: [[['log'], log], [['_by'], by], [['_at'], at]] }]);
+    if (r.erros && r.erros.length) throw new Error('Não foi possível gravar.');
+    return { ok: true, h: atHora_(new Date()), feitos: ok.length, total: ids.length };
+  }
+}
+function atAvals_(A) {
+  var ev = A.reg.evals || {}, cfg = (A.reg.meta.cfg || {}).eval || {};
+  var num = function (v) { var n = atNum_(v); return n === null ? null : n; };
+  return Object.keys(ev).map(function (id) { var e = ev[id]; return e && e.pid === A.pid && e.pub && e.date ? { id: id, e: e } : null; })
+    .filter(function (x) { return x; })
+    .sort(function (a, b) { return String(b.e.date).localeCompare(String(a.e.date)); }).slice(0, 6)
+    .map(function (x) {
+      var e = x.e, v = e.v || {}, todas = [];
+      var areas = AT_EVAL.map(function (k) {
+        var at = Object.keys(v[k[0]] || {}).map(function (a) { return { l: a, v: num(v[k[0]][a]) }; }).filter(function (a) { return a.v !== null; });
+        var m = at.length ? at.reduce(function (s, a) { return s + a.v; }, 0) / at.length : null;
+        if (m !== null) todas.push(m);
+        return { k: k[0], l: (cfg[k[0]] && cfg[k[0]].l) || k[1], v: m === null ? null : Math.round(m * 10) / 10, at: at };
+      });
+      return { id: x.id, date: e.date, by: e.by || '', areas: areas, media: todas.length ? Math.round(todas.reduce(function (s, a) { return s + a; }, 0) / todas.length * 10) / 10 : null,
+               str: e.str || '', weak: e.weak || '', fin: e.fin || '' };
+    });
+}
+
+/** Relatório mensal (app técnica): bem-estar e PSE de cada atleta num mês (YYYY-MM), lidos das folhas inteiras dos
+ *  formulários (as respostas da app do atleta estão lá também). bem[pid][dia] = {t: total 4-20, i:[sono,fadiga,dor,stress]};
+ *  pse[pid][dia] = [{rpe, dur, tipo, c = rpe×dur}]. Nomes ligados como no resto (à mão, "· Nomes", monitorização). */
+function atMensal_(mes) {
+  mes = String(mes || '');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) throw new Error('mês inválido');
+  var reg = atReg_(), pl = reg.players, cfg = reg.meta.cfg || {}, man = atManual_(cfg), nomeDe = {};
+  try { var map = ligacoesNomes_(atNomesMon_(), pl, (cfg.mon && cfg.mon.map) || {}); Object.keys(map).forEach(function (n) { if (map[n]) nomeDe[map[n]] = n; }); } catch (e) {}
+  var As = Object.keys(pl).filter(function (id) { return pl[id]; }).map(function (id) { return { pid: id, p: pl[id], nome: nomeDe[id] || pl[id].name, man: man }; });
+  var quem = {}, out = { ok: true, mes: mes, bem: {}, pse: {}, semAtleta: {}, erros: [] };
+  var ler = function (F, fn) {
+    var ult = atUltimaLinha_(F); if (ult < 2) return;
+    F.f.getRange(2, 1, ult - 1, F.cab.length).getValues().forEach(function (r) {
+      var d = atData_(r[F.c.t]); if (!d) return; var k = atKey_(d); if (k.slice(0, 7) !== mes) return;
+      var b = r[F.c.n], kb = atChave_(b), A = kb in quem ? quem[kb] : (quem[kb] = As.filter(function (a) { return atEle_(b, a); })[0] || null);
+      if (!A) { b = String(b || '').trim(); if (b) out.semAtleta[b] = (out.semAtleta[b] || 0) + 1; return; }
+      fn(A.pid, k, r);
+    });
+  };
+  try {
+    var B = atFolha_(ID_BEMESTAR, ['sono']);
+    ler(B, function (pid, k, r) {
+      var i = [B.c.sono, B.c.fadiga, B.c.dor, B.c.stress].map(function (c) { return atNum_(r[c]); });
+      if (i.some(function (v) { return v === null; })) return;
+      (out.bem[pid] = out.bem[pid] || {})[k] = { t: i.reduce(function (s, v) { return s + v; }, 0), i: i };   // a última do dia conta
+    });
+  } catch (e) { out.erros.push('bem-estar: ' + e.message); }
+  try {
+    var P = atFolha_(ID_PSE, ['intens', 'sessão', 'sessao']);
+    ler(P, function (pid, k, r) {
+      var rpe = atNum_(r[P.c.rpe]), dur = P.c.dur >= 0 ? atMin_(r[P.c.dur]) : null; if (rpe === null) return;
+      var o = out.pse[pid] = out.pse[pid] || {};
+      (o[k] = o[k] || []).push({ rpe: rpe, dur: dur, tipo: P.c.tipo >= 0 ? String(r[P.c.tipo] || '') : '', c: dur !== null ? Math.round(rpe * dur) : null });
+    });
+  } catch (e) { out.erros.push('PSE: ' + e.message); }
+  return out;
 }
 
 // ============================================================ AVISOS NO TELEMÓVEL (APP DO ATLETA)

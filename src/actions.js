@@ -172,6 +172,56 @@ function newEventForm(type,date){
   }}});
 }
 
+/* ================= copiar uma semana de treinos =================
+   Escolhe a semana de origem (com treinos) e a segunda-feira de destino; cada treino vai para o mesmo dia da semana
+   com hora, duração, local, tema, tipo, intensidade, material, objetivos e (opcional) o plano de exercícios.
+   Presenças, PSE, avaliações e notas não se copiam. Dias que já têm treino ficam desmarcados (podes marcar na mesma). */
+const WD_PT=["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+function wcWeeks(){ const g={}; trainings().forEach(e=>{ const w=mondayOf(e.date); (g[w]=g[w]||[]).push(e); }); return g; }
+function weekCopyForm(src){
+  const W=wcWeeks(), ks=Object.keys(W).sort().reverse(); if(!ks.length){ toast("Ainda não há treinos para copiar."); return; }
+  const t=todayISO(); src=src&&W[src]?src:(ks.find(w=>w<=mondayOf(t))||ks[0]);
+  const dst=addDays(src<mondayOf(t)?mondayOf(t):src,7);
+  const lbl=w=>{ const mi=cycleAt("micro",w)||cycleAt("micro",addDays(w,3)); return `${fmtD(w)} a ${fmtD(addDays(w,6))} · ${plural(W[w].length,"treino")}${mi?" · "+mi.name:""}`; };
+  const body=`<div class="form">
+    <label class="fld full">Semana a copiar${sel("src",ks.map(w=>({v:w,l:lbl(w)})),src,'data-c="wcUpd"')}</label>
+    <label class="fld">Para a semana de (segunda-feira)<input type="date" name="dst" value="${dst}" data-c="wcUpd"></label>
+    <div class="fld full wcopts"><label class="chk"><input type="checkbox" name="plan" checked data-c="wcUpd"><span>Copiar o plano (exercícios e minutos)</span></label>
+      <label class="chk"><input type="checkbox" name="obj" checked><span>Copiar objetivos e material</span></label>
+      <label class="chk"><input type="checkbox" name="mc" checked><span>Criar o microciclo da semana, se ainda não existir</span></label></div></div>
+    <div id="wcPrev"></div>`;
+  modal({title:"Copiar semana de treinos",sub:"Presenças, PSE, avaliações e notas não se copiam",body,foot:footSave("Copiar"),ctx:{wc:true,save:wcSave}});
+  wcPreview();
+}
+function wcPlan(){ const src=fv("src"), dst0=fv("dst"); if(!src||!validISO(dst0)) return null; const dst=mondayOf(dst0), W=wcWeeks();
+  const evs=events(); return {src,dst,rows:(W[src]||[]).slice().sort(byDT).map(e=>{ const o=dayDiff(src,e.date), date=addDays(dst,o);
+    const ocup=evs.filter(x=>x.type==="treino"&&x.date===date); return {e,date,o,ocup}; })}; }
+function wcPreview(){
+  const el=$("#wcPrev"); if(!el) return; const P=wcPlan();
+  if(!P){ el.innerHTML=`<p class="small muted">Escolhe a semana de destino.</p>`; return; }
+  if(P.src===P.dst){ el.innerHTML=`<p class="note" style="color:var(--r5)">A semana de destino é a mesma que a de origem.</p>`; return; }
+  const withPlan=fv("plan");
+  el.innerHTML=`<p class="small" style="margin:12px 0 6px"><b>${plural(P.rows.length,"treino")}</b> de ${fmtD(P.src)} → semana de <b>${fmtD(P.dst)} a ${fmtD(addDays(P.dst,6))}</b>${P.dst<mondayOf(todayISO())?` <span class="tag warn">semana passada</span>`:""}</p>
+    <div class="list wclist">${P.rows.map((r,i)=>{ const e=r.e, nb=(e.plan||[]).length, mins=(e.plan||[]).reduce((s,x)=>s+(+x.min||0),0);
+      return `<label class="li wcrow ${r.ocup.length?"busy":""}"><input type="checkbox" name="wc${i}" ${r.ocup.length?"":"checked"}><span class="main"><b>${WD_PT[r.o]} ${fmtD(r.date,{day:"numeric",month:"short"})}${e.time?" · "+esc(e.time):""}${e.theme?" · "+esc(e.theme):""}</b>
+        <small>${[TR_TYPES.find(t=>t.k===e.ttype)?.l,e.int,e.dur?e.dur+" min":"",withPlan&&nb?`${plural(nb,"bloco")} (${mins}')`:""].filter(Boolean).map(esc).join(" · ")||"Sem detalhes"}</small>
+        ${r.ocup.length?`<small class="wcwarn">Já há treino neste dia${r.ocup[0].time?" às "+esc(r.ocup[0].time):""}${r.ocup[0].theme?" ("+esc(r.ocup[0].theme)+")":""} — marca para copiar na mesma</small>`:""}</span></label>`; }).join("")}</div>`;
+}
+function wcSave(){
+  const P=wcPlan(); if(!P){ toast("Escolhe a semana de destino."); return; }
+  if(P.src===P.dst){ toast("A semana de destino é a mesma que a de origem."); return; }
+  const withPlan=fv("plan"), withObj=fv("obj"); let n=0;
+  P.rows.forEach((r,i)=>{ if(!fv("wc"+i)) return; const e=r.e;
+    put("events",uid("tr_"),{type:"treino",date:r.date,time:e.time||"",dur:e.dur||90,place:e.place||"",theme:e.theme||"",int:e.int||"",ttype:e.ttype||"",clima:"",
+      mat:withObj?e.mat||"":"",objG:withObj?e.objG||"":"",objE:withObj?e.objE||"":"",plan:withPlan?clone(e.plan||[]):[],att:{},closed:false,notes:""}); n++; });
+  let mc=false;
+  if(n && fv("mc") && !cycles("micro").some(c=>c.start<=addDays(P.dst,6)&&c.end>=P.dst)){
+    const om=cycleAt("micro",P.src)||cycleAt("micro",addDays(P.src,3));
+    put("cycles",uid("cy_"),{kind:"micro",name:`Microciclo ${fmtD(P.dst)}`,start:P.dst,end:addDays(P.dst,6),period:om&&om.period||"",obj:om&&om.obj||"",notes:""}); mc=true; }
+  if(!n){ toast("Marca pelo menos um treino para copiar."); return; }
+  closeModal(); S.day=P.dst; S.cal=P.dst.slice(0,7);
+  toast(`${plural(n,"treino copiado","treinos copiados")} para a semana de ${fmtD(P.dst)}${mc?" (e o microciclo)":""}.`);
+}
 function weekGenForm(){
   const t=todayISO(), wd=(toD(t).getDay()+6)%7;
   const mon = wd<=1 ? mondayOf(t) : addDays(mondayOf(t),7);
@@ -227,7 +277,7 @@ function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px;white-space:pre-line"><b>${l}:</b> ${esc(v)}</p>`:"";
   modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
-    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px">${x.imgk&&EXVEC[x.imgk]&&!x.vec&&!(x.img||x.imgA||x.imgL||x.imgG)?`<div class="seg" style="margin-top:8px" aria-label="Desenho"><button data-a="exvMode" data-k="v" data-id="${esc(id)}" class="${EXV_MODE!=="o"?"on":""}">Desenho vetorial</button><button data-a="exvMode" data-k="o" data-id="${esc(id)}" class="${EXV_MODE==="o"?"on":""}">Imagem original</button></div>`:""}</div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
+    body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px"></div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
     foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.vec||(x.imgk&&EXVEC[x.imgk])||(x.drw&&(x.drw.it||[]).length)?"Editar desenho":"Desenhar"}</button><button class="btn" data-a="exFrom" data-id="${esc(id)}" title="Cria um exercício novo igual a este, para alterares">⧉ Novo a partir deste</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
 function exForm(id){
@@ -319,12 +369,15 @@ function evalForm(pid,evalId){
     <div class="form" style="margin-top:14px">
       <label class="fld full">Principais qualidades<textarea name="str">${esc(ev.str||"")}</textarea></label>
       <label class="fld full">Aspetos a melhorar<textarea name="weak">${esc(ev.weak||"")}</textarea></label>
-      <label class="fld full">Avaliação final<input name="fin" value="${esc(ev.fin||"")}" placeholder="Ex.: Titular indiscutível, a subir de forma"></label></div>`;
+      <label class="fld full">Avaliação final<input name="fin" value="${esc(ev.fin||"")}" placeholder="Ex.: Titular indiscutível, a subir de forma"></label>
+      ${EDITION==="estrela"?`<label class="chk full avpub"><input type="checkbox" name="pub" ${ev.pub?"checked":""}><span><b>Mostrar esta avaliação na app do atleta</b><small class="muted"> — opcional. ${esc(firstName(p.name))} vê as notas por área e critério, os pontos fortes, o que melhorar e a avaliação final. Podes tirar quando quiseres.</small></span></label>`:""}</div>`;
   modal({title:esc(p.name),sub:evalId?"Editar avaliação":"Nova avaliação",big:true,body,foot:footSave("Guardar avaliação",evalId?"Eliminar":null),ctx:{v:clone(v),areaAvg,
     save:()=>{ const date=fv("date"); if(!validISO(date)){ toast("Indica a data."); return; }
       const has=Object.values(M.v).some(o=>Object.values(o||{}).some(x=>parseNum(x)!=null));
       if(!has){ toast("Avalia pelo menos um atributo."); return; }
-      put("evals",evalId||uid("av_"),{pid,date,by:fv("by"),v:M.v,str:fv("str"),weak:fv("weak"),fin:fv("fin")}); closeModal(); toast("Avaliação guardada"); },
+      const pub=EDITION==="estrela"&&!!fv("pub");
+      put("evals",evalId||uid("av_"),{pid,date,by:fv("by"),v:M.v,str:fv("str"),weak:fv("weak"),fin:fv("fin"),pub}); closeModal();
+      toast(pub?(P(pid)&&P(pid).atk?"Avaliação guardada — já aparece na app do atleta":"Avaliação guardada. Para a ver, o atleta precisa do link da app (ficha → App do atleta)."):"Avaliação guardada"); },
     del:()=>askConfirm("Eliminar esta avaliação?","Eliminar",true).then(ok=>{ if(ok){ del("evals",evalId); closeModal(); } })
   }});
   Object.keys(evalCfg()).forEach(k=>{ const a=areaAvg(k); $("#av_"+k).textContent=a==null?"–":fmt1(a); });
@@ -600,6 +653,7 @@ const A = {
   calNav: el => { const [y,m]=S.cal.split("-").map(Number); const d=new Date(y,m-1+(+el.dataset.n),1); S.cal=d.getFullYear()+"-"+pad(d.getMonth()+1); render(); },
   calToday: () => { S.day=todayISO(); S.cal=S.day.slice(0,7); render(); },
   weekGen: () => weekGenForm(),
+  weekCopy: el => weekCopyForm(el.dataset.w||""),
   newEvent: el => newEventForm(el.dataset.type, el.dataset.d),
   tsub: el => { S.tsub=el.dataset.k; render(); },
   plsub: el => { S.plsub=el.dataset.k; render(); },
@@ -742,7 +796,6 @@ const A = {
   syncTrash: () => syncLixo(),
   syncRestore: el => syncRestore(+el.dataset.j),
   theme: () => { const i=THEMES.findIndex(t=>t[0]===THEME); THEME=THEMES[(i+1)%THEMES.length][0]; try{ localStorage.setItem(LS+":theme",THEME); }catch(e){} applyTheme(); toast(THEMES.find(t=>t[0]===THEME)[1]); },
-  exvMode: el => { setExvMode(el.dataset.k); exView(el.dataset.id); schedule(); },
   exPickAdd: el => { const id=el.dataset.id, exId=el.dataset.x; const tr=clone(D.events[id]), ex=D.exercises[exId]; if(!tr||!ex) return;
     tr.plan=tr.plan||[]; tr.plan.push({ex:exId,name:ex.name,min:ex.dur??null}); put("events",id,tr); toast(`${ex.name} adicionado`); },
   catCfg: () => catCfgForm(),
@@ -766,6 +819,7 @@ const A = {
 
 /* ================= alterações em campos ================= */
 const Cg = {
+  wcUpd: () => wcPreview(),
   cargaMc: el => { S.cargaMc=el.value; render(); },
   f: el => { const {col,id,f,t}=el.dataset; if(!D[col]||!D[col][id]) return; const o=clone(D[col][id]);
     let v = el.value; if(typeof v==="string") v=v.trim();

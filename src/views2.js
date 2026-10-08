@@ -109,7 +109,7 @@ function vPlantel(){
   const list=players().filter(p=>!S.plGroup||GROUP(p.pos)===S.plGroup);
   const arch=allPlayers().filter(p=>p.archived);
   return `
-  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
+  <div class="bar"><h2>Plantel</h2>${sub}<span class="sp"></span><button class="btn" data-a="mesRel">Relatórios mensais</button><button class="btn primary" data-a="plNew">+ Adicionar atleta</button></div>
   <div class="chips" style="margin-bottom:12px"><button class="chip ${!S.plGroup?"on":""}" data-a="plGroup" data-k="">Todos (${players().length})</button>${["GR","DEF","MED","ATA"].map(k=>`<button class="chip ${S.plGroup===k?"on":""}" data-a="plGroup" data-k="${k}">${GNAME[k]}</button>`).join("")}</div>
   <section class="card"><div class="list">${list.length?list.map(p=>{ const s=st.pl[p.id], av=avail(p.id);
     return playerLine(p,`${av!=="ok"?`<span class="tag ${AV[av].c}">${AV[av].l}</span>`:""}<span class="small muted num" style="text-align:right">${s.j} J — ${s.min}'<br>${s.att==null?"–":s.att+"%"} treinos</span>${badge(s.avg)}`); }).join(""):`<div class="empty"><b>Sem atletas</b></div>`}</div></section>
@@ -118,7 +118,7 @@ function vPlantel(){
     <div class="list">${staff().length?staff().map(s=>`<button class="li" data-a="stfEdit" data-id="${esc(s.id)}">${avatar({id:s.id,name:s.name,pos:"",photo:s.photo,photoData:s.photoData})}<span class="main"><b>${esc(s.name)}</b><small>${esc(s.role||"")}</small></span><span class="muted">›</span></button>`).join(""):`<div class="empty"><b>Sem staff</b></div>`}</div></section>
   ${vWho()}
   ${EDITION==="clubes"?sbAccount():""}
-  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span></div><div class="card-b">
+  <section class="card" style="margin-top:14px"><div class="card-h"><h3>Equipa e cópias de segurança</h3><span class="sub" id="appVer">Versão de ${esc(BUILD)}</span><button class="btn sm" data-a="estado">Estado da app</button></div><div class="card-b">
     <div class="form">
       <label class="fld">Equipa (nome curto)<input value="${esc(m.team||"")}" data-c="meta" data-f="team"></label>
       <label class="fld">Nome no cabeçalho<input value="${esc(m.full||"")}" data-c="meta" data-f="full" placeholder="ex.: ${EDITION==="clubes"?"GD Exemplo — Sub-19":"CF Estrela da Amadora — Equipa B"}"></label>
@@ -158,7 +158,7 @@ function pAtleta(id){
   <section class="card">
     <div class="ahead">${avatar(p,`data-a="photo" data-id="${esc(id)}" aria-label="Mudar foto" title="Mudar foto"`)}
       <div><h2>${esc(p.name)}</h2><p><span class="tag gold">${esc(p.pos||"—")}</span>${p.n?`<span>N.º ${esc(p.n)}</span>`:""}${p.foot?`<span>— Pé ${esc(p.foot.toLowerCase())}</span>`:""}${age!=null?`<span>— ${age} anos</span>`:""}${p.height?`<span>— ${esc(p.height)} cm</span>`:""}${p.weight?`<span>— ${esc(p.weight)} kg</span>`:""}<span class="tag ${AV[av].c}">${AV[av].l}</span></p></div>
-      <div class="acts"><button class="btn sm" data-a="plEdit" data-id="${esc(id)}">Editar dados</button><button class="btn sm" data-a="evalNew" data-id="${esc(id)}">Nova avaliação</button><button class="btn sm" data-a="injNew" data-id="${esc(id)}">Registar lesão</button><button class="btn sm gold" data-a="prAth" data-id="${esc(id)}">Relatório em PDF</button></div></div>
+      <div class="acts"><button class="btn sm" data-a="plEdit" data-id="${esc(id)}">Editar dados</button><button class="btn sm" data-a="evalNew" data-id="${esc(id)}">Nova avaliação</button><button class="btn sm" data-a="injNew" data-id="${esc(id)}">Registar lesão</button><button class="btn sm" data-a="cmpWith" data-id="${esc(id)}">Comparar</button><button class="btn sm" data-a="mesRel" data-id="${esc(id)}">Relatório mensal</button><button class="btn sm gold" data-a="prAth" data-id="${esc(id)}">Relatório em PDF</button></div></div>
     <div class="card-b"><div class="kpis">
       <div class="kpi"><span>Jogos (titular)</span><b>${s.j}<small> (${s.tit})</small></b></div>
       <div class="kpi"><span>Minutos</span><b>${s.min}'</b></div>
@@ -174,7 +174,7 @@ function pAtleta(id){
     <section class="card"><div class="card-h"><h3>Avaliação</h3><button class="btn sm primary" data-a="evalNew" data-id="${esc(id)}">+ Avaliação</button></div><div class="card-b">
       ${last?`${radarSVG(la,pa)}<div class="areas" style="margin-top:8px">${Object.entries(evalCfg()).map(([k,a])=>`<div class="area"><span>${esc(a.l)}</span><b>${la[k]==null?"–":fmt1(la[k])}</b>${pa&&la[k]!=null&&pa[k]!=null?deltaHTML(la[k],pa[k],false,1):""}</div>`).join("")}</div>
         ${prev?`<p class="note">Linha tracejada: avaliação anterior (${fmtD(prev.date)}).</p>`:""}`:`<div class="empty"><b>Sem avaliações</b>Avalia técnica, tática, física e psicológica de 0 a 10.</div>`}
-    </div>${evs.length?`<div class="list" style="border-top:1px solid var(--line)">${evs.slice().reverse().map(e=>`<button class="li" data-a="evalEdit" data-id="${esc(e.id)}"><span class="main"><b>${fmtD(e.date,{day:"numeric",month:"long",year:"numeric"})}</b><small>${esc(e.by||"Sem responsável")}${e.fin?" — "+esc(e.fin):""}</small></span>${badge(evalScore(e))}</button>`).join("")}</div>`:""}</section>
+    </div>${evs.length?`<div class="list" style="border-top:1px solid var(--line)">${evs.slice().reverse().map(e=>`<button class="li" data-a="evalEdit" data-id="${esc(e.id)}"><span class="main"><b>${fmtD(e.date,{day:"numeric",month:"long",year:"numeric"})}</b><small>${esc(e.by||"Sem responsável")}${e.fin?" — "+esc(e.fin):""}</small></span>${e.pub?`<span class="tag blue" title="O atleta vê esta avaliação na app dele">Na app do atleta</span>`:""}${badge(evalScore(e))}</button>`).join("")}</div>`:""}</section>
     <section class="card"><div class="card-h"><h3>Testes físicos</h3><button class="btn sm" data-a="tab" data-t="testes">Registar</button></div>
       ${ms.length?`<div class="tscroll"><table class="tb"><thead><tr><th class="l">Teste</th>${ms.map(mo=>`<th>${esc(mo.label||fmtD(mo.date))}</th>`).join("")}</tr></thead><tbody>${testRows}</tbody></table></div>`:`<div class="empty"><b>Sem momentos de avaliação</b></div>`}</section>
     <section class="card"><div class="card-h"><h3>Jogos</h3><span class="sub">${s.games.length} convocatórias</span></div>
