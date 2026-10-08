@@ -10,6 +10,7 @@ const SYNC={cfg:null,last:0,q:{},err:"",at:null,pulling:false,pushing:false,busy
 try{ const c=JSON.parse(localStorage.getItem(SYNC_LS)||"null"); if(c&&c.url&&c.key){ SYNC.cfg={url:c.url,key:c.key}; SYNC.last=+c.last||0; } }catch(e){}
 try{ const q=JSON.parse(localStorage.getItem(SYNCQ_LS)||"null"); if(q&&typeof q==="object") SYNC.q=q; }catch(e){}
 const syncOn = () => !!(SYNC.cfg && MODE==="local");
+const SYNC_KEY_MSG = "A chave da partilha não é a do script: em Plantel → Partilhar com a equipa técnica, a chave tem de ser igual à CHAVE_APP do dados_app.gs (não é a da monitorização).";
 const syncN = () => Object.keys(SYNC.q).length;
 function syncSaveCfg(){ try{ if(SYNC.cfg) localStorage.setItem(SYNC_LS,JSON.stringify({...SYNC.cfg,last:SYNC.last})); else localStorage.removeItem(SYNC_LS); }catch(e){} }
 function syncSaveQ(){ clearTimeout(SYNC.qs); SYNC.qs=null; try{ localStorage.setItem(SYNCQ_LS,JSON.stringify(SYNC.q)); }catch(e){} }
@@ -60,7 +61,7 @@ async function syncGet(params,ms=30000){
         SYNC.diag.jsonp=(SYNC.diag.jsonp||0)+1; SYNC.diag.fetchErr=String(e&&e.message||e); }
     }
     if(d===undefined) d=await monJsonp(u);
-    if(d&&d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro);
+    if(d&&d.erro) throw new Error(d.erro==="chave"?SYNC_KEY_MSG:d.erro);
     return d;
   }finally{ clearTimeout(tm); }
 }
@@ -71,7 +72,7 @@ async function syncPost(body){
     const r=await fetch(SYNC.cfg.url.trim(),{method:"POST",body:JSON.stringify({...body,k:SYNC.cfg.key}),signal:ctl?ctl.signal:undefined});
     if(!r.ok) throw new Error("HTTP "+r.status);
     const d=await r.json();
-    if(d&&d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro==="pedido desconhecido"?"O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).":d.erro);
+    if(d&&d.erro) throw new Error(d.erro==="chave"?SYNC_KEY_MSG:d.erro==="pedido desconhecido"?"O script ainda não tem a versão nova (Implementar → Gerir implementações → Nova versão).":d.erro);
     return d;
   }finally{ clearTimeout(tm); }
 }
@@ -271,7 +272,7 @@ function syncForm(){
   modal({title:"Partilhar dados com a equipa técnica",sub:"Google Sheets através do script \"Estrela B — Dados da app\"",
     body:`${on?syncDiagHTML():""}${on?`<p class="small" style="margin:0 0 12px"><b>Ligado.</b> ${SYNC.err?`<span style="color:var(--r5)">${esc(SYNC.err)}</span>`:SYNC.at?"Última sincronização às "+new Date(SYNC.at).toLocaleTimeString("pt-PT")+".":""}${syncN()?` ${syncN()} alteração(ões) por enviar.`:""}</p>`:""}
       <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
-      <label class="fld full">Chave<input name="key" value="${esc(c.key||monCfg().key||"")}" autocomplete="off"></label></div>
+      <label class="fld full">Chave<input name="key" value="${esc(c.key||"")}" autocomplete="off" placeholder="CHAVE_APP do dados_app.gs"></label></div>
       <p class="note">É o URL do script "Estrela B — Dados da app" (diferente do da monitorização) e a mesma chave. Cada pessoa da equipa técnica liga uma vez no seu dispositivo.
       Ao ligar, o que existe só aqui é enviado e o que já está partilhado passa para este dispositivo (nos registos que existem nos dois, fica o partilhado).
       As alterações dos outros aparecem em cerca de ${SYNC_MS/1000} segundos.</p>`,

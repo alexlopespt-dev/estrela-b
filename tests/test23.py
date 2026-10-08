@@ -5,15 +5,17 @@ from playwright.sync_api import sync_playwright
 # Dois scripts separados: a monitorização (resumo + JSONP) e "Dados da app". Se alguém colar na partilha o URL
 # da monitorização, a app explica o erro e não liga.
 errs=[]
+import re
 KEY="BbcqfGe2wAsSXYXG8r8Cnbfa"; PORT=8785; URL="https://script.google.com/macros/s/MON/exec"
 GS=os.path.join(ROOT,"tools","apps-script","monitorizacao_completo.gs")
+MKEY=re.search(r"var CHAVE_APP = '([^']+)'",open(GS,encoding="utf-8").read()).group(1)   # a monitorização tem a sua própria chave
 srv=subprocess.Popen(["node",os.path.join(ROOT,"tests","gas_servidor.js"),str(PORT),GS],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 assert "pronto" in srv.stdout.readline()
 def get(q): return urllib.request.urlopen(f"http://127.0.0.1:{PORT}/exec?"+q).read().decode()
 try:
     resumo={"v":1,"jogadores":[{"nome":"Abbiati"}]}
     urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{PORT}/__props",data=json.dumps({"app_n":"1","app_0":json.dumps(resumo)}).encode(),method="POST")).read()
-    r1=get("k="+KEY); r2=get("k="+KEY+"&cb=abc"); r3=get("k=errada"); r4=get("k="+KEY+"&a=pull&since=0")
+    r1=get("k="+MKEY); r2=get("k="+MKEY+"&cb=abc"); r3=get("k=errada"); r4=get("k="+MKEY+"&a=pull&since=0")
     print("monitorização:", r1[:40], "| JSONP:", r2[:12], "| chave errada:", r3, "| pull ignorado:", r4[:30])
     if json.loads(r1).get("v")!=1 or not r2.startswith("abc(") or "chave" not in r3 or '"docs"' in r4: errs.append("script da monitorização")
     def fwd(route):

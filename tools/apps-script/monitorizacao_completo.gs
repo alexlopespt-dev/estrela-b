@@ -2021,7 +2021,7 @@ function atualizar_() {
  *
  * Segurança: sem a chave, o endereço devolve só {"erro":"chave"}. Não partilhes o URL com a chave.
  */
-var CHAVE_APP = 'BbcqfGe2wAsSXYXG8r8Cnbfa';
+var CHAVE_APP = '86342e006bd845aea1b69604164450b4';   // a chave da monitorização (diferente da do dados_app.gs)
 var DIAS_APP = 14;          // dias de histórico enviados para os mini-gráficos
 var DIAS_RESP = 7;          // dias de respostas em bruto (bem-estar e PSE) enviados para a app
 

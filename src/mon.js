@@ -18,7 +18,7 @@ async function monFetch(manual){
     let d;
     try{ const r=await fetch(u,{signal:ctl?ctl.signal:undefined}); if(!r.ok) throw new Error("HTTP "+r.status); d=await r.json(); }
     catch(e){ if(e&&e.name==="AbortError") throw e; d=await monJsonp(u); }   // leitura direta bloqueada pelo browser: tenta por <script>
-    if(d.erro) throw new Error(d.erro==="chave"?"A chave não está certa.":d.erro==="pedido desconhecido"?monWrongScript(c.url):d.erro);
+    if(d.erro) throw new Error(d.erro==="chave"?"A chave da monitorização não é a do script: em Ligação ao Sheets, a chave tem de ser igual à CHAVE_APP do monitorizacao_completo.gs (não é a da partilha).":d.erro==="pedido desconhecido"?monWrongScript(c.url):d.erro);
     if(!Array.isArray(d.jogadores)) throw new Error("A resposta não tem jogadores.");
     const antes=MON.data&&MON.data.atualizado;
     MON.data=d; MON.at=new Date().toISOString();
@@ -229,7 +229,7 @@ function monCfgForm(){
   const opts=[{v:"",l:"— não ligar —"},...players().map(p=>({v:p.id,l:p.name}))];
   const body=`<p class="small muted" style="margin:0 0 12px">Endereço da aplicação Web publicada no Apps Script do ficheiro "${MON_FILE}" (Implementar → Aplicação Web; termina em <b>/exec</b>) e a chave definida no script (CHAVE_APP).</p>
     <div class="form"><label class="fld full">Endereço (URL)<input name="url" value="${esc(c.url||"")}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
-      <label class="fld full">Chave<input name="key" value="${esc(c.key||"")}" autocomplete="off"></label></div>
+      <label class="fld full">Chave<input name="key" value="${esc(c.key||"")}" autocomplete="off" placeholder="CHAVE_APP do monitorizacao_completo.gs"></label></div>
     ${names.length?`<div class="asec" style="margin-top:16px"><span>Nomes da folha → atletas da app</span></div>
       <p class="small muted" style="margin:0 0 6px">Os nomes iguais ligam-se sozinhos. Corrige só os que estiverem mal ou em falta.</p>
       ${names.map((n,i)=>`<div class="monmap"><span>${esc(n)}${miss.includes(n)?` <span class="tag warn">sem ligação</span>`:""}</span>${sel("m_"+i,opts,map[n]||"",`data-n="${esc(n)}"`)}</div>`).join("")}`:""}`;
