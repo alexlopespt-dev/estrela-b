@@ -276,15 +276,16 @@ function cycleForm(kind,id){
 function exView(id){
   const x=D.exercises[id]; if(!x) return;
   const row=(l,v)=>v?`<p style="margin:0 0 10px;white-space:pre-line"><b>${l}:</b> ${esc(v)}</p>`:"";
-  modal({title:esc(x.name),sub:esc([x.cat,x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
+  modal({title:esc(x.name),sub:esc([x.cat,x.gkt&&GK_TL(x.gkt),x.dur?x.dur+"'":"",x.players?x.players+" jogadores":""].filter(Boolean).join(" — ")),
     body:`${x.auto?`<p class="small" style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--r6) 15%,transparent)"><b>Descrição proposta</b> a partir do nome e do desenho. Revê e carrega em Editar → Guardar para a confirmar.</p>`:""}${exImg(x)?`<div style="margin-bottom:12px"><img src="${esc(exImg(x))}" alt="" style="width:100%;border-radius:10px"></div>`:(x.drw&&(x.drw.it||[]).length?`<div style="margin-bottom:12px">${drawSVG(x.drw)}</div>`:"")}${exMoms(x).length?`<p style="margin:0 0 10px"><b>Momento:</b> ${exMoms(x).map(k=>{ const m=MOMENTS.find(o=>o.k===k); return `<span class="tag" style="margin-right:4px"><i class="mdot" style="background:var(--m-${k})"></i>${m.ab} — ${esc(m.l)}</span>`; }).join("")}</p>`:""}${row("Objetivo",x.obj)}${x.desc?`<p style="margin:0 0 10px;white-space:pre-line">${esc(x.desc)}</p>`:""}${row("Princípios",(x.pr||[]).filter(k=>D.principles[k]).map(k=>D.principles[k].name).join(", "))}${row("Espaço",x.space)}${row("Material",x.mat)}${x.cp?`<p style="margin:0;white-space:pre-line"><b>Pontos-chave e variantes:</b><br>${esc(x.cp)}</p>`:""}`,
     foot:`<button class="btn" data-a="exPhoto" data-id="${esc(id)}">${x.img||x.imgA||x.imgL||x.imgG?"Mudar foto":"Foto"}</button><button class="btn" data-a="drawEx" data-id="${esc(id)}">${x.vec||(x.imgk&&EXVEC[x.imgk])||(x.drw&&(x.drw.it||[]).length)?"Editar desenho":"Desenhar"}</button><button class="btn" data-a="exFrom" data-id="${esc(id)}" title="Cria um exercício novo igual a este, para alterares">⧉ Novo a partir deste</button><span class="right"><button class="btn" data-a="mClose">Fechar</button><button class="btn primary" data-a="exEdit" data-id="${esc(id)}">Editar</button></span>`});
 }
-function exForm(id){
-  const x=id?D.exercises[id]:{};
+function exForm(id,pre){
+  const x=id?D.exercises[id]:(pre||{}), isG=/guarda[\s-]*redes/i.test(x.cat||"");
   const body=`<div class="form">
     <label class="fld full">Nome<input name="name" value="${esc(x.name||"")}"></label>
-    <label class="fld">Categoria${sel("cat",exCats().includes(x.cat)||!x.cat?exCats():exCats().concat([x.cat]),x.cat||exCats()[0])}</label>
+    <label class="fld">Categoria${sel("cat",exCats().includes(x.cat)||!x.cat?exCats():exCats().concat([x.cat]),x.cat||exCats()[0],'data-c="exCatChg"')}</label>
+    <label class="fld" data-gkonly ${isG?"":'style="display:none"'}>Trabalho de guarda-redes${sel("gkt",GK_T.map(g=>({v:g.k,l:g.l})),x.gkt||"","","—")}</label>
     <label class="fld">Duração (min)<input name="dur" inputmode="numeric" value="${esc(x.dur??"")}"></label>
     <label class="fld">N.º de jogadores<input name="players" value="${esc(x.players??"")}"></label>
     <label class="fld">Espaço<input name="space" value="${esc(x.space||"")}" placeholder="Ex.: 30x20 m"></label>
@@ -297,8 +298,9 @@ function exForm(id){
   modal({title:id?"Editar exercício":"Novo exercício",big:true,body,foot:footSave("Guardar",id?"Eliminar":null),ctx:{
     save:()=>{ const name=fv("name"); if(!name){ toast("Dá um nome ao exercício."); return; }
       const nid=id||uid("ex_");
-      const base0=id?clone(D.exercises[id]):{}; delete base0.auto;
-      put("exercises",nid,{...base0,pr:principles().filter(p=>fv("pr_"+p.id)).map(p=>p.id),mom:MOMENTS.filter(m=>fv("mom_"+m.k)).map(m=>m.k),name,cat:fv("cat"),dur:parseNum(fv("dur")),players:fv("players"),space:fv("space"),mat:fv("mat"),obj:fv("obj"),desc:fv("desc"),cp:fv("cp")});
+      const base0=id?clone(D.exercises[id]):{}; delete base0.auto; delete base0.gkt;
+      const gkt=/guarda[\s-]*redes/i.test(fv("cat"))&&fv("gkt")?{gkt:fv("gkt")}:{};
+      put("exercises",nid,{...base0,...gkt,pr:principles().filter(p=>fv("pr_"+p.id)).map(p=>p.id),mom:MOMENTS.filter(m=>fv("mom_"+m.k)).map(m=>m.k),name,cat:fv("cat"),dur:parseNum(fv("dur")),players:fv("players"),space:fv("space"),mat:fv("mat"),obj:fv("obj"),desc:fv("desc"),cp:fv("cp")});
       closeModal(); toast("Exercício guardado"); if(!id) setTimeout(()=>drawEditor(nid),60); },
     del:()=>askConfirm("Eliminar este exercício da biblioteca? Os treinos que o usam mantêm o nome do bloco.","Eliminar",true).then(ok=>{ if(ok){ del("exercises",id); closeModal(); } })
   }});
@@ -630,9 +632,9 @@ function oppRepForm(oid,rid){
 let PRINT_PREF={scale:100};
 try{ const p=JSON.parse(localStorage.getItem(LS+":print")||"null"); if(p&&p.scale) PRINT_PREF=p; }catch(e){}
 function printAsk(kind,id){
-  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id),prejogo:()=>preJogoPrint(),rehab:id=>rbPrint(id)}[kind];
+  const run={plan:planPrint,train:trainingPrint,ath:athletePrint,game:gamePrint,opp:oppPrint,week:id=>{ const [s,e]=String(id).split("|"); weekPrint(s,e); },bp:id=>bpPrint(id),prejogo:()=>preJogoPrint(),rehab:id=>rbPrint(id),gk:id=>gkPrint(id),gkw:id=>gkWeekPrint(id)}[kind];
   if(!run) return;
-  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal",bp:"Bolas paradas",prejogo:"Relatório pré-jogo",rehab:"Plano de reabilitação"};
+  const titles={plan:"Plano de treino",train:"Relatório de treino",ath:"Relatório do atleta",game:"Ficha de jogo",opp:"Ficha do adversário",week:"Relatório semanal",bp:"Bolas paradas",prejogo:"Relatório pré-jogo",rehab:"Plano de reabilitação",gk:"Treino de guarda-redes",gkw:"Semana dos guarda-redes"};
   modal({title:titles[kind],sub:"Documento para imprimir ou guardar em PDF",
     body: kind==="plan" ? `<p class="small muted" style="margin:0">Plano em A4 ao alto: cabeçalho da sessão e cada exercício com o desenho em grande. O ficheiro descarregado abre no browser; para PDF escolhe Imprimir → Guardar como PDF (ativa "Gráficos de fundo" se o campo sair branco).</p>` : `<div class="qlbl"><span>Tamanho da folha</span></div>
       <div class="seg" style="margin-bottom:14px">${[100,125,150,175].map(s=>`<button data-a="prScale" data-k="${s}" class="${PRINT_PREF.scale===s?"on":""}">${s}%</button>`).join("")}</div>
@@ -644,7 +646,7 @@ function printAsk(kind,id){
 /* ================= ações (cliques) ================= */
 const A = {
   tab: el => go(el.dataset.t),
-  page: el => { if(D[{treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents"}[el.dataset.p]]?.[el.dataset.id]) openPage(el.dataset.p, el.dataset.id); else toast("Este registo já não existe."); },
+  page: el => { if(D[{treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents",gk:"gk"}[el.dataset.p]]?.[el.dataset.id]) openPage(el.dataset.p, el.dataset.id); else toast("Este registo já não existe."); },
   back: () => back(),
   mClose: () => { if(M&&M.dirty){ askConfirm("Fechar sem guardar as alterações?","Fechar sem guardar",true).then(ok=>{ if(ok) closeModal(); }); } else closeModal(); },
   mSave: () => M && M.save && M.save(),

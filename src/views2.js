@@ -170,6 +170,7 @@ function pAtleta(id){
   </section>
   <div class="grid2" style="margin-top:14px">
     ${monAth(id)}
+    ${gkAthCard(id)}
     ${atCard(id)}
     <section class="card"><div class="card-h"><h3>Avaliação</h3><button class="btn sm primary" data-a="evalNew" data-id="${esc(id)}">+ Avaliação</button></div><div class="card-b">
       ${last?`${radarSVG(la,pa)}<div class="areas" style="margin-top:8px">${Object.entries(evalCfg()).map(([k,a])=>`<div class="area"><span>${esc(a.l)}</span><b>${la[k]==null?"–":fmt1(la[k])}</b>${pa&&la[k]!=null&&pa[k]!=null?deltaHTML(la[k],pa[k],false,1):""}</div>`).join("")}</div>

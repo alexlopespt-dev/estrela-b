@@ -10,7 +10,7 @@ const SENTRY_DSN = "__SENTRY__";     // registo de erros (Sentry, região UE); v
 const SB = { s:null, user:null, teams:[], team:null, role:null, gate:"loading", err:"", info:"", busy:false, started:false, people:null };
 const SB_SES = LS+":sessao", SB_TEAM = LS+":equipa", SB_INV = LS+":convite";
 const ROLE_L = {admin:"Administrador do clube",principal:"Treinador principal",adjunto:"Treinador adjunto",analista:"Analista",
-  fisio:"Fisioterapeuta / médico",fisico:"Preparador físico",manager:"Team manager",leitura:"Só leitura"};
+  fisio:"Fisioterapeuta / médico",fisico:"Preparador físico",gr:"Treinador de guarda-redes",manager:"Team manager",leitura:"Só leitura"};
 // configuração base de um clube novo (não são dados de jogadores)
 const CLUBE_BASE = {
   statdefs:{sd01:{title:"Remates",code:"RM",neg:false,hl:true,order:1},sd02:{title:"Remates à baliza",code:"RB",neg:false,hl:true,order:2},

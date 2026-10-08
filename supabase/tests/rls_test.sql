@@ -9,7 +9,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000b', 'b@clube-b.pt'),     -- admin do clube B
   ('00000000-0000-0000-0000-00000000000c', 'c@clube-a.pt'),     -- adjunto do clube A (convidado)
   ('00000000-0000-0000-0000-00000000000d', 'd@clube-a.pt'),     -- fisio do clube A (convidado)
-  ('00000000-0000-0000-0000-00000000000e', 'e@outro.pt');       -- intruso
+  ('00000000-0000-0000-0000-00000000000e', 'e@outro.pt'),       -- intruso
+  ('00000000-0000-0000-0000-00000000000f', 'f@clube-a.pt');     -- treinador de GR do clube A (convidado)
 
 create temp table ctx (k text primary key, v text);
 grant all on ctx to authenticated;
@@ -61,6 +62,8 @@ insert into public.invites (team_id, email, role) select v::uuid, 'd@clube-a.pt'
 insert into public.invites (team_id, email, role, expires_at) select v::uuid, 'e@outro.pt', 'admin', now() - interval '1 day' from ctx where k='teamA';
 insert into ctx select 'invC', token::text from public.invites where email='c@clube-a.pt';
 insert into ctx select 'invD', token::text from public.invites where email='d@clube-a.pt';
+insert into public.invites (team_id, email, role) select v::uuid, 'f@clube-a.pt', 'gr' from ctx where k='teamA';
+insert into ctx select 'invF', token::text from public.invites where email='f@clube-a.pt';
 insert into ctx select 'invE', token::text from public.invites where email='e@outro.pt';
 
 -- intruso E: não aceita o convite de C (email diferente) nem o seu (expirado)
@@ -98,6 +101,21 @@ select pg_temp.check(pg_temp.fails(format($q$select public.patch_doc(%L,'events'
 insert into public.docs (team_id, col, id, data) select v::uuid, 'rehabex', 'rx1', '{"name":"Nordic"}' from ctx where k='teamA';
 insert into public.docs (team_id, col, id, data) select v::uuid, 'rehab', 'in1', '{"fase":2}' from ctx where k='teamA';
 select pg_temp.check((select count(*) from public.docs where col in ('rehab','rehabex')) = 2, 'fisio grava a reabilitação (plano e biblioteca)');
+select pg_temp.check(pg_temp.fails(format($q$insert into public.docs (team_id,col,id,data) values (%L,'gk','x','{}')$q$, (select v from ctx where k='teamA'))), 'fisio não grava sessões de GR');
+
+-- F (treinador de GR) grava as sessões de GR e os exercícios; não altera treinos nem atletas; não vê o clínico
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000f','f@clube-a.pt');
+select pg_temp.check(public.accept_invite((select v::uuid from ctx where k='invF')) = (select v::uuid from ctx where k='teamA'), 'F aceita o convite (treinador de GR)');
+select pg_temp.check((select role from public.members where user_id=auth.uid()) = 'gr', 'F fica treinador de GR');
+insert into public.docs (team_id, col, id, data) select v::uuid, 'gk', 'gk1', '{"k":"s","date":"2026-10-08","plan":[]}' from ctx where k='teamA';
+insert into public.docs (team_id, col, id, data) select v::uuid, 'exercises', 'gk01', '{"name":"Encaixe frontal","cat":"Guarda-redes","gkt":"enc"}' from ctx where k='teamA';
+select pg_temp.check((select count(*) from public.docs where col in ('gk','exercises')) = 2, 'treinador de GR grava sessões de GR e exercícios');
+select pg_temp.check(public.patch_doc((select v::uuid from ctx where k='teamA'),'gk','gk1','[{"p":["theme"],"v":"Saídas aéreas"}]') > 0, 'treinador de GR altera a sessão (campo a campo)');
+select pg_temp.check((select count(*) from public.docs where col='clinical') = 0, 'treinador de GR NÃO vê o clínico');
+select pg_temp.check((select count(*) from public.docs where col='events') = 1, 'treinador de GR vê os treinos');
+select pg_temp.check(pg_temp.fails(format($q$select public.patch_doc(%L,'events','tr1','[{"p":["notes"],"v":"x"}]')$q$, (select v from ctx where k='teamA'))) or
+                     (select data->>'notes' from public.docs where id='tr1') = 'A secreto', 'treinador de GR não altera treinos');
+select pg_temp.check(pg_temp.fails(format($q$insert into public.docs (team_id,col,id,data) values (%L,'players','px','{}')$q$, (select v from ctx where k='teamA'))), 'treinador de GR não grava atletas');
 
 -- A (admin): vê o histórico, o campo a campo manteve o resto do treino, apagado recuperável, não fica sem admin
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a','a@clube-a.pt');

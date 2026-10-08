@@ -53,12 +53,14 @@ function meForm(){
 const meBanner = () => EDITION==="clubes" || meGet().nome||meGet().disp ? "" : `<button class="alert warn" data-a="meCfg"><i></i><span class="main"><b>Identifica este dispositivo</b><small>Para se saber quem fez cada alteração (ex.: “MacBook Pro de Alexandre”).</small></span></button>`;
 
 /* ---- últimas alterações (todas as coleções, pelo carimbo) ---- */
-const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",rehab:"Reabilitação",rehabex:"Exercício de reabilitação",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
+const WHO_COL = {events:null,players:"Atleta",injuries:"Lesão",exercises:"Exercício",cycles:"Ciclo",principles:"Princípio",staff:"Equipa técnica",opponents:"Adversário",setpieces:"Bola parada",tactics:"Esquema tático",rehab:"Reabilitação",rehabex:"Exercício de reabilitação",gk:"Guarda-redes",tests:"Testes físicos",evals:"Avaliação",scout:"Scouting",statdefs:"Estatística"};
 function whoItems(){
   const out=[];
   Object.keys(WHO_COL).forEach(c=>Object.entries(D[c]||{}).forEach(([id,x])=>{ if(!x||!x._at) return;
     let what, pg=null;
     if(c==="events"){ what=x.type==="jogo"?`Jogo ${x.venue==="F"?"@ ":"vs "}${x.opp||""}`:`Treino${x.theme?" — "+x.theme:""}`; what+=x.date?` (${fmtD(x.date,{day:"2-digit",month:"2-digit"})})`:""; pg=x.type==="jogo"?"jogo":"treino"; }
+    else if(c==="gk"){ if(x.k==="j"){ const g=D.events[x.g]; what=`Registo dos GR — ${g?(g.venue==="F"?"@ ":"vs ")+(g.opp||""):"jogo"}`; pg=g?"jogo":null; id=x.g; }
+      else { what=`Sessão de GR${x.theme?" — "+x.theme:""}${x.date?` (${fmtD(x.date,{day:"2-digit",month:"2-digit"})})`:""}`; pg="gk"; } }
     else { const nm=x.name||x.label||(c==="injuries"||c==="evals"||c==="rehab"?pname(x.pid):"")||(x.date?fmtD(x.date):""); what=`${WHO_COL[c]}${nm?": "+nm:""}`;
       pg={players:"atleta",opponents:"adversario",scout:"alvo"}[c]||null; if(c==="injuries"||c==="evals"){ if(D.players[x.pid]){ pg="atleta"; id=x.pid; } } }
     out.push({at:x._at,by:x._by||"",what,pg,id});

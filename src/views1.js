@@ -1,6 +1,6 @@
 /* ================= estado de navegação ================= */
 const TABS = [
-  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"jogos",l:"Jogos"},
+  {k:"painel",l:"Painel"},{k:"agenda",l:"Agenda"},{k:"treinos",l:"Treinos"},{k:"gr",l:"Guarda-redes"},{k:"jogos",l:"Jogos"},
   {k:"plantel",l:"Plantel"},{k:"testes",l:"Testes físicos"},{k:"clinico",l:"Clínico"},{k:"mon",l:"Monitorização"},{k:"scouting",l:"Scouting"},{k:"adv",l:"Adversários"},{k:"stats",l:"Estatísticas"}
 ];
 const S = { pm:todayISO().slice(0,7), mdl:"", dist:"", tab:"painel", page:null, cal:todayISO().slice(0,7), day:todayISO(), tsub:"sessoes", exCat:"", jComp:"", plGroup:"", tmom:null, scSt:"", stComp:"", stSort:"min", stDir:-1 };
@@ -29,13 +29,13 @@ function render(){
   let h="";
   try{
     if(S.page){
-      const f={treino:pTreino,jogo:pJogo,atleta:pAtleta,alvo:pAlvo,adversario:pOpp}[S.page.name];
+      const f={treino:pTreino,jogo:pJogo,atleta:pAtleta,alvo:pAlvo,adversario:pOpp,gk:pGk}[S.page.name];
       h = f ? f(S.page.id) : "";
-      if(h){ const c={treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents"}[S.page.name]; h+=edLine(D[c]&&D[c][S.page.id]); }
+      if(h){ const c={treino:"events",jogo:"events",atleta:"players",alvo:"scout",adversario:"opponents",gk:"gk"}[S.page.name]; h+=edLine(D[c]&&D[c][S.page.id]); }
       if(!h){ S.page=null; }
     }
     if(!S.page){
-      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats}[S.tab]||vPainel)();
+      h = ({painel:vPainel,agenda:vAgenda,treinos:vTreinos,jogos:vJogos,plantel:vPlantel,testes:vTestes,clinico:vClinico,mon:vMon,scouting:vScouting,adv:vOpp,stats:vStats,gr:vGr}[S.tab]||vPainel)();
     }
   }catch(err){
     console.error(err); if(typeof errReport==="function") errReport(err,{pagina:S.page?S.page.p||"ficha":S.tab});
@@ -261,6 +261,7 @@ function pTreino(id){
     <div>${pls.map(attRow).join("")}</div>
     <p class="note" style="padding:0 16px 14px">P presente — AT atraso — FJ falta justificada — FI falta injustificada — L lesionado — D dispensado. Atletas com lesão ativa ficam como L ao marcar os restantes.</p>
   </section>
+  ${gkTrCard(id)}
   ${staffAttHTML(e,id)}
   ${trEvalHTML(e,id)}
   <section class="card" style="margin-top:14px"><div class="card-h"><h3>Notas do treinador</h3></div><div class="card-b">
